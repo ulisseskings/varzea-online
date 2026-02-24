@@ -778,10 +778,47 @@
   box-shadow: 0 0 25px rgba(255,215,0,0.5);
 }
 
+#contactBtn{
+  position:absolute;
+  bottom:45px;
+  right:10px;
+  font-size:10px;
+  padding:4px 8px;
+  border:none;
+  border-radius:6px;
+  background:#222;
+  color:#fff;
+  cursor:pointer;
+  opacity:0.8;
+  z-index:9999;
+}
+
+#contactBtn:hover{
+  opacity:1;
+  background:#333;
+}
+
   </style>
 </head>
 
 <body>
+<button id="contactBtn">Contato</button>
+
+<div id="contactModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3>Contato</h3>
+    <p>
+      Entre em contato conosco e envie seus elogios,
+      dúvidas e/ou sugestões para o email:<br><br>
+      <strong>varzea.online@outlook.com</strong>
+    </p>
+
+    <div class="modal-buttons">
+      <button onclick="closeContactModal()">OK</button>
+      <button onclick="closeContactModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
   <div id="matchBox">
   <span id="playerBlueName">...</span>
@@ -2718,7 +2755,14 @@ const slotPositionsSecondHalf = {
   slotD_red: {left: "663px", top: "235px"},
   slotG_red: {left: "823px", top: "235px"}
 };
+document.getElementById("contactBtn")
+  .addEventListener("click", ()=>{
+    document.getElementById("contactModal").style.display = "flex";
+});
 
+function closeContactModal(){
+  document.getElementById("contactModal").style.display = "none";
+}
 </script>
 </body>
 </html>
