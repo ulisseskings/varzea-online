@@ -1298,15 +1298,6 @@ if(roomCode){
 }
 
 if(roomCode){
-  socket.emit("joinRoom", {
-    name: playerName,
-    role: playerRole,
-    roomCode: roomCode
-  });
-}else{
-  alert("Sala inválida.");
-  window.location.href = "/";
-}
 
     if(playerRole === "spectator"){
 
