@@ -15,8 +15,9 @@ app.get("/", (req,res)=>{
   res.sendFile(__dirname + "/public/lobby.html");
 });
 
-app.use(express.static("public"));
-
+app.use(express.static("public", {
+  index: false
+}))
 
 
 function shuffle(array){
