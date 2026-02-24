@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Várzea Online</title>
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+
+      /* Fundo oficial */
+      background: url("https://i.imgur.com/IDHNj51.png") no-repeat center center;
+      background-size: cover;
+
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    /* Lobby central inferior */
+    .menu-container {
+      width: 420px;
+      margin-bottom: 110px;
+
+      background: rgba(0, 0, 0, 0.78);
+      border-radius: 18px;
+
+      padding: 25px;
+      text-align: center;
+
+      backdrop-filter: blur(6px);
+    }
+
+    .menu-container h1 {
+      margin: 0 0 20px;
+      font-size: 18px;
+      color: gold;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    input, select {
+      width: 90%;
+      padding: 12px;
+      margin: 10px 0;
+
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      outline: none;
+      text-align: center;
+    }
+
+    select option {
+      background: black;
+      color: white;
+    }
+
+    button {
+      width: 95%;
+      padding: 14px;
+      margin-top: 12px;
+
+      border: none;
+      border-radius: 12px;
+
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+
+      background: linear-gradient(to right, #ffcc00, #ff8800);
+      color: black;
+
+      transition: 0.25s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(255, 200, 0, 0.6);
+    }
+
+    /* Laterais animadas */
+.side-decor {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 300px;
+  width: auto;
+
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+    .left { left: 30px; }
+
+    .right { right: 30px; }
+
+
+  </style>
+</head>
+
+<body>
+
+  <!-- Imagens decorativas laterais -->
+  <img class="side-decor left"  id="leftImg"  src="https://i.imgur.com/uuEvIlD.png">
+  <img class="side-decor right" id="rightImg" src="https://i.imgur.com/Hmbou7i.png">
+
+  <!-- Lobby -->
+  <div class="menu-container">
+    
+
+    <input id="playerName" placeholder="Seu nome..." />
+
+    <select id="role">
+      <option value="blue">Jogador Azul</option>
+      <option value="red">Jogador Vermelho</option>
+      <option value="spectator">Espectador</option>
+    </select>
+
+    <button onclick="enterGame()">Entrar na Sala</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    const socket = io();
+
+    function enterGame() {
+
+      // 1️⃣ Pega o nome digitado
+      const name = document.getElementById("playerName").value;
+
+      // 2️⃣ Pega o papel selecionado
+      const role = document.getElementById("role").value;
+
+      // 3️⃣ Verifica se digitou nome
+      if (!name) {
+        alert("Digite seu nome!");
+        return;
+      }
+
+      // 4️⃣ Salva no navegador
+      localStorage.setItem("playerRole", role);
+      localStorage.setItem("playerName", name);
+
+      // 5️⃣ Envia para o servidor
+      socket.emit("joinRoom", { name, role });
+
+      // 6️⃣ Vai para o tabuleiro
+      window.location.href = "index.html";
+    }
+
+const leftImages = [
+  "https://i.imgur.com/uuEvIlD.png",
+  "https://i.imgur.com/rVXSF0A.png",
+  "https://i.imgur.com/8tdCynv.png",
+  "https://i.imgur.com/jJ84rBZ.png",
+  "https://i.imgur.com/dPxFK64.png"
+];
+
+const rightImages = [
+  "https://i.imgur.com/Hmbou7i.png",
+  "https://i.imgur.com/ntYDKd7.png",
+  "https://i.imgur.com/SYlGinK.png",
+  "https://i.imgur.com/Gnbzgmi.png",
+  "https://i.imgur.com/lWXt4b8.png"
+];
+
+let leftIndex = 0;
+let rightIndex = 0;
+let showLeft = true;
+
+const leftImg = document.getElementById("leftImg");
+const rightImg = document.getElementById("rightImg");
+
+function swapCharacter() {
+
+  if (showLeft) {
+
+    // Esconde direita
+    rightImg.style.opacity = 0;
+
+    // Troca imagem da esquerda
+    leftImg.src = leftImages[leftIndex];
+    leftImg.style.opacity = 1;
+
+    leftIndex = (leftIndex + 1) % leftImages.length;
+
+  } else {
+
+    // Esconde esquerda
+    leftImg.style.opacity = 0;
+
+    // Troca imagem da direita
+    rightImg.src = rightImages[rightIndex];
+    rightImg.style.opacity = 1;
+
+    rightIndex = (rightIndex + 1) % rightImages.length;
+  }
+
+  // Alterna lado
+  showLeft = !showLeft;
+}
+
+
+window.onload = () => {
+
+  // Começa mostrando esquerda
+  leftImg.style.opacity = 1;
+  rightImg.style.opacity = 0;
+
+  swapCharacter();
+
+  setInterval(swapCharacter, 3000);
+};
+
+
+</script>

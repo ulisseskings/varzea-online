@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Várzea Online</title>
+
+<style>
+body{
+  margin:0;
+  height:100vh;
+  overflow:hidden;
+  font-family:Arial, sans-serif;
+
+  background:url("https://i.imgur.com/YF7IHur.png") no-repeat center center;
+  background-size:cover;
+
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+}
+
+/* Container principal */
+.menu-container{
+  width:320px;
+  margin-bottom:95px;
+
+  background:rgba(0,0,0,0.78);
+  border-radius:18px;
+
+  padding:5px;
+  text-align:center;
+
+  backdrop-filter:blur(6px);
+}
+
+.menu-container h2{
+  margin:0 0 10px;
+  font-size:12px;
+  color:gold;
+  letter-spacing:1px;
+  text-shadow:0 0 10px rgba(255,215,0,0.5);
+}
+
+input, select{
+  width:90%;
+  padding:10px;
+  margin:10px 0;
+
+  border:none;
+  border-radius:10px;
+  font-size:12px;
+
+  background:rgba(255,255,255,0.1);
+  color:white;
+  outline:none;
+  text-align:center;
+}
+
+select option{
+  background:black;
+  color:white;
+}
+
+button{
+  width:95%;
+  padding:5px;
+  margin-top:0px;
+
+  border:none;
+  border-radius:12px;
+
+  font-size:12px;
+  font-weight:bold;
+  cursor:pointer;
+
+  background:linear-gradient(to right,#ffcc00,#ff8800);
+  color:black;
+
+  transition:0.25s;
+}
+
+button:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 15px rgba(255,200,0,0.6);
+}
+
+/* Laterais */
+.side-decor{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  height:400px;
+  width:auto;
+
+  opacity:0;
+  transition:opacity 1s ease-in-out;
+}
+
+.left{ left:140px; }
+.right{ right:140px; }
+
+hr{
+  margin:5px 0;
+  border:1px solid rgba(255,255,255,0.1);
+}
+#audioLobby{
+  position:absolute;
+  top:20px;
+  right:30px;
+
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+
+  z-index:9999;
+}
+
+#audioLobby button{
+  background:#111;
+  color:white;
+  border:1px solid #555;
+  padding:6px 15px;
+  border-radius:30px;
+  cursor:pointer;
+  font-size:10px;
+}
+
+#audioLobby button:hover{
+  background:#222;
+}
+
+#audioLobby input{
+  width:60px;
+  accent-color: rgb(0,255,120);
+}
+
+#lobbyBanner{
+  position:absolute;
+  top:50px;
+  left:50%;
+  transform:translateX(-50%);
+  width:400px;
+  z-index:50;
+
+  transition: transform 1s ease-in-out;
+}
+
+#lobbyBanner img{
+  width:100%;
+  height:auto;
+  display:block;
+  border-radius:12px;
+}
+
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:999999;
+}
+
+.modal-box{
+  background:#111;
+  padding:25px 35px;
+  border-radius:15px;
+  text-align:center;
+  color:white;
+  width:320px;
+  box-shadow:0 0 25px rgba(255,215,0,0.4);
+}
+
+.modal-box h3{
+  margin:0 0 15px;
+  color:gold;
+}
+
+.modal-box p{
+  margin-bottom:20px;
+}
+
+.modal-buttons{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+}
+
+.modal-buttons button{
+  padding:8px 15px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+<div id="audioLobby">
+  <button id="musicToggleLobby">🎵 ON</button>
+  <input type="range"
+    id="volumeSliderLobby"
+    min="0"
+    max="1"
+    step="0.01"
+    value="0.2">
+
+    <button id="manualLobbyBtn">📘 Manual</button>
+</div>
+
+
+<img class="side-decor left"  id="leftImg"  src="https://i.imgur.com/uuEvIlD.png">
+<img class="side-decor right" id="rightImg" src="https://i.imgur.com/Hmbou7i.png">
+
+<div id="lobbyBanner">
+  <img id="bannerImg" src="https://i.imgur.com/JelZIZD.png">
+</div>
+
+<div class="menu-container">
+
+
+
+  <input type="text" id="nickname" placeholder="Seu nickname">
+
+  <select id="role">
+    <option value="blue">Time Azul</option>
+    <option value="red">Time Vermelho</option>
+    <option value="spectator">Espectador</option>
+  </select>
+
+  <button onclick="createRoom()">Criar Sala</button>
+
+  <hr>
+
+  <input type="text" id="roomCode" placeholder="Código da sala">
+
+  <button onclick="joinRoom()">Entrar na Sala</button>
+
+</div>
+
+<!-- 🎵 Música online -->
+<audio id="bgMusic" loop>
+  <source src="https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868321/background_x393rd.mp3" type="audio/mpeg">
+</audio>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+let bgMusic = document.getElementById("bgMusic");
+let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
+let currentVolume = parseFloat(localStorage.getItem("musicVolume")) || 0.2;
+
+bgMusic.volume = currentVolume;
+
+if(musicEnabled){
+  document.addEventListener("click", ()=>{
+    bgMusic.play().catch(()=>{});
+  }, {once:true});
+}
+
+document.getElementById("musicToggleLobby")
+  .addEventListener("click", ()=>{
+
+    musicEnabled = !musicEnabled;
+
+    localStorage.setItem("musicEnabled", musicEnabled);
+
+    if(musicEnabled){
+      bgMusic.play();
+      document.getElementById("musicToggleLobby").innerText="🎵 ON";
+    }else{
+      bgMusic.pause();
+      document.getElementById("musicToggleLobby").innerText="🎵 OFF";
+    }
+
+});
+
+document.getElementById("volumeSliderLobby")
+  .addEventListener("input", (e)=>{
+    currentVolume = parseFloat(e.target.value);
+    bgMusic.volume = currentVolume;
+    localStorage.setItem("musicVolume", currentVolume);
+});
+
+
+const socket = io();
+
+/* ============================= */
+/*   LÓGICA ORIGINAL MANTIDA    */
+/* ============================= */
+
+function createRoom(){
+  const name = document.getElementById("nickname").value;
+  const role = document.getElementById("role").value;
+
+  if(!name){
+    alert("Digite seu nickname.");
+    return;
+  }
+
+  socket.emit("createRoom",{ name, role });
+}
+
+function joinRoom(){
+  const name = document.getElementById("nickname").value;
+  const role = document.getElementById("role").value;
+  const roomCode = document.getElementById("roomCode").value;
+
+  if(!name || !roomCode){
+    alert("Preencha nickname e código.");
+    return;
+  }
+
+  localStorage.setItem("playerName",name);
+  localStorage.setItem("playerRole",role);
+
+  window.location.href = `/index.html?room=${roomCode}`;
+}
+
+socket.on("roomCreated",(roomCode)=>{
+  const name = document.getElementById("nickname").value;
+  const role = document.getElementById("role").value;
+
+  localStorage.setItem("playerName",name);
+  localStorage.setItem("playerRole",role);
+
+  window.location.href = `/index.html?room=${roomCode}`;
+});
+
+/* ============================= */
+/*   IMAGENS ANIMADAS           */
+/* ============================= */
+
+const leftImages=[
+  "https://i.imgur.com/uuEvIlD.png",
+  "https://i.imgur.com/rVXSF0A.png",
+  "https://i.imgur.com/8tdCynv.png",
+  "https://i.imgur.com/jJ84rBZ.png",
+  "https://i.imgur.com/dPxFK64.png"
+];
+
+const rightImages=[
+  "https://i.imgur.com/Hmbou7i.png",
+  "https://i.imgur.com/ntYDKd7.png",
+  "https://i.imgur.com/SYlGinK.png",
+  "https://i.imgur.com/Gnbzgmi.png",
+  "https://i.imgur.com/lWXt4b8.png"
+];
+
+let leftIndex=0;
+let rightIndex=0;
+let showLeft=true;
+
+const leftImg=document.getElementById("leftImg");
+const rightImg=document.getElementById("rightImg");
+
+function swapCharacter(){
+
+  if(showLeft){
+    rightImg.style.opacity=0;
+    leftImg.src=leftImages[leftIndex];
+    leftImg.style.opacity=1;
+    leftIndex=(leftIndex+1)%leftImages.length;
+  }else{
+    leftImg.style.opacity=0;
+    rightImg.src=rightImages[rightIndex];
+    rightImg.style.opacity=1;
+    rightIndex=(rightIndex+1)%rightImages.length;
+  }
+
+  showLeft=!showLeft;
+}
+
+window.onload=()=>{
+  leftImg.style.opacity=1;
+  rightImg.style.opacity=0;
+  swapCharacter();
+  setInterval(swapCharacter,3000);
+};
+
+const bannerImages = [
+  "https://i.imgur.com/JelZIZD.png",
+  "https://i.imgur.com/rjnW253.png",
+  "https://i.imgur.com/cLGNSVy.png",
+  "https://i.imgur.com/E5KSaDt.png"
+];
+
+let bannerIndex = 0;
+const banner = document.getElementById("lobbyBanner");
+const bannerImg = document.getElementById("bannerImg");
+
+// 🔁 troca imagem a cada 1 segundo
+setInterval(()=>{
+  bannerIndex = (bannerIndex + 1) % bannerImages.length;
+  bannerImg.src = bannerImages[bannerIndex];
+},80);
+
+// 🎲 movimento aleatório suave dentro de 15px
+function randomFloat(){
+  return (Math.random() * 30 - 15).toFixed(2);
+}
+
+setInterval(()=>{
+  const x = randomFloat();
+  const y = randomFloat();
+
+  banner.style.transform =
+    `translate(-50%, 0) translate(${x}px, ${y}px)`;
+
+},2000);
+
+function openModal(type){
+
+  const overlay = document.getElementById("modalOverlay");
+  const title   = document.getElementById("modalTitle");
+  const text    = document.getElementById("modalText");
+  const confirmBtn = document.getElementById("confirmBtn");
+
+  overlay.style.display = "flex";
+
+  if(type === "manual"){
+
+    title.innerText = "Manual de Regras";
+    text.innerText =
+      "Deseja acessar o Manual Oficial de Regras agora?";
+
+    confirmBtn.innerText = "Acessar";
+
+    confirmBtn.onclick = ()=>{
+      window.open(
+        "https://drive.google.com/file/d/1mlVRX4wJhj4qFmxtdtW6gic0qF9cJM76/view?usp=drive_link",
+        "_blank"
+      );
+      closeModal();
+    };
+  }
+}
+
+function closeModal(){
+  document.getElementById("modalOverlay").style.display = "none";
+}
+
+document.getElementById("manualLobbyBtn")
+  .addEventListener("click", ()=>{
+    openModal("manual");
+});
+
+</script>
+
+<!-- Modal de Confirmação -->
+<div id="modalOverlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+
+    <h3 id="modalTitle"></h3>
+    <p id="modalText"></p>
+
+    <div class="modal-buttons">
+      <button id="confirmBtn">Confirmar</button>
+      <button onclick="closeModal()">Cancelar</button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
