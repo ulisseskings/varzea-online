@@ -527,6 +527,9 @@ socket.on("rotateTwist", ({id})=>{
 
 socket.on("joinRoom", ({ name, role, roomCode }) => {
 
+  console.log("Tentando entrar na sala:", roomCode);
+  console.log("Salas existentes:", Object.keys(rooms));
+
   if(!rooms[roomCode]){
     socket.emit("roomError", "Sala não existe.");
     return;
