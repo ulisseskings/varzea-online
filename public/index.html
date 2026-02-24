@@ -1278,6 +1278,22 @@ const board = document.getElementById("board");
 const playerRole = localStorage.getItem("playerRole");
 const playerName = localStorage.getItem("playerName");
 
+const urlParams = new URLSearchParams(window.location.search);
+const roomCode = urlParams.get("room");
+
+if(!roomCode || !playerName || !playerRole){
+  console.log("Sessão inválida. Voltando para lobby.");
+  window.location.href = "/";
+  throw new Error("Sessão inválida");
+}
+
+// 🚀 ENTRA NA SALA
+socket.emit("joinRoom", {
+  name: playerName,
+  role: playerRole,
+  roomCode: roomCode
+});
+
   // 🔴 GIRA TELA PARA O VERMELHO
 if (playerRole === "red") {
 
@@ -1290,12 +1306,9 @@ if (playerRole === "red") {
   board.style.transformOrigin = "center center";
 }
 
-const urlParams = new URLSearchParams(window.location.search);
-const roomCode = urlParams.get("room");
-
-if(roomCode){
+// 4️⃣ Mostra código
   document.getElementById("roomCodeBox").innerText = "Sala: " + roomCode;
-}
+
 
 if(roomCode)
 
