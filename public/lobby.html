@@ -198,8 +198,10 @@ hr{
 /* BOTÃO CONTATO */
 #contactBtn{
   position:absolute;
-  bottom:45px; /* acima do copyright */
-  right:10px;
+  width: 50px;
+  height:20px;
+  bottom:75px; /* acima do copyright */
+  right:40px;
   font-size:10px;
   padding:4px 8px;
   border:none;
@@ -463,6 +465,47 @@ document.getElementById("contactBtn")
 
 function closeContactModal(){
   document.getElementById("contactModal").style.display = "none";
+}
+
+function createRoom(){
+
+  const name = document.getElementById("nickname").value.trim();
+  const role = document.getElementById("role").value;
+
+  if(!name){
+    alert("Digite um nickname.");
+    return;
+  }
+
+  socket.emit("createRoom", {
+    name,
+    role
+  });
+
+}
+
+function joinRoom(){
+
+  const name = document.getElementById("nickname").value.trim();
+  const role = document.getElementById("role").value;
+  const roomCode = document.getElementById("roomCode").value.trim().toUpperCase();
+
+  if(!name){
+    alert("Digite um nickname.");
+    return;
+  }
+
+  if(!roomCode){
+    alert("Digite o código da sala.");
+    return;
+  }
+
+  socket.emit("joinRoom", {
+    name,
+    role,
+    roomCode
+  });
+
 }
 
 </script>
