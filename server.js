@@ -563,6 +563,9 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
 
   socket.join(roomCode);
 
+  // 🔥 CONFIRMA ENTRADA
+  socket.emit("roomJoined", roomCode);
+
   if(role === "blue"){
     room.players.blue = name;
   }

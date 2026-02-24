@@ -321,12 +321,11 @@ function joinRoom(){
     alert(msg);
   });
 
-  socket.on("syncPlayers", ()=>{
-    localStorage.setItem("playerName",name);
-    localStorage.setItem("playerRole",role);
-    window.location.href = `/index.html?room=${roomCode}`;
-  });
-}
+  socket.on("roomJoined", (roomCode)=>{
+  localStorage.setItem("playerName", name);
+  localStorage.setItem("playerRole", role);
+  window.location.href = `/index.html?room=${roomCode}`;
+});
 
 socket.on("roomCreated",(roomCode)=>{
   const name = document.getElementById("nickname").value;
