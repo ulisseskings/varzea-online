@@ -11,12 +11,11 @@ const io = new Server(server, {
   }
 });
 
-app.use(express.static("public"));
-
 app.get("/", (req,res)=>{
   res.sendFile(__dirname + "/public/lobby.html");
 });
 
+app.use(express.static("public"));
 
 
 
