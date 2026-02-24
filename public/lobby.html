@@ -336,7 +336,7 @@ socket.on("roomCreated",(roomCode)=>{
 
   window.location.href = `/index.html?room=${roomCode}`;
 });
-
+}
 /* ============================= */
 /*   IMAGENS ANIMADAS           */
 /* ============================= */
@@ -403,7 +403,7 @@ const bannerImg = document.getElementById("bannerImg");
 setInterval(()=>{
   bannerIndex = (bannerIndex + 1) % bannerImages.length;
   bannerImg.src = bannerImages[bannerIndex];
-},90);
+},500);
 
 // 🎲 movimento aleatório suave dentro de 15px
 function randomFloat(){
