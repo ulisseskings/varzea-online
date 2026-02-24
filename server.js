@@ -604,6 +604,21 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
 
   socket.join(roomCode);
 
+  // 🔥 REASSUME POSIÇÃO
+  if(role === "blue"){
+    room.players.blue = name;
+  }
+
+  if(role === "red"){
+    room.players.red = name;
+  }
+
+  if(role === "spectator"){
+    if(!room.spectators.includes(name)){
+      room.spectators.push(name);
+    }
+  }
+
   io.to(roomCode).emit("syncPlayers", room.players);
   io.to(roomCode).emit("syncSpectators", room.spectators);
 
@@ -611,7 +626,6 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
   socket.emit("syncSubTokens", room.subTokens || {});
   socket.emit("syncTwists", room.twists || []);
   socket.emit("syncDeckSizes", room.decks);
-
 });
 
 socket.on("restartMatch", ()=>{

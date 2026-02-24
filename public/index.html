@@ -245,7 +245,8 @@
   width: 100%;
   height: 55px;
 
-  background: linear-gradient(to bottom, rgb(12, 151, 54), #00440f);
+  background:linear-gradient(to right,#ffcc00,#ff8800);
+  border-radius:12px;
 
   display: flex;
   justify-content: center;
@@ -390,14 +391,27 @@
   background: red;
 }
 
-#contactModal{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.75);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 999999;
+#contactModal #modalBox{
+  background:rgba(0,0,0,0.85);
+  border-radius:18px;
+  border:2px solid gold;
+  box-shadow:0 0 25px rgba(255,215,0,0.4);
+}
+
+#contactModal button{
+  background:linear-gradient(to right,#ffcc00,#ff8800);
+  color:black;
+  font-weight:bold;
+  border:none;
+  border-radius:12px;
+  padding:8px 15px;
+  cursor:pointer;
+  transition:0.25s;
+}
+
+#contactModal button:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 15px rgba(255,200,0,0.6);
 }
 
 /* ===================== */
@@ -826,7 +840,7 @@
       <strong>varzea.online@outlook.com</strong>
     </p>
 
-    <div class="modal-buttons">
+    <div id="modalButtons">
       <button onclick="closeContactModal()">OK</button>
       <button onclick="closeContactModal()">Cancelar</button>
     </div>
@@ -1580,11 +1594,23 @@ function mustRefillHand(player){
 
   const currentHand = (player==="blue") ? hand : hand_red;
 
-  // conta apenas AMDG
   const totalAMDG = currentHand.filter(c =>
     c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
     c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
   ).length;
+
+  // 🔥 se qualquer deck AMDG estiver vazio, libera regra
+  const amdgDecks = player === "blue"
+    ? ["A","M","D","G"]
+    : ["A_red","M_red","D_red","G_red"];
+
+  const anyDeckEmpty = amdgDecks.some(type =>
+    !decks[type] || decks[type].length === 0
+  );
+
+  if(anyDeckEmpty){
+    return false; // 🔥 libera jogar
+  }
 
   return totalAMDG < 13;
 }
