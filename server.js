@@ -592,9 +592,53 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
   socket.emit("syncTwists", room.twists || []);
 });
 
+socket.on("reconnectRoom", ({ name, role, roomCode }) => {
 
+  if(!rooms[roomCode]) return;
 
+  const room = rooms[roomCode];
 
+  socket.role = role;
+  socket.roomCode = roomCode;
+  socket.playerName = name;
+
+  socket.join(roomCode);
+
+  io.to(roomCode).emit("syncPlayers", room.players);
+  io.to(roomCode).emit("syncSpectators", room.spectators);
+
+  socket.emit("updateBoardSlots", room.boardSlots);
+  socket.emit("syncSubTokens", room.subTokens || {});
+  socket.emit("syncTwists", room.twists || []);
+  socket.emit("syncDeckSizes", room.decks);
+
+});
+
+socket.on("restartMatch", ()=>{
+
+  const room = rooms[socket.roomCode];
+  if(!room) return;
+
+  room.decks = JSON.parse(JSON.stringify(decks));
+  Object.keys(room.decks).forEach(type=>{
+    shuffle(room.decks[type]);
+  });
+
+  room.hands.blue = [];
+  room.hands.red  = [];
+
+  room.boardSlots = {
+    A:[],M:[],D:[],G:[],
+    A_red:[],M_red:[],D_red:[],G_red:[],
+    P1:[],P2:[],P1_red:[],P2_red:[]
+  };
+
+  room.twists = [];
+  room.subTokens = {};
+
+  io.to(socket.roomCode).emit("matchRestarted");
+
+});
 
 
 
