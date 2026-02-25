@@ -564,6 +564,11 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
 
   socket.join(roomCode);
 
+  io.to(roomCode).emit("playerJoinedMessage", {
+  name,
+  role
+  });
+
   // 🔥 CONFIRMA ENTRADA
   socket.emit("roomJoined", roomCode);
 
@@ -638,7 +643,7 @@ socket.on("restartMatch", ()=>{
 
   // 🔒 Opcional: só jogadores podem reiniciar
   if(socket.role !== "blue" && socket.role !== "red") return;
-  
+
   if(!room) return;
 
   room.decks = JSON.parse(JSON.stringify(decks));

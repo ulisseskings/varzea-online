@@ -2,7 +2,15 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport"
+      content="width=device-width,
+               initial-scale=1.0,
+               minimum-scale=0.5,
+               maximum-scale=3.0,
+               user-scalable=yes">
+              
+  <meta name="screen-orientation" content="landscape">
+
   <title>Várzea Online</title>
 
 
@@ -216,7 +224,6 @@
 /* TOPBAR ESTILO GAME HUD */
 
 #spectatorBox{
-  position:absolute;
   top:55px;
   right:120px;
 
@@ -819,40 +826,44 @@
   background:#333;
 }
 
-@media (max-width: 768px){
 
-  .hand-card{
-    width: 65px;
-    height: 90px;
-    margin: 0 -18px;
+#rotateWarning{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#111;
+  color:white;
+  font-family:Arial;
+  font-size:20px;
+  font-weight:bold;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  z-index:9999999;
+}
+
+@media (orientation: portrait){
+  #rotateWarning{
+    display:flex;
   }
-
-  #hand{
-    height: 75px;
-  }
-
+  #board,
+  #topbar,
+  #rightPanel,
+  #matchBox,
+  #hand,
   #hand_red{
-    height: 60px;
+    display:none !important;
   }
-
-  #matchBox{
-    font-size: 9px;
-  }
-
-  #tempoStatus{
-    font-size: 10px;
-    right: 150px;
-  }
-  #rightPanel{
-  right:20px;
 }
-
-}
-
   </style>
 </head>
 
 <body>
+
+<div id="rotateWarning">
+  🔄 Gire o celular para o modo horizontal
+</div>
+
 <button id="contactBtn">Contato</button>
 
   <div id="matchBox">
@@ -1356,12 +1367,16 @@ function scaleBoard(){
   const baseWidth  = 1152;
   const baseHeight = 658;
 
-  const screenWidth  = window.innerWidth;
-  const screenHeight =
-  document.documentElement.clientHeight - 60;
+  const screenWidth  = window.visualViewport
+    ? window.visualViewport.width
+    : window.innerWidth;
+
+  const screenHeight = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
 
   const scaleX = screenWidth  / baseWidth;
-  const scaleY = screenHeight / baseHeight;
+  const scaleY = (screenHeight - 60) / baseHeight;
 
   const scale = Math.min(scaleX, scaleY);
 
@@ -1852,15 +1867,18 @@ function getCorrectPoint(clientX, clientY){
 
   const rect = board.getBoundingClientRect();
 
-  let x = clientX;
-  let y = clientY;
+  let x = (clientX - rect.left) * (board.offsetWidth  / rect.width);
+  let y = (clientY - rect.top)  * (board.offsetHeight / rect.height);
 
   if(playerRole === "red"){
-    x = rect.left + rect.width  - (clientX - rect.left);
-    y = rect.top  + rect.height - (clientY - rect.top);
+    x = board.offsetWidth  - x;
+    y = board.offsetHeight - y;
   }
 
-  return { x, y };
+  return {
+    x: rect.left + x,
+    y: rect.top  + y
+  };
 }
 
 
@@ -2225,6 +2243,40 @@ document.querySelectorAll(".piece").forEach(piece => {
 
   piece.addEventListener("dragstart", (e)=>{
     e.dataTransfer.setData("movePiece", piece.dataset.anchor);
+  });
+
+});
+document.querySelectorAll(".piece").forEach(piece=>{
+
+  piece.addEventListener("touchstart", function(e){
+
+    const touch = e.touches[0];
+    this.dataset.touching = "true";
+    this.style.zIndex = 99999;
+
+  });
+
+  piece.addEventListener("touchmove", function(e){
+
+    if(this.dataset.touching !== "true") return;
+
+    const touch = e.touches[0];
+    const rect = board.getBoundingClientRect();
+
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    const anchor = document.getElementById(this.dataset.anchor);
+    if(anchor){
+      anchor.style.left = x + "px";
+      anchor.style.top  = y + "px";
+      applyAnchors();
+    }
+
+  });
+
+  piece.addEventListener("touchend", function(){
+    this.dataset.touching = "false";
   });
 
 });
