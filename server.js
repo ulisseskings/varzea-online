@@ -27,6 +27,14 @@ app.get("/", (req,res)=>{
 
 });
 
+function shuffle(array){
+  for(let i = array.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+
 function generateRoomCode(length = 5){
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code;
@@ -42,6 +50,13 @@ function generateRoomCode(length = 5){
 }
 
 let rooms = {};
+
+function shuffle(array){
+  for(let i = array.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
 /* ===============================
    🎴 DECKS OFICIAIS (SERVIDOR)
 ================================ */
