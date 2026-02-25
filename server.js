@@ -21,7 +21,7 @@ app.get("/", (req,res)=>{
 
   if(/Mobi|Android|iPhone|iPad/i.test(userAgent)){
     res.sendFile(__dirname + "/public/lobby-mobile.html");
-  }else{
+  } else {
     res.sendFile(__dirname + "/public/lobby.html");
   }
 
