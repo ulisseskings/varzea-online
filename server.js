@@ -16,15 +16,17 @@ app.use(express.static("public", {
 }))
 
 app.get("/", (req,res)=>{
-  res.sendFile(__dirname + "/public/lobby.html");
+
+  const userAgent = req.headers["user-agent"] || "";
+
+  if(/Mobi|Android|iPhone|iPad/i.test(userAgent)){
+    res.sendFile(__dirname + "/public/lobby-mobile.html");
+  }else{
+    res.sendFile(__dirname + "/public/lobby.html");
+  }
+
 });
 
-function shuffle(array){
-  for(let i = array.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
 function generateRoomCode(length = 5){
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code;

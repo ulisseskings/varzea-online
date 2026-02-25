@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>Várzea Online</title>
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1,
+               maximum-scale=1,
+               user-scalable=no">
 
 <style>
 body{
@@ -236,6 +241,67 @@ hr{
   opacity:1;
   background:#333;
 }
+
+/* ===================== */
+/* MOBILE ADAPTATION */
+/* ===================== */
+
+@media (max-width: 900px){
+
+  body{
+    align-items:center;
+  }
+
+  .menu-container{
+    width:85%;
+    margin-bottom:20px;
+    padding:20px;
+  }
+
+  .menu-container h2{
+    font-size:16px;
+  }
+
+  input, select{
+    font-size:16px;
+    padding:14px;
+  }
+
+  button{
+    font-size:15px;
+    padding:12px;
+  }
+
+  /* esconder personagens laterais no mobile */
+  .side-decor{
+    display:none;
+  }
+
+  /* banner central maior */
+  #lobbyBanner{
+    width:80%;
+    top:20px;
+  }
+
+  /* audio reposicionado */
+  #audioLobby{
+    top:10px;
+    right:10px;
+  }
+
+  /* botão contato */
+  #contactBtn{
+    bottom:20px;
+    right:15px;
+  }
+
+  #fullscreenLobbyBtn{
+    bottom:50px;
+    right:15px;
+  }
+
+}
+
 </style>
 </head>
 

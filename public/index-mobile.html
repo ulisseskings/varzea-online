@@ -2,11 +2,14 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
+             
   <meta name="viewport"
         content="width=device-width,
                 initial-scale=1,
                 maximum-scale=1,
-                user-scalable=no">
+                user-scalable=no,
+                viewport-fit=cover">
+  
               
   <meta name="screen-orientation" content="landscape">
 
@@ -84,7 +87,7 @@
 
 #hand {
   position: fixed;          /* ✅ não depende do body */
-  bottom: -15px;              /* ✅ colado na base */
+  bottom: 0px;              /* ✅ colado na base */
   left: 0;
 
   width: 100%;
@@ -571,7 +574,9 @@
 
 #twistZoomImg{
   width: auto;
-  height: 400px;
+  max-height: 80vh;
+  max-width: 90vw;
+   height: auto;
 
   border-radius: 15px;
   box-shadow: 0 0 25px black;
@@ -804,21 +809,26 @@
 }
 
 #contactBtn{
-  position:absolute;
-  width: 50px;
-  height:20px;
-  bottom:75px; /* acima do copyright */
-  right:40px;
-  font-size:10px;
-  padding:4px 8px;
-  border:none;
-  border-radius:6px;
-  background:#222;
-  color:#fff;
-  cursor:pointer;
-  opacity:0.8;
-}
+  position: fixed;
+  bottom: 75px;
+  right: 20px;
 
+  min-width: 95px;
+  height: 36px;
+
+  font-size: 12px;
+  font-weight: bold;
+
+  border-radius: 10px;
+
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(5px);
+
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+
+  z-index: 999999;
+}
 
 #contactBtn:hover{
   opacity:1;
@@ -841,18 +851,41 @@
   z-index:9999999;
 }
 
-@media (orientation: portrait){
-  #rotateWarning{
-    display:flex;
+@media (max-width: 900px){
+
+  #hand{
+    height: 70px;
   }
-  #board,
-  #topbar,
-  #rightPanel,
-  #matchBox,
-  #hand,
+
   #hand_red{
-    display:none !important;
+    height: 60px;
   }
+
+  .hand-card{
+    width: 70px;
+    height: 95px;
+  }
+  #topbar{
+    height: 42px;
+    gap: 8px;
+  }
+
+  #topLogo{
+    height: 32px;
+  }
+
+  #topbar button{
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 8px;
+  }
+
+  .topbox,
+  #tempoStatus{
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+
 }
 
 img,
@@ -869,10 +902,42 @@ img {
   pointer-events: auto;
 }
 
+@media (max-height: 500px){
+  #topbar{
+    top: 0px;
+    height: 45px;
+  }
+
+  #topbar button{
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+
+  #topLogo{
+    height: 38px;
+  }
+    #counter_blue{
+    left: 20px;
+    bottom: 110px;
+    font-size: 9px;
+  }
+
+  #counter_red{
+    left: auto;
+    right: 20px;
+    top: 100px;
+    font-size: 9px;
+  }
+}
+body{
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
   </style>
 </head>
 
 <body>
+
 
 <div id="rotateWarning">
   🔄 Gire o celular para o modo horizontal
@@ -1019,37 +1084,37 @@ img {
 
 <div class="deck-wrapper" data-anchor="deckA">
   <img class="deck-slot" src="https://i.imgur.com/9xzQNTb.png"
-       draggable="true" data-deck="A">
+        data-deck="A">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','A')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckM">
   <img class="deck-slot" src="https://i.imgur.com/XxdG1vW.png"
-       draggable="true" data-deck="M">
+         data-deck="M">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','M')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckD">
   <img class="deck-slot" src="https://i.imgur.com/RUEsxIt.png"
-       draggable="true" data-deck="D">
+         data-deck="D">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','D')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckG">
   <img class="deck-slot" src="https://i.imgur.com/l7eDrIo.png"
-       draggable="true" data-deck="G">
+         data-deck="G">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','G')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckP">
   <img class="deck-slot" src="https://i.imgur.com/ru5z5NM.png"
-       draggable="true" data-deck="P">
+         data-deck="P">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','P')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckT">
   <img class="deck-slot" src="https://i.imgur.com/D40CPCK.png"
-       draggable="true" data-deck="T">
+         data-deck="T">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','T')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
@@ -1059,31 +1124,31 @@ img {
 
 <div class="deck-wrapper red-zone" data-anchor="deckA_red">
   <img class="deck-slot" src="https://i.imgur.com/xRIC9Aq.png"
-       draggable="true" data-deck="A_red">
+         data-deck="A_red">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','A_red')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper red-zone" data-anchor="deckM_red">
   <img class="deck-slot" src="https://i.imgur.com/ItO2wFO.png"
-       draggable="true" data-deck="M_red">
+         data-deck="M_red">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','M_red')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper red-zone" data-anchor="deckD_red">
   <img class="deck-slot" src="https://i.imgur.com/2e3i2cY.png"
-       draggable="true" data-deck="D_red">
+         data-deck="D_red">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','D_red')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper red-zone" data-anchor="deckG_red">
   <img class="deck-slot" src="https://i.imgur.com/Brr9kXs.png"
-       draggable="true" data-deck="G_red">
+         data-deck="G_red">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','G_red')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper red-zone" data-anchor="deckP_red">
   <img class="deck-slot" src="https://i.imgur.com/vMrYkT5.png"
-       draggable="true" data-deck="P_red">
+         data-deck="P_red">
   <button class="shuffle-btn" onclick="event.stopPropagation(); event.preventDefault(); socket.emit('shuffleDeck','P_red')"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
@@ -1095,32 +1160,32 @@ img {
   <!-- Bola -->
   <!-- Bola -->
 <div class="anchor" id="bola" style="left:581px; top:329px;"></div>
-<img class="piece ball" src="https://i.imgur.com/xbobPgs.png" data-anchor="bola" draggable="true">
+<img class="piece ball" src="https://i.imgur.com/xbobPgs.png" data-anchor="bola"  >
 
 <!-- Gol Azul / Vermelho -->
 <div class="anchor" id="tokengola" style="left:249px; top:480px;"></div>
 <div class="anchor" id="tokengolv" style="left:915px; top:179px;"></div>
 
 <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengola">
-<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengolv" draggable="true">
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengolv"  >
 
 <!-- Forma Azul -->
 <div class="anchor" id="forma1a" style="left:418px; top:488px;"></div>
 <div class="anchor" id="forma2a" style="left:418px; top:507px;"></div>
 <div class="anchor" id="forma3a" style="left:418px; top:524px;"></div>
 
-<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1a" draggable="true">
-<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2a" draggable="true">
-<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a" draggable="true">
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1a"  >
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2a"  >
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a"  >
 
 <!-- Forma Vermelho -->
 <div class="anchor" id="forma1v" style="left:749px; top:167px;"></div>
 <div class="anchor" id="forma2v" style="left:749px; top:150px;"></div>
 <div class="anchor" id="forma3v" style="left:749px; top:132px;"></div>
 
-<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1v" draggable="true">
-<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2v" draggable="true">
-<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v" draggable="true">
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1v"  >
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2v"  >
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v"  >
 
 <!-- Substituições Azul -->
 <div class="anchor" id="suba1" style="left:432px; top:555px;"></div>
@@ -1153,18 +1218,18 @@ img {
 <div class="anchor" id="bonus1a" style="left:980px; top:510px;"></div>
 <div class="anchor" id="bonus1a2" style="left:1000px; top:510px;"></div>
 
-<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a" draggable="true">
-<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a" draggable="true">
-<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2" draggable="true">
+<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a"  >
+<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a"  >
+<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2"  >
 
 <!-- Bonus Vermelho -->
 <div class="anchor" id="bonus2v" style="left:200px; top:140px;"></div>
 <div class="anchor" id="bonus1v" style="left:180px; top:140px;"></div>
 <div class="anchor" id="bonus1v2" style="left:160px; top:140px;"></div>
 
-<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v" draggable="true">
-<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v" draggable="true">
-<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2" draggable="true">
+<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v"  >
+<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v"  >
+<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2"  >
 
 <!-- Reds -->
 <div class="anchor" id="red1a" style="left:1020px; top:510px;"></div>
@@ -1172,20 +1237,20 @@ img {
 <div class="anchor" id="red3a" style="left:1060px; top:510px;"></div>
 <div class="anchor" id="red4a" style="left:1080px; top:510px;"></div>
 
-<img class="piece cardred" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1a" draggable="true">
-<img class="piece cardred" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2a" draggable="true">
-<img class="piece cardred" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3a" draggable="true">
-<img class="piece cardred" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4a" draggable="true">
+<img class="piece cardred" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1a"  >
+<img class="piece cardred" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2a"  >
+<img class="piece cardred" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3a"  >
+<img class="piece cardred" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4a"  >
 
 <div class="anchor" id="red1v" style="left:140px; top:140px;"></div>
 <div class="anchor" id="red2v" style="left:120px; top:140px;"></div>
 <div class="anchor" id="red3v" style="left:100px; top:140px;"></div>
 <div class="anchor" id="red4v" style="left:80px; top:140px;"></div>
 
-<img class="piece cardred red" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1v" draggable="true">
-<img class="piece cardred red" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2v" draggable="true">
-<img class="piece cardred red" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3v" draggable="true">
-<img class="piece cardred red" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4v" draggable="true">
+<img class="piece cardred red" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1v"  >
+<img class="piece cardred red" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2v"  >
+<img class="piece cardred red" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3v"  >
+<img class="piece cardred red" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4v"  >
 
 <!-- MÃO VERMELHA -->
 <div id="hand_red">
@@ -1226,6 +1291,12 @@ img {
 <audio id="bgMusic" loop>
   <source src="https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868321/background_x393rd.mp3" type="audio/mpeg">
 </audio>
+
+<script>
+if(localStorage.getItem("deviceMode") === "mobile"){
+  window.location.href = "/lobby-mobile.html";
+}
+</script>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -1323,7 +1394,7 @@ document.getElementById("musicToggle")
 
 
 
-const socket = io();  
+const socket = io();
 
 // =============================
 // 🔊 SISTEMA DE ÁUDIO LOCAL
@@ -1354,15 +1425,12 @@ document.getElementById("sfxToggle")
 socket.on("syncPlayers", (players)=>{
   if(!players) return;
 
-  document.getElementById("playerBlueName").innerText =
-    players.blue || "...";
-
-  document.getElementById("playerRedName").innerText =
-    players.red || "...";
+  playerBlueNameEl.innerText = players.blue;
+  playerRedNameEl.innerText  = players.red;
 });
 
 socket.on("syncSpectators", (list)=>{
-  const el = document.getElementById("spectatorList");
+  const el = spectatorListEl;
 
   if(!list || list.length === 0){
     el.innerText = "Nenhum";
@@ -1376,19 +1444,42 @@ let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
 
+// ===========================
+// 🔥 CACHE DE ELEMENTOS FIXOS
+// ===========================
+
+const handEl        = document.getElementById("hand");
+const handRedEl     = document.getElementById("hand_red");
+const topbarEl      = document.getElementById("topbar");
+const tempoStatusEl = document.getElementById("tempoStatus");
+const roomCodeBoxEl = document.getElementById("roomCodeBox");
+const spectatorListEl = document.getElementById("spectatorList");
+const playerBlueNameEl = document.getElementById("playerBlueName");
+const playerRedNameEl  = document.getElementById("playerRedName");
+
+const playerRole = localStorage.getItem("playerRole");
+const playerName = localStorage.getItem("playerName");
+
+const handInnerBlue = handEl.querySelector(".hand-inner");
+const handInnerRed  = handRedEl.querySelector(".hand-inner");
+
+const slotPileEls = document.querySelectorAll(".slot-pile");
+const deckWrapperEls = document.querySelectorAll(".deck-wrapper");
+
 function scaleBoard(){
 
   const baseWidth  = 1152;
   const baseHeight = 658;
 
   const screenWidth  = window.innerWidth;
-  const screenHeight = window.innerHeight - 60;
+  const topbarHeight = document.getElementById("topbar").offsetHeight;
+  const screenHeight = window.innerHeight - topbarHeight;
 
   const scaleX = screenWidth  / baseWidth;
   const scaleY = screenHeight / baseHeight;
 
-  const scale = Math.max(scaleX, scaleY); 
-  // 👆 era Math.min, isso deixava pequeno
+  const scale = Math.min(scaleX, scaleY); 
+
 
   if (playerRole === "red") {
     board.style.transform =
@@ -1403,8 +1494,6 @@ function scaleBoard(){
 window.addEventListener("resize", scaleBoard);
 window.addEventListener("load", scaleBoard);
 
-const playerRole = localStorage.getItem("playerRole");
-const playerName = localStorage.getItem("playerName");
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomCode = urlParams.get("room");
@@ -1423,14 +1512,11 @@ socket.emit("reconnectRoom", {
 });
 
 
-
 // 4️⃣ Mostra código
-  document.getElementById("roomCodeBox").innerText = "Sala: " + roomCode;
+  roomCodeBoxEl.innerText = "Sala: " + roomCode;
 
 
-if(roomCode)
-
-    if(playerRole === "spectator"){
+if(roomCode && playerRole === "spectator"){
 
       let markVisible = false;
 
@@ -1478,21 +1564,17 @@ if(roomCode)
     const existing = document.querySelector(".spectator-cross");
     if(existing) existing.remove();
   });
-  
+ 
 console.log("Jogador:", playerName, "Role:", playerRole);
 
-if (playerRole === "blue") {
-  document.getElementById("hand_red").style.display = "none";
+if (playerRole !== "blue") {
+  handEl.style.display = "none";
 }
 
-if (playerRole === "red") {
-  document.getElementById("hand").style.display = "none";
+if (playerRole !== "red") {
+  handRedEl.style.display = "none";
 }
 
-if (playerRole === "spectator") {
-  document.getElementById("hand").style.display = "none";
-  document.getElementById("hand_red").style.display = "none";
-}
 
 
 
@@ -1584,8 +1666,7 @@ function highlightSlot(type){
 function clearHighlight() {
 
   /* Remove slot highlight */
-  document.querySelectorAll(".slot-pile")
-    .forEach(s => s.classList.remove("highlight"));
+  slotPileEls.forEach(s => s.classList.remove("highlight"));
 
   /* Remove deck highlight */
   document.querySelectorAll(".deck-wrapper")
@@ -1675,8 +1756,8 @@ let firstHalfEnded = false;
 
 function renderHand() {
 
-  const handDiv = document.querySelector("#hand .hand-inner");
-  const handDivRed = document.querySelector("#hand_red .hand-inner");
+    const handDiv = handInnerBlue;
+    const handDivRed = handInnerRed;
   
   // ✅ preserva contador e remove só as cartas/grupos
   handDiv.querySelectorAll(".hand-group").forEach(g => g.remove());
@@ -1730,35 +1811,83 @@ function renderHand() {
         img.src = card.front;
         img.className="hand-card";
 
-        // 🔥 desktop continua usando drag
-        img.draggable = true;
+        let touchCard = null;
 
-        // 🔥 bloqueia drag nativo do navegador
-        img.addEventListener("dragstart", (e)=>{
-          e.stopPropagation();
-        });
+        img.addEventListener("touchstart", function(e){
 
-        img.addEventListener("dragstart",(e)=>{
-          e.dataTransfer.setData("fromHand", JSON.stringify(card));
+          e.preventDefault();
+
+          touchCard = card;
+
           highlightSlot(card.type);
 
-          // 🔥 Ativa zona correta da mão
-          if(card.type.includes("_red")){
-            document.getElementById("hand_red").classList.add("active-zone");
-          } else {
-            document.getElementById("hand").classList.add("active-zone");
-          }
-        });
+          this.style.position = "fixed";
+          this.style.zIndex = 99999;
+          this.style.opacity = "0.8";
 
-        img.addEventListener("dragend",()=>{
+        }, { passive:false });
+
+        img.addEventListener("touchmove", function(e){
+
+          if(!touchCard) return;
+
+          const touch = e.touches[0];
+
+          this.style.left = touch.clientX - 45 + "px";
+          this.style.top  = touch.clientY - 60 + "px";
+
+        }, { passive:false });
+
+        img.addEventListener("touchend", function(e){
+
+          this.style.transition = "0.15s ease";
+          this.style.transform = "scale(1.05)";
+          setTimeout(()=>{
+            this.style.transition = "";
+            this.style.transform = "";
+          },150);
+
+          if(!touchCard) return;
+
+          const touch = e.changedTouches[0];
+          const elementBelow =
+            document.elementFromPoint(touch.clientX, touch.clientY);
+
+          const slot = elementBelow?.closest(".slot-pile");
+          const deck = elementBelow?.closest("[data-deck]");
+
+          // 🔁 devolver ao deck
+          if(deck && deck.dataset.deck === card.type){
+
+            socket.emit("returnCardToDeck", {
+              cardId: card.id,
+              deck: card.type
+            });
+
+          }
+
+          // 🎯 jogar no slot
+          if(slot){
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: slot.dataset.slot
+            });
+
+          }
+
           clearHighlight();
 
-          // 🔥 Remove fundo das duas mãos
-          document.getElementById("hand").classList.remove("active-zone");
-          document.getElementById("hand_red").classList.remove("active-zone");
-        });
+          this.style.position = "";
+          this.style.left = "";
+          this.style.top = "";
+          this.style.zIndex = "";
+          this.style.opacity = "";
+          touchCard = null;
 
-          if(isRedHand){
+        }, { passive:false });
+        
+        if(isRedHand){
           img.style.zIndex = groups[type].length - groups[type].indexOf(card);
         } else {
           img.style.zIndex = groups[type].indexOf(card);
@@ -1824,16 +1953,6 @@ function renderSlot(type) {
     fan.style.transform =
       `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`;
 
-    fan.draggable=true;
-
-    fan.addEventListener("dragstart",(e)=>{
-      e.dataTransfer.setData("fromSlot", JSON.stringify({type,index:i}));
-      highlightSlot(type);
-    });
-
-    fan.addEventListener("dragend",()=>{
-      clearHighlight();
-    });
     if(playerRole === "red" && !type.includes("_red")){
   fan.style.transform += " rotate(180deg)";
 }
@@ -1848,25 +1967,41 @@ function renderSlot(type) {
 
 /* DUPLO CLIQUE */
 document.querySelectorAll(".slot-pile").forEach(slot=>{
-  slot.addEventListener("dblclick",()=>{
+  let tapTimer = null;
+
+slot.addEventListener("touchstart",(e)=>{
+  e.preventDefault();
+
+  if(tapTimer){
+    clearTimeout(tapTimer);
+    tapTimer = null;
+
     const type = slot.dataset.slot;
     slotFanOpen[type] = !slotFanOpen[type];
     renderSlot(type);
-  });
+
+  } else {
+    tapTimer = setTimeout(()=>{
+      tapTimer = null;
+    },250);
+  }
+
+},{ passive:false });
 });
 
 /* ===================== */
 /* DECK DRAG */
 
 document.querySelectorAll("[data-deck]").forEach(deck=>{
-  deck.addEventListener("dragstart",(e)=>{
-    e.dataTransfer.setData("deckType", deck.dataset.deck);
-    highlightSlot(deck.dataset.deck);
-  });
 
-  deck.addEventListener("dragend",()=>{
-    clearHighlight();
-  });
+  deck.addEventListener("touchstart", function(e){
+
+    e.preventDefault();
+
+    socket.emit("drawCard", deck.dataset.deck);
+
+  }, { passive:false });
+
 });
 
 /* ===================== */
@@ -1899,341 +2034,12 @@ function getCorrectPoint(clientX, clientY){
 }
 
 
-board.addEventListener("dragover", e => e.preventDefault());
 
-board.addEventListener("drop",(e)=>{
-  e.preventDefault();
-
-  const rect = board.getBoundingClientRect();
-  const corrected = getCorrectPoint(e.clientX, e.clientY);
-
-  /* ===================== */
-  /* 1. MOVER TOKENS */
-
-  const moveAnchor = e.dataTransfer.getData("movePiece");
-
-  if(moveAnchor){
-
-    const anchor = document.getElementById(moveAnchor);
-
-    let x = corrected.x - rect.left;
-    let y = corrected.y - rect.top;
-
-
-    // limites tabuleiro
-    x = Math.max(-400, Math.min(board.clientWidth + 400, x));
-    y = Math.max(-400, Math.min(board.clientHeight + 400, y));
-
-
-    anchor.style.left = `${x}px`;
-    anchor.style.top  = `${y}px`;
-
-    applyAnchors();
-
-    // 🔥 ENVIA PARA SERVIDOR
-    socket.emit("moveToken", {
-      anchor: moveAnchor,
-      x: x,
-      y: y
-    });
-
-    return;
-  }
-  const moveTwistId = e.dataTransfer.getData("moveTwist");
-
-  if(moveTwistId){
-
-    const rect = board.getBoundingClientRect();
-
-    const x = corrected.x - rect.left;
-    const y = corrected.y - rect.top;
-
-    socket.emit("moveTwist", {
-      id: moveTwistId,
-      x,
-      y
-    });
-
-    return;
-  }
-
-  /* ===================== */
-  /* 2. MOVER CARTAS TWIST LIVRES */
-
-  const moveFree = e.dataTransfer.getData("moveFreeCard");
-
-  if(moveFree && draggedFreeCard){
-
-    let x = corrected.x - rect.left;
-    let y = corrected.y - rect.top;
-
-    x = Math.max(0, Math.min(board.clientWidth, x));
-    y = Math.max(80, Math.min(board.clientHeight - 80, y));
-
-    draggedFreeCard.style.left = `${x}px`;
-    draggedFreeCard.style.top  = `${y}px`;
-
-    draggedFreeCard = null;
-    return;
-  }
-
-/* ===================== */
-/* DEVOLVER TWIST NO DECK */
-
-if(draggedFreeCard){
-
-  const targetDeck = getTargetDeck(e.clientX, e.clientY);
-
-  if(targetDeck && targetDeck.dataset.deck === "T"){
-
-    socket.emit("returnTwistToDeck", {
-      id: draggedFreeCard.dataset.id
-    });
-
-    draggedFreeCard.remove();
-    draggedFreeCard = null;
-
-    return;
-  }
-
-}
-
-  /* ===================== */
-  /* 4. COMPRAR DO DECK */
-
-  const deckType = e.dataTransfer.getData("deckType");
-
-  if(deckType){
-    console.log("Tentando comprar:", deckType);
-
-    // 🔥 Define qual mão vai receber
-    const targetHand = deckType.includes("_red") ? hand_red : hand;
-
-  // 🚫 REGRA: limite de 13 apenas para cartas AMDG
-  function countAMDG(handArr){
-    return handArr.filter(c =>
-      c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
-      c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
-    ).length;
-  }
-
-  if(countAMDG(targetHand) >= 13){
-
-    // só bloqueia se a carta comprada também for AMDG
-    if(["A","M","D","G","A_red","M_red","D_red","G_red"].includes(deckType)){
-      alert("Você já possui 13 cartas na mão!");
-      return;
-    }
-
-  }
-
-    if(deckType === "T"){
-    socket.emit("drawTwist");
-  } else {
-    socket.emit("drawCard", deckType);
-  }
-
-  }
-
-  /* ===================== */
-  /* 5. SOLTAR CARTA DA MÃO */
-
-  const fromHand = e.dataTransfer.getData("fromHand");
-
-  if(fromHand){
-
-  const card = JSON.parse(fromHand);
-
-  const p = getCorrectPoint(corrected.x, corrected.y);
-  const targetDeck = getTargetDeck(p.x, p.y);
-
-  if(targetDeck && targetDeck.dataset.deck === card.type){
-
-    if(card.type.includes("_red")){
-      hand_red = hand_red.filter(c => c.id !== card.id);
-    } else {
-      hand = hand.filter(c => c.id !== card.id);
-    }
-
-    socket.emit("returnCardToDeck", {
-      cardId: card.id,
-      deck: card.type
-    });
-
-    renderHand();
-    return;
-  }
-
-    // soltou em slot
-    const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-    const targetSlot = elementBelow.closest(".slot-pile");
-
-  if(targetSlot){
-
-  // 🚫 Só bloqueia se a carta for AMDG
-  const isAMDG =
-    ["A","M","D","G","A_red","M_red","D_red","G_red"].includes(card.type);
-
-  if(isAMDG && !firstHalfEnded &&
-    mustRefillHand(card.type.includes("_red") ? "red" : "blue")){
-    alert("Reponha sua mão até que fique 13 cartas para jogar em campo.");
-    return;
-  }
-
-  const slotType = targetSlot.dataset.slot;
-
-  /* ========================= */
-  /* ✅ PENALTI: regra especial */
-
-  if(card.type === "P"){
-    if(slotType !== "P1" && slotType !== "P2") return;
-  }
-
-  if(card.type === "P_red"){
-    if(slotType !== "P1_red" && slotType !== "P2_red") return;
-  }
-
-/* ========================= */
-/* ✅ CARTAS NORMAIS (AMDG) */
-
-  const isNormal =
-    ["A","M","D","G","A_red","M_red","D_red","G_red"].includes(card.type);
-
-  if(isNormal){
-
-    // não deixa cruzar lados
-    if(card.type.includes("_red") && !slotType.includes("_red")) return;
-    if(!card.type.includes("_red") && slotType.includes("_red")) return;
-
-    // exige slot exato
-    if(card.type !== slotType) return;
-  }
-
-
-      if(card.type.includes("_red")){
-        hand_red = hand_red.filter(c => c.id !== card.id);
-      } else {
-        hand = hand.filter(c => c.id !== card.id);
-      }
-
-      socket.emit("playCardToSlot", {
-        cardId: card.id,
-        slot: slotType
-      });
-
-      renderHand();
-      renderSlot(slotType);
-      return;
-    }
-  }
-
- /* ===================== */
-/* 6. SOLTAR CARTA DO SLOT */
-
-  const fromSlot = e.dataTransfer.getData("fromSlot");
-
-  if(fromSlot){
-
-  const data = JSON.parse(fromSlot);
-  const card = slotPiles[data.type].splice(data.index,1)[0];
-
-  const p = getCorrectPoint(corrected.x, corrected.y);
-  const targetDeck = getTargetDeck(p.x, p.y);
-
-  // devolveu no deck correto
-  if(targetDeck && targetDeck.dataset.deck === card.type){
-        socket.emit("returnSlotCardToDeck", {
-      card: card,
-      fromSlot: data.type
-    });
-    renderSlot(data.type);
-    return;
-  }
-
-  const elementBelow = document.elementFromPoint(corrected.x, corrected.y);
-  const targetSlot = elementBelow?.closest(".slot-pile");
-
-  if(targetSlot){
-
-    const slotType = targetSlot.dataset.slot;
-
-    if(card.type==="P" && !(slotType==="P1" || slotType==="P2")) return;
-    if(card.type==="P_red" && !(slotType==="P1_red" || slotType==="P2_red")) return;
-
-    if(card.type!=="P" && card.type!=="P_red"){
-      if(card.type !== slotType) return;
-    }
-
-    if(card.type.includes("_red") && !slotType.includes("_red")) return;
-    if(!card.type.includes("_red") && slotType.includes("_red")) return;
-
-    slotPiles[slotType].push(card);
-
-    renderSlot(slotType);
-    renderSlot(data.type);
-    return;
-  }
-
-  // fora → volta pra mão
-  if(card.type.includes("_red")){
-    hand_red.push(card);
-  } else {
-    hand.push(card);
-  }
-
-  renderHand();
-  renderSlot(data.type);
-  return;
-}
-    // ⚠️ Checa fim do tempo
-    if(!firstHalfEnded && checkDeckEnd()) return;
-});
 
 function checkDeckEnd(){
   return false; // por enquanto nunca bloqueia
 }
-/* ===================== */
-/* DROP GLOBAL (fora do tabuleiro) */
 
-document.addEventListener("drop", (e) => {
-
-  const corrected = getCorrectPoint(e.clientX, e.clientY);
-
-  const moveAnchor = e.dataTransfer.getData("movePiece");
-  if(!moveAnchor) return;
-
-  const anchor = document.getElementById(moveAnchor);
-  if(!anchor) return;
-
-  // posição na janela
-  let x = corrected.x;
-  let y = corrected.y;
-
-  // limites da janela inteira
-  x = Math.max(0, Math.min(window.innerWidth, x));
-  y = Math.max(0, Math.min(window.innerHeight, y));
-
-  // converte para posição relativa ao board
-  const rect = board.getBoundingClientRect();
-
-  anchor.style.left = `${x - rect.left}px`;
-  anchor.style.top  = `${y - rect.top}px`;
-
-  applyAnchors();
-  });
-
-/* ===================== */
-/* APPLY ANCHORS (VOLTOU!) */
-
-  function applyAnchors() {
-    document.querySelectorAll("[data-anchor]").forEach(el=>{
-      const anchor=document.getElementById(el.dataset.anchor);
-      if(anchor){
-        el.style.left=anchor.style.left;
-        el.style.top=anchor.style.top;
-      }
-    });
-  }
 
   applyAnchors();
   /* ===================== */
@@ -2244,34 +2050,17 @@ document.querySelectorAll(".piece").forEach(piece => {
   const isRedPiece = piece.classList.contains("red");
   const isBall = piece.classList.contains("ball");
 
-  // espectador não pode mover peças
-  if(playerRole === "spectator"){
-    piece.draggable = false;
-    return;
-  }
-
+  if(playerRole === "spectator") return;
   if(playerRole === "blue" && isRedPiece) return;
   if(playerRole === "red" && !isRedPiece && !isBall) return;
+  if(piece.classList.contains("token27")) return;
 
-  if(piece.classList.contains("token27")){
-    piece.draggable = false;
-    return;
-  }
-
-  piece.addEventListener("dragstart", (e)=>{
-    e.dataTransfer.setData("movePiece", piece.dataset.anchor);
-  });
-
-});
-document.querySelectorAll(".piece").forEach(piece=>{
+  piece.dataset.touching = "false";
 
   piece.addEventListener("touchstart", function(e){
-
-    const touch = e.touches[0];
+    e.preventDefault();
     this.dataset.touching = "true";
-    this.style.zIndex = 99999;
-
-  });
+  }, { passive:false });
 
   piece.addEventListener("touchmove", function(e){
 
@@ -2290,10 +2079,21 @@ document.querySelectorAll(".piece").forEach(piece=>{
       applyAnchors();
     }
 
-  });
+  }, { passive:false });
 
   piece.addEventListener("touchend", function(){
+
     this.dataset.touching = "false";
+
+    const anchor = document.getElementById(this.dataset.anchor);
+    if(!anchor) return;
+
+    socket.emit("moveToken", {
+      anchor: this.dataset.anchor,
+      x: anchor.style.left,
+      y: anchor.style.top
+    });
+
   });
 
 });
@@ -2360,13 +2160,8 @@ document.querySelectorAll(".piece").forEach(piece=>{
       token.src = "https://i.imgur.com/AQJilFs.png";
 
       token.dataset.anchor = anchor.id;
-      token.draggable = true;
 
       token.style.zIndex = 6000 + i;
-
-      token.addEventListener("dragstart", (e)=>{
-        e.dataTransfer.setData("movePiece", anchor.id);
-      });
 
       board.appendChild(token);
     }
@@ -2408,13 +2203,6 @@ function spawnTwistCard(card){
   img.style.transform =
     `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
 
-  img.draggable = true;
-
-  /* ===================== */
-  /* DRAG */
-  img.addEventListener("dragstart",(e)=>{
-    e.dataTransfer.setData("moveTwist", card.id);
-  });
 
   /* ===================== */
   /* 1 CLIQUE = GIRAR */
@@ -2560,16 +2348,7 @@ function startSecondHalf(){
     closeModal();
   }
 
-  /* ===================== */
-  /* BLOQUEAR NOVA ABA AO ARRASTAR PRA FORA */
 
-  document.addEventListener("dragover", (e) => {
-    e.preventDefault();
-  });
-
-  document.addEventListener("drop", (e) => {
-    e.preventDefault();
-  });
 
 
    /* ===================== */
@@ -2616,11 +2395,6 @@ function startSecondHalf(){
 
 
 
-// 👁 Espectador vê a mesa toda, mas nenhuma mão
-if (playerRole === "spectator") {
-  document.getElementById("hand").style.display = "none";
-  document.getElementById("hand_red").style.display = "none";
-}
 
 function updateEmptyDeckVisuals(){
   document.querySelectorAll("[data-deck]").forEach(deckEl => {
@@ -2822,7 +2596,7 @@ socket.on("secondHalfStarted", ()=>{
 
   firstHalfEnded = true;
 
-  document.getElementById("tempoStatus").innerText = "2º Tempo";
+  tempoStatusEl.innerText = "2º Tempo";
 
   // 🏟️ trocar campo
   document.getElementById("boardBg").src =
