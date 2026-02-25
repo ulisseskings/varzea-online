@@ -216,14 +216,33 @@ hr{
   opacity:1;
   background:#333;
 }
+#fullscreenLobbyBtn{
+  position:absolute;
+  width: 90px;
+  height:20px;
+  bottom:100px; /* acima do botão contato */
+  right:40px;
+  font-size:10px;
+  padding:4px 8px;
+  border:none;
+  border-radius:6px;
+  background:#222;
+  color:#fff;
+  cursor:pointer;
+  opacity:0.8;
+}
 
+#fullscreenLobbyBtn:hover{
+  opacity:1;
+  background:#333;
+}
 </style>
 </head>
 
 <body>
 
 <button id="contactBtn">Contato</button>
-
+<button id="fullscreenLobbyBtn">⛶ Tela Cheia</button>
 <div id="audioLobby">
   <button id="musicToggleLobby">🎵 ON</button>
   <input type="range"
@@ -507,7 +526,27 @@ function joinRoom(){
   });
 
 }
+const fullscreenLobbyBtn = document.getElementById("fullscreenLobbyBtn");
 
+if(fullscreenLobbyBtn){
+
+  fullscreenLobbyBtn.addEventListener("click", ()=>{
+
+    if(!document.fullscreenElement){
+
+      document.documentElement.requestFullscreen().catch(err=>{
+        console.log("Erro fullscreen:", err);
+      });
+
+    }else{
+
+      document.exitFullscreen();
+
+    }
+
+  });
+
+}
 </script>
 
 <!-- Modal de Confirmação -->
