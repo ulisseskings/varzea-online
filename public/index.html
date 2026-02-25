@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
-      content="width=device-width,
-               initial-scale=1.0,
-               minimum-scale=0.5,
-               maximum-scale=3.0,
-               user-scalable=yes">
+        content="width=device-width,
+                initial-scale=1,
+                maximum-scale=1,
+                user-scalable=no">
               
   <meta name="screen-orientation" content="landscape">
 
@@ -855,6 +854,24 @@
     display:none !important;
   }
 }
+
+img,
+.piece,
+.hand-card,
+.slot{
+  -webkit-user-select: none;
+  user-select: none;
+
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+
+  touch-action: none;
+}
+
+img {
+  pointer-events: auto;
+}
+
   </style>
 </head>
 
@@ -1367,18 +1384,14 @@ function scaleBoard(){
   const baseWidth  = 1152;
   const baseHeight = 658;
 
-  const screenWidth  = window.visualViewport
-    ? window.visualViewport.width
-    : window.innerWidth;
-
-  const screenHeight = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
+  const screenWidth  = window.innerWidth;
+  const screenHeight = window.innerHeight - 60;
 
   const scaleX = screenWidth  / baseWidth;
-  const scaleY = (screenHeight - 60) / baseHeight;
+  const scaleY = screenHeight / baseHeight;
 
-  const scale = Math.min(scaleX, scaleY);
+  const scale = Math.max(scaleX, scaleY); 
+  // 👆 era Math.min, isso deixava pequeno
 
   if (playerRole === "red") {
     board.style.transform =
@@ -1719,7 +1732,14 @@ function renderHand() {
         const img = document.createElement("img");
         img.src = card.front;
         img.className="hand-card";
+
+        // 🔥 desktop continua usando drag
         img.draggable = true;
+
+        // 🔥 bloqueia drag nativo do navegador
+        img.addEventListener("dragstart", (e)=>{
+          e.stopPropagation();
+        });
 
         img.addEventListener("dragstart",(e)=>{
           e.dataTransfer.setData("fromHand", JSON.stringify(card));
@@ -2946,6 +2966,16 @@ if (fullscreenBtn) {
   });
 
 }
+document.addEventListener("contextmenu", e => {
+  e.preventDefault();
+});
+
+// 🔥 Impede seleção longa de imagem no mobile
+document.addEventListener("touchstart", function(e){
+  if(e.target.tagName === "IMG"){
+    e.preventDefault();
+  }
+}, { passive:false });
 
 </script>
 </body>
