@@ -13,6 +13,10 @@
               
   <meta name="screen-orientation" content="landscape">
 
+  <meta name="screen-orientation" content="landscape">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <title>Várzea Online</title>
 
 
@@ -933,6 +937,55 @@ body{
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ============================= */
+/* ORIENTATION OVERLAY */
+/* ============================= */
+
+#rotateOverlay{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(180deg,#0b5e2b,#003b1a);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:9999999;
+}
+
+.rotateBox{
+  text-align:center;
+  color:white;
+  padding:30px;
+}
+
+.phoneIcon{
+  font-size:60px;
+  animation: rotatePhone 1.5s infinite ease-in-out;
+}
+
+@keyframes rotatePhone{
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.rotateBox h2{
+  margin-top:20px;
+  color:gold;
+}
+
+.rotateBox button{
+  margin-top:20px;
+  padding:12px 20px;
+  border:none;
+  border-radius:10px;
+  font-weight:bold;
+  background:gold;
+  color:black;
+  cursor:pointer;
+}
+
+
   </style>
 </head>
 
@@ -2741,8 +2794,50 @@ document.addEventListener("contextmenu", e => {
   e.preventDefault();
 });
 
+const rotateOverlay = document.getElementById("rotateOverlay");
+const rotateFullscreenBtn = document.getElementById("rotateFullscreenBtn");
 
+function checkOrientation(){
+
+  if(window.innerHeight > window.innerWidth){
+    rotateOverlay.style.display = "flex";
+  }else{
+    rotateOverlay.style.display = "none";
+  }
+
+}
+
+// dispara imediatamente
+checkOrientation();
+
+// escuta mudanças
+window.addEventListener("resize", checkOrientation);
+window.addEventListener("orientationchange", checkOrientation);
+
+// botão fullscreen
+rotateFullscreenBtn.addEventListener("click", ()=>{
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+});
 
 </script>
+
+<div id="rotateOverlay">
+  <div class="rotateBox">
+    <div class="phoneIcon">📱</div>
+    <h2>Use na Horizontal</h2>
+    <p>
+      Para melhor experiência,<br>
+      gire seu celular.
+    </p>
+
+    <button id="rotateFullscreenBtn">
+      ⛶ Ativar Tela Cheia
+    </button>
+  </div>
+</div>
+
+
 </body>
 </html>
