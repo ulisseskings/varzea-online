@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Duel Boardgame - Sistema Oficial</title>
 
 
@@ -9,10 +10,6 @@
     body {
       margin: 0;
       background: #1A7547;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       overflow: hidden;
     }
     :root {
@@ -245,8 +242,7 @@
   width: 100%;
   height: 55px;
 
-  background:linear-gradient(to right,#ffcc00,#ff8800);
-  border-radius:12px;
+  background: linear-gradient(to bottom, rgb(12, 151, 54), #00440f);
 
   display: flex;
   justify-content: center;
@@ -391,28 +387,6 @@
   background: red;
 }
 
-#contactModal #modalBox{
-  background:rgba(0,0,0,0.85);
-  border-radius:18px;
-  border:2px solid gold;
-  box-shadow:0 0 25px rgba(255,215,0,0.4);
-}
-
-#contactModal button{
-  background:linear-gradient(to right,#ffcc00,#ff8800);
-  color:black;
-  font-weight:bold;
-  border:none;
-  border-radius:12px;
-  padding:8px 15px;
-  cursor:pointer;
-  transition:0.25s;
-}
-
-#contactModal button:hover{
-  transform:scale(1.05);
-  box-shadow:0 0 15px rgba(255,200,0,0.6);
-}
 
 /* ===================== */
 /* HIGHLIGHT AMARELO GERAL */
@@ -477,7 +451,7 @@
   top: 80px;
 }
 
-.deck-wrapper:hover .shuffle-btn {
+.deck-wrapper.show-shuffle .shuffle-btn {
   display: flex;
 }
 
@@ -825,27 +799,38 @@
   background:#333;
 }
 
+@media (max-width: 768px){
+
+  .hand-card{
+    width: 65px;
+    height: 90px;
+    margin: 0 -18px;
+  }
+
+  #hand{
+    height: 75px;
+  }
+
+  #hand_red{
+    height: 60px;
+  }
+
+  #matchBox{
+    font-size: 9px;
+  }
+
+  #tempoStatus{
+    font-size: 10px;
+    right: 150px;
+  }
+
+}
+
   </style>
 </head>
 
 <body>
 <button id="contactBtn">Contato</button>
-
-<div id="contactModal" style="display:none;">
-  <div id="modalBox">
-    <h3>Contato</h3>
-    <p>
-      Entre em contato conosco e envie seus elogios,
-      dúvidas e/ou sugestões para o email:<br><br>
-      <strong>varzea.online@outlook.com</strong>
-    </p>
-
-    <div id="modalButtons">
-      <button onclick="closeContactModal()">OK</button>
-      <button onclick="closeContactModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
 
   <div id="matchBox">
   <span id="playerBlueName">...</span>
@@ -899,6 +884,7 @@
 
   <!-- LADO DIREITO -->
   <div class="bar-right">
+    <button id="fullscreenBtn">⛶ Tela Cheia</button>
     <button onclick="openModal('manual')">Manual de Regras</button>
     <button onclick="openModal('guia')">Guia de Referências</button>
   </div>
@@ -1339,6 +1325,33 @@ let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
 
+function scaleBoard(){
+
+  const baseWidth  = 1152;
+  const baseHeight = 658;
+
+  const screenWidth  = window.innerWidth;
+  const screenHeight =
+  document.documentElement.clientHeight - 60;
+
+  const scaleX = screenWidth  / baseWidth;
+  const scaleY = screenHeight / baseHeight;
+
+  const scale = Math.min(scaleX, scaleY);
+
+  if (playerRole === "red") {
+    board.style.transform =
+      `translateX(-50%) rotate(180deg) scale(${scale})`;
+  } else {
+    board.style.transform =
+      `translateX(-50%) scale(${scale})`;
+  }
+
+}
+
+window.addEventListener("resize", scaleBoard);
+window.addEventListener("load", scaleBoard);
+
 const playerRole = localStorage.getItem("playerRole");
 const playerName = localStorage.getItem("playerName");
 
@@ -1358,17 +1371,7 @@ socket.emit("reconnectRoom", {
   roomCode: roomCode
 });
 
-  // 🔴 GIRA TELA PARA O VERMELHO
-if (playerRole === "red") {
 
-  document.getElementById("copyright").style.right = "8px";
-  document.getElementById("copyright").style.left = "auto";
-
-  board.style.transform =
-    "translateX(-50%) rotate(180deg)";
-
-  board.style.transformOrigin = "center center";
-}
 
 // 4️⃣ Mostra código
   document.getElementById("roomCodeBox").innerText = "Sala: " + roomCode;
@@ -2800,14 +2803,27 @@ const slotPositionsSecondHalf = {
   slotD_red: {left: "663px", top: "235px"},
   slotG_red: {left: "823px", top: "235px"}
 };
+
 document.getElementById("contactBtn")
   .addEventListener("click", ()=>{
-    document.getElementById("contactModal").style.display = "flex";
-});
 
-function closeContactModal(){
-  document.getElementById("contactModal").style.display = "none";
-}
+    const overlay = document.getElementById("modalOverlay");
+    const title   = document.getElementById("modalTitle");
+    const text    = document.getElementById("modalText");
+    const confirmBtn = document.getElementById("confirmBtn");
+
+    overlay.style.display = "flex";
+
+    title.innerText = "Contato";
+    text.innerHTML =
+      "Entre em contato conosco e envie seus elogios,<br>" +
+      "dúvidas e/ou sugestões para o email:<br><br>" +
+      "<strong>varzea.online@outlook.com</strong>";
+
+    confirmBtn.innerText = "OK";
+    confirmBtn.onclick = closeModal;
+
+});
 
 socket.on("matchRestarted", ()=>{
 
@@ -2830,6 +2846,28 @@ socket.on("matchRestarted", ()=>{
     "https://i.imgur.com/GUyhwlh.png";
 
 });
+
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+if (fullscreenBtn) {
+
+  fullscreenBtn.addEventListener("click", ()=>{
+
+    if (!document.fullscreenElement) {
+
+      document.documentElement.requestFullscreen().catch(err=>{
+        console.log("Erro fullscreen:", err);
+      });
+
+    } else {
+
+      document.exitFullscreen();
+
+    }
+
+  });
+
+}
 
 </script>
 </body>

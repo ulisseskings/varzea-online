@@ -255,15 +255,13 @@ socket.on("startSecondHalf", ()=>{
   const room = rooms[socket.roomCode];
   if(!room) return;
 
-  // 🔁 recria todos os decks do zero
-  room.decks = JSON.parse(JSON.stringify(decks));
+    // 🚫 BLOQUEIO DE ESPECTADOR
+  if(socket.role === "spectator") return;
 
-  // 🔀 embaralha novamente
-  Object.keys(room.decks).forEach(type=>{
-    shuffle(room.decks[type]);
-  });
+  // 🔒 Opcional: só jogadores podem iniciar
+  if(socket.role !== "blue" && socket.role !== "red") return;
 
-    // 🔁 devolver cartas da mão para os decks
+  // 🔁 devolver cartas das mãos
   room.hands.blue.forEach(card=>{
     room.decks[card.type].push(card);
   });
@@ -272,25 +270,28 @@ socket.on("startSecondHalf", ()=>{
     room.decks[card.type].push(card);
   });
 
-  // 🧹 limpa mãos
+  // 🧹 limpar mãos
   room.hands.blue = [];
   room.hands.red  = [];
 
-  // 🧹 limpa slots (não twists)
+  // 🔁 devolver cartas dos slots
   Object.keys(room.boardSlots).forEach(slot=>{
+    room.boardSlots[slot].forEach(card=>{
+      room.decks[card.type].push(card);
+    });
     room.boardSlots[slot] = [];
   });
 
-  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
-
-  // 🚨 AGORA SIM
-  io.to(socket.roomCode).emit("secondHalfStarted");
-
-  io.to(socket.roomCode).emit("syncHands", {
-  blue: room.hands.blue,
-  red: room.hands.red
+  // 🔀 embaralhar todos os decks
+  Object.keys(room.decks).forEach(type=>{
+    shuffle(room.decks[type]);
   });
 
+  // atualizar clientes
+  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+  io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+
+  io.to(socket.roomCode).emit("secondHalfStarted");
 });
 
 socket.on("returnTwistToDeck", ({id})=>{
@@ -631,6 +632,13 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
 socket.on("restartMatch", ()=>{
 
   const room = rooms[socket.roomCode];
+
+    // 🚫 BLOQUEIO DE ESPECTADOR
+  if(socket.role === "spectator") return;
+
+  // 🔒 Opcional: só jogadores podem reiniciar
+  if(socket.role !== "blue" && socket.role !== "red") return;
+  
   if(!room) return;
 
   room.decks = JSON.parse(JSON.stringify(decks));
