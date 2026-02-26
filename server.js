@@ -20,11 +20,11 @@ const io = new Server(server, {
   }
 });
 
-app.use(express.static("public"));
-
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/device.html");
 });
+
+app.use(express.static("public"));
 
 function generateRoomCode(length = 5){
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
