@@ -1,43 +1,59 @@
-const deviceMode = localStorage.getItem("deviceMode");
+document.addEventListener("DOMContentLoaded", () => {
 
-if(!deviceMode){
-  window.location.href = "/device.html";
-}
+  const deviceMode = localStorage.getItem("deviceMode");
 
-let bgMusic = document.getElementById("bgMusic");
-let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
-let currentVolume = parseFloat(localStorage.getItem("musicVolume")) || 0.2;
+  if(!deviceMode){
+    window.location.href = "/device.html";
+    return;
+  }
 
-bgMusic.volume = currentVolume;
+  let bgMusic = document.getElementById("bgMusic");
+  let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
+  let currentVolume = parseFloat(localStorage.getItem("musicVolume")) || 0.2;
 
-if(musicEnabled){
-  document.addEventListener("click", ()=>{
-    bgMusic.play().catch(()=>{});
-  }, {once:true});
-}
-
-document.getElementById("musicToggleLobby")
-  .addEventListener("click", ()=>{
-
-    musicEnabled = !musicEnabled;
-
-    localStorage.setItem("musicEnabled", musicEnabled);
+  if(bgMusic){
+    bgMusic.volume = currentVolume;
 
     if(musicEnabled){
-      bgMusic.play();
-      document.getElementById("musicToggleLobby").innerText="🎵 ON";
-    }else{
-      bgMusic.pause();
-      document.getElementById("musicToggleLobby").innerText="🎵 OFF";
+      document.addEventListener("click", ()=>{
+        bgMusic.play().catch(()=>{});
+      }, {once:true});
     }
+  }
 
-});
+  const musicToggle = document.getElementById("musicToggleLobby");
+  if(musicToggle){
+    musicToggle.addEventListener("click", ()=>{
 
-document.getElementById("volumeSliderLobby")
-  .addEventListener("input", (e)=>{
-    currentVolume = parseFloat(e.target.value);
-    bgMusic.volume = currentVolume;
-    localStorage.setItem("musicVolume", currentVolume);
+      musicEnabled = !musicEnabled;
+      localStorage.setItem("musicEnabled", musicEnabled);
+
+      if(bgMusic){
+        if(musicEnabled){
+          bgMusic.play();
+          musicToggle.innerText="🎵 ON";
+        }else{
+          bgMusic.pause();
+          musicToggle.innerText="🎵 OFF";
+        }
+      }
+
+    });
+  }
+
+  const volumeSlider = document.getElementById("volumeSliderLobby");
+  if(volumeSlider){
+    volumeSlider.addEventListener("input", (e)=>{
+      currentVolume = parseFloat(e.target.value);
+
+      if(bgMusic){
+        bgMusic.volume = currentVolume;
+      }
+
+      localStorage.setItem("musicVolume", currentVolume);
+    });
+  }
+
 });
 
 
