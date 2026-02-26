@@ -4,13 +4,7 @@ const { Server } = require("socket.io");
 
 const app = express();
 
-app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    "script-src 'self' 'unsafe-eval' https://res.cloudinary.com https://i.imgur.com; object-src 'none';"
-  );
-  next();
-});
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
