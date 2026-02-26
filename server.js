@@ -20,23 +20,11 @@ const io = new Server(server, {
   }
 });
 
-app.use(express.static("public", {
-  index: false
-}))
+app.use(express.static("public"));
 
-app.get("/", (req,res)=>{
-
-  const userAgent = req.headers["user-agent"] || "";
-
-  if(/Mobi|Android|iPhone|iPad/i.test(userAgent)){
-    res.sendFile(__dirname + "/public/lobby-mobile.html");
-  } else {
-    res.sendFile(__dirname + "/public/lobby.html");
-  }
-
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/device.html");
 });
-
-
 
 function generateRoomCode(length = 5){
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

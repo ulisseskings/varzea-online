@@ -1,4 +1,4 @@
-const deviceMode = localStorage.getItem("deviceMode");
+const deviceMode = sessionStorage.getItem("deviceMode");
 
 if(!deviceMode){
   window.location.href = "/device.html";

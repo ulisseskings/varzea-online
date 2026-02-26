@@ -42,19 +42,27 @@ button{
 <div class="box">
   <h1>Escolha sua versão</h1>
 
-  <button class="desktop" onclick="choose('desktop')">
+  <button onclick="selectDevice('desktop')">
     🖥 Versão Desktop
   </button>
 
-  <button class="mobile" onclick="choose('mobile')">
+  <button onclick="selectDevice('mobile')">
     📱 Versão Mobile
   </button>
 </div>
 
 <script>
-function choose(type){
-  localStorage.setItem("deviceMode", type);
-  window.location.href = "/";
+// Limpa qualquer modo antigo
+localStorage.clear();
+
+function selectDevice(mode) {
+  localStorage.setItem("deviceMode", mode);
+
+  if (mode === "mobile") {
+    window.location.href = "/lobby-mobile.html";
+  } else {
+    window.location.href = "/lobby.html";
+  }
 }
 </script>
 

@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
      VERIFICA DEVICE
   ================================ */
 
-  const deviceMode = localStorage.getItem("deviceMode");
+  const deviceMode = sessionStorage.getItem("deviceMode");
   if (!deviceMode) {
     window.location.href = "/device.html";
     return;

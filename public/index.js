@@ -1,3 +1,9 @@
+const deviceMode = sessionStorage.getItem("deviceMode");
+
+if (!deviceMode) {
+  window.location.href = "/device.html";
+}
+
 let bgMusic;
 let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
