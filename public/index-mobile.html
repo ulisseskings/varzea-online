@@ -1447,7 +1447,10 @@ document.getElementById("musicToggle")
 
 
 
-const socket = io();
+const socket = io({
+  transports: ["websocket"],
+  upgrade: false
+});
 
 // =============================
 // 🔊 SISTEMA DE ÁUDIO LOCAL

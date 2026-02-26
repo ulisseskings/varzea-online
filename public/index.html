@@ -1229,6 +1229,7 @@ img {
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+  
 let bgMusic;
 let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
@@ -1323,7 +1324,10 @@ document.getElementById("musicToggle")
 
 
 
-const socket = io();  
+const socket = io({
+  transports: ["websocket"],
+  upgrade: false
+});
 
 // =============================
 // 🔊 SISTEMA DE ÁUDIO LOCAL
@@ -1409,10 +1413,16 @@ const playerName = localStorage.getItem("playerName");
 const urlParams = new URLSearchParams(window.location.search);
 const roomCode = urlParams.get("room");
 
-if(!roomCode || !playerName || !playerRole){
-  console.log("Sessão inválida. Voltando para lobby.");
+if(!roomCode){
+  console.log("Sem código de sala.");
+  return;
+}
+
+if(!playerName || !playerRole){
+  console.log("Dados não encontrados no localStorage.");
+  alert("Sessão expirada. Volte ao lobby.");
   window.location.href = "/";
-  throw new Error("Sessão inválida");
+  return;
 }
 
 // 🚀 ENTRA NA SALA

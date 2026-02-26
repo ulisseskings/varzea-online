@@ -337,7 +337,10 @@ document.getElementById("volumeSliderLobby")
 });
 
 
-const socket = io();
+const socket = io({
+  transports: ["websocket"],
+  upgrade: false
+});
 
 // 🔥 LISTENERS GLOBAIS
 

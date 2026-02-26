@@ -27,12 +27,6 @@ app.get("/", (req,res)=>{
 
 });
 
-function shuffle(array){
-  for(let i = array.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
 
 
 function generateRoomCode(length = 5){
@@ -505,43 +499,44 @@ socket.on("rotateTwist", ({id})=>{
 
   });
 
-  socket.on("createRoom", ({ name, role }) => {
+socket.on("createRoom", ({ name, role }) => {
 
-    const roomCode = generateRoomCode();
+  const roomCode = generateRoomCode();
 
-    // 🔥 cria sala REAL
-    rooms[roomCode] = {
-  players:{
-    blue:null,
-    red:null
-  },
-    hands:{                // ✅ ADICIONE ISSO
-    blue:[],
-    red:[]
-  },
-      boardSlots: {
-        A:[],M:[],D:[],G:[],
-        A_red:[],M_red:[],D_red:[],G_red:[],
-        P1:[],P2:[],P1_red:[],P2_red:[]
-      },
-      twists: [],
-      tokens: [],
-      decks: JSON.parse(JSON.stringify(decks)),
+  rooms[roomCode] = {
+    players:{ blue:null, red:null },
+    hands:{ blue:[], red:[] },
+    boardSlots:{
+      A:[],M:[],D:[],G:[],
+      A_red:[],M_red:[],D_red:[],G_red:[],
+      P1:[],P2:[],P1_red:[],P2_red:[]
+    },
+    twists:[],
+    tokens:[],
+    decks: JSON.parse(JSON.stringify(decks)),
+    subTokens:{},
+    blueConnected:false,
+    redConnected:false,
+    spectators:[]
+  };
 
-      subTokens: {},   // 🔥 ADICIONE ISSO
+  // 🔥 ENTRA NA SALA
+  socket.role = role;
+  socket.roomCode = roomCode;
+  socket.playerName = name;
 
-      blueConnected:false,
-      redConnected:false
-    };
+  socket.join(roomCode);
 
-    // embaralha decks
-    Object.keys(rooms[roomCode].decks).forEach(type=>{
-      shuffle(rooms[roomCode].decks[type]);
-    });
+  if(role === "blue") rooms[roomCode].players.blue = name;
+  if(role === "red")  rooms[roomCode].players.red  = name;
+  if(role === "spectator") rooms[roomCode].spectators.push(name);
 
-    socket.emit("roomCreated", roomCode);
+  socket.emit("roomCreated", roomCode);
 
-  });
+  io.to(roomCode).emit("syncPlayers", rooms[roomCode].players);
+  io.to(roomCode).emit("syncSpectators", rooms[roomCode].spectators);
+
+});
 
 socket.on("joinRoom", ({ name, role, roomCode }) => {
 
