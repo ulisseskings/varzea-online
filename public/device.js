@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  localStorage.clear();
   const desktopBtn = document.getElementById("desktopBtn");
   const mobileBtn = document.getElementById("mobileBtn");
 
