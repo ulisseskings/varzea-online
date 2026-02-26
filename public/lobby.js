@@ -1,170 +1,293 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  const socket = io();
+  /* ===============================
+     VERIFICA DEVICE
+  ================================ */
 
-  /* =========================
+  const deviceMode = localStorage.getItem("deviceMode");
+
+  if (!deviceMode) {
+    window.location.href = "/device.html";
+    return;
+  }
+
+  /* ===============================
+     SOCKET
+  ================================ */
+
+  const socket = io({
+    transports: ["websocket"],
+    upgrade: false
+  });
+
+  /* ===============================
      ELEMENTOS
-  ========================= */
+  ================================ */
 
-  const bgMusic = document.getElementById("bgMusic");
+  const nicknameInput = document.getElementById("nickname");
+  const roleSelect = document.getElementById("role");
+  const roomCodeInput = document.getElementById("roomCode");
+
+  const createBtn = document.getElementById("createRoomBtn");
+  const joinBtn = document.getElementById("joinRoomBtn");
+
   const musicToggle = document.getElementById("musicToggleLobby");
   const volumeSlider = document.getElementById("volumeSliderLobby");
+  const bgMusic = document.getElementById("bgMusic");
 
   const leftImg = document.getElementById("leftImg");
   const rightImg = document.getElementById("rightImg");
-
   const banner = document.getElementById("lobbyBanner");
   const bannerImg = document.getElementById("bannerImg");
 
-  /* =========================
+  const manualBtn = document.getElementById("manualLobbyBtn");
+  const contactBtn = document.getElementById("contactBtn");
+  const fullscreenBtn = document.getElementById("fullscreenLobbyBtn");
+
+  /* ===============================
      MÚSICA
-  ========================= */
+  ================================ */
 
   let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
   let currentVolume = parseFloat(localStorage.getItem("musicVolume")) || 0.2;
 
-  if(bgMusic){
+  if (bgMusic) {
     bgMusic.volume = currentVolume;
 
-    document.addEventListener("click", ()=>{
-      if(musicEnabled){
-        bgMusic.play().catch(()=>{});
-      }
-    }, {once:true});
+    if (musicEnabled) {
+      document.addEventListener("click", () => {
+        bgMusic.play().catch(() => {});
+      }, { once: true });
+    }
   }
 
-  if(musicToggle && bgMusic){
-    musicToggle.addEventListener("click", ()=>{
+  if (musicToggle) {
+    musicToggle.addEventListener("click", () => {
+
       musicEnabled = !musicEnabled;
       localStorage.setItem("musicEnabled", musicEnabled);
 
-      if(musicEnabled){
+      if (!bgMusic) return;
+
+      if (musicEnabled) {
         bgMusic.play();
-        musicToggle.innerText="🎵 ON";
-      }else{
+        musicToggle.innerText = "🎵 ON";
+      } else {
         bgMusic.pause();
-        musicToggle.innerText="🎵 OFF";
+        musicToggle.innerText = "🎵 OFF";
       }
+
     });
   }
 
-  if(volumeSlider && bgMusic){
-    volumeSlider.addEventListener("input", (e)=>{
+  if (volumeSlider) {
+    volumeSlider.addEventListener("input", (e) => {
+
       currentVolume = parseFloat(e.target.value);
-      bgMusic.volume = currentVolume;
       localStorage.setItem("musicVolume", currentVolume);
+
+      if (bgMusic) {
+        bgMusic.volume = currentVolume;
+      }
+
     });
   }
 
-  /* =========================
-     ANIMAÇÃO LATERAIS
-  ========================= */
+  /* ===============================
+     IMAGENS LATERAIS
+  ================================ */
 
-  if(leftImg && rightImg){
+  if (leftImg && rightImg) {
 
-    const leftImages=[ ... ]; // mantenha seu array
-    const rightImages=[ ... ];
+    const leftImages = [
+      "https://i.imgur.com/uuEvIlD.png",
+      "https://i.imgur.com/rVXSF0A.png",
+      "https://i.imgur.com/8tdCynv.png",
+      "https://i.imgur.com/jJ84rBZ.png",
+      "https://i.imgur.com/dPxFK64.png"
+    ];
 
-    let leftIndex=0;
-    let rightIndex=0;
-    let showLeft=true;
+    const rightImages = [
+      "https://i.imgur.com/Hmbou7i.png",
+      "https://i.imgur.com/ntYDKd7.png",
+      "https://i.imgur.com/SYlGinK.png",
+      "https://i.imgur.com/Gnbzgmi.png",
+      "https://i.imgur.com/lWXt4b8.png"
+    ];
 
-    function swapCharacter(){
-      if(showLeft){
-        rightImg.style.opacity=0;
-        leftImg.src=leftImages[leftIndex];
-        leftImg.style.opacity=1;
-        leftIndex=(leftIndex+1)%leftImages.length;
-      }else{
-        leftImg.style.opacity=0;
-        rightImg.src=rightImages[rightIndex];
-        rightImg.style.opacity=1;
-        rightIndex=(rightIndex+1)%rightImages.length;
+    let leftIndex = 0;
+    let rightIndex = 0;
+    let showLeft = true;
+
+    function swapCharacter() {
+
+      if (showLeft) {
+        rightImg.style.opacity = 0;
+        leftImg.src = leftImages[leftIndex];
+        leftImg.style.opacity = 1;
+        leftIndex = (leftIndex + 1) % leftImages.length;
+      } else {
+        leftImg.style.opacity = 0;
+        rightImg.src = rightImages[rightIndex];
+        rightImg.style.opacity = 1;
+        rightIndex = (rightIndex + 1) % rightImages.length;
       }
-      showLeft=!showLeft;
+
+      showLeft = !showLeft;
     }
 
-    leftImg.style.opacity=1;
-    rightImg.style.opacity=0;
-    setInterval(swapCharacter,3000);
+    leftImg.style.opacity = 1;
+    rightImg.style.opacity = 0;
+
+    setInterval(swapCharacter, 3000);
   }
 
-  /* =========================
+  /* ===============================
      BANNER
-  ========================= */
+  ================================ */
 
-  if(banner && bannerImg){
+  if (banner && bannerImg) {
 
-    const bannerImages=[ ... ]; // seu array
+    const bannerImages = [
+      "https://i.imgur.com/JelZIZD.png",
+      "https://i.imgur.com/rjnW253.png",
+      "https://i.imgur.com/cLGNSVy.png",
+      "https://i.imgur.com/E5KSaDt.png"
+    ];
 
-    let bannerIndex=0;
+    let bannerIndex = 0;
 
-    setInterval(()=>{
-      bannerIndex=(bannerIndex+1)%bannerImages.length;
-      bannerImg.src=bannerImages[bannerIndex];
-    },200);
+    setInterval(() => {
+      bannerIndex = (bannerIndex + 1) % bannerImages.length;
+      bannerImg.src = bannerImages[bannerIndex];
+    }, 2000);
 
-    function randomFloat(){
-      return (Math.random()*30-15).toFixed(2);
+    function randomFloat() {
+      return (Math.random() * 30 - 15).toFixed(2);
     }
 
-    setInterval(()=>{
-      const x=randomFloat();
-      const y=randomFloat();
-      banner.style.transform=
-        `translate(-50%,0) translate(${x}px,${y}px)`;
-    },2000);
+    setInterval(() => {
+      banner.style.transform =
+        `translate(-50%, 0) translate(${randomFloat()}px, ${randomFloat()}px)`;
+    }, 2000);
   }
 
-  /* =========================
-     BOTÕES
-  ========================= */
+  /* ===============================
+     MODAIS
+  ================================ */
 
-  document.getElementById("createRoomBtn")
-    ?.addEventListener("click", createRoom);
+  function openManual() {
+    window.open(
+      "https://drive.google.com/file/d/1mlVRX4wJhj4qFmxtdtW6gic0qF9cJM76/view?usp=drive_link",
+      "_blank"
+    );
+  }
 
-  document.getElementById("joinRoomBtn")
-    ?.addEventListener("click", joinRoom);
+  if (manualBtn) {
+    manualBtn.addEventListener("click", openManual);
+  }
 
-  function createRoom(){
-    const name = document.getElementById("nickname").value.trim();
-    const role = document.getElementById("role").value;
+  if (contactBtn) {
+    contactBtn.addEventListener("click", () => {
+      document.getElementById("contactModal").style.display = "flex";
+    });
+  }
 
-    if(!name){
-      alert("Digite um nickname.");
-      return;
+  const closeContactBtn = document.getElementById("closeContactBtn");
+  if (closeContactBtn) {
+    closeContactBtn.addEventListener("click", () => {
+      document.getElementById("contactModal").style.display = "none";
+    });
+  }
+
+  /* ===============================
+     FULLSCREEN
+  ================================ */
+
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", () => {
+
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+
+    });
+  }
+
+  /* ===============================
+     CRIAR SALA
+  ================================ */
+
+  if (createBtn) {
+    createBtn.addEventListener("click", () => {
+
+      const name = nicknameInput.value.trim();
+      const role = roleSelect.value;
+
+      if (!name) {
+        alert("Digite um nickname.");
+        return;
+      }
+
+      socket.emit("createRoom", { name, role });
+
+    });
+  }
+
+  /* ===============================
+     ENTRAR SALA
+  ================================ */
+
+  if (joinBtn) {
+    joinBtn.addEventListener("click", () => {
+
+      const name = nicknameInput.value.trim();
+      const role = roleSelect.value;
+      const roomCode = roomCodeInput.value.trim().toUpperCase();
+
+      if (!name || !roomCode) {
+        alert("Preencha todos os campos.");
+        return;
+      }
+
+      socket.emit("joinRoom", { name, role, roomCode });
+
+    });
+  }
+
+  /* ===============================
+     SOCKET EVENTS
+  ================================ */
+
+  socket.on("roomCreated", (roomCode) => {
+
+    localStorage.setItem("playerName", nicknameInput.value);
+    localStorage.setItem("playerRole", roleSelect.value);
+
+    if (deviceMode === "mobile") {
+      window.location.href = `/index-mobile.html?room=${roomCode}`;
+    } else {
+      window.location.href = `/index.html?room=${roomCode}`;
     }
 
-    socket.emit("createRoom",{name,role});
-  }
-
-  function joinRoom(){
-    const name = document.getElementById("nickname").value.trim();
-    const role = document.getElementById("role").value;
-    const roomCode =
-      document.getElementById("roomCode").value.trim().toUpperCase();
-
-    if(!name || !roomCode){
-      alert("Preencha os campos.");
-      return;
-    }
-
-    socket.emit("joinRoom",{name,role,roomCode});
-  }
-
-  /* =========================
-     SOCKET
-  ========================= */
-
-  socket.on("roomCreated",(roomCode)=>{
-    window.location.href=`/index.html?room=${roomCode}`;
   });
 
-  socket.on("roomJoined",(roomCode)=>{
-    window.location.href=`/index.html?room=${roomCode}`;
+  socket.on("roomJoined", (roomCode) => {
+
+    localStorage.setItem("playerName", nicknameInput.value);
+    localStorage.setItem("playerRole", roleSelect.value);
+
+    if (deviceMode === "mobile") {
+      window.location.href = `/index-mobile.html?room=${roomCode}`;
+    } else {
+      window.location.href = `/index.html?room=${roomCode}`;
+    }
+
   });
 
-  socket.on("roomError",(msg)=>{
+  socket.on("roomError", (msg) => {
     alert(msg);
   });
 
