@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ================================ */
 
   const deviceMode = localStorage.getItem("deviceMode");
-
   if (!deviceMode) {
     window.location.href = "/device.html";
     return;
@@ -44,6 +43,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const contactBtn = document.getElementById("contactBtn");
   const fullscreenBtn = document.getElementById("fullscreenLobbyBtn");
 
+  const manualModal = document.getElementById("manualModal");
+  const manualConfirmBtn = document.getElementById("manualConfirmBtn");
+  const manualCancelBtn = document.getElementById("manualCancelBtn");
+
+  const contactModal = document.getElementById("contactModal");
+  const closeContactBtn = document.getElementById("closeContactBtn");
+
   /* ===============================
      MÚSICA
   ================================ */
@@ -63,7 +69,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (musicToggle) {
     musicToggle.addEventListener("click", () => {
-
       musicEnabled = !musicEnabled;
       localStorage.setItem("musicEnabled", musicEnabled);
 
@@ -76,20 +81,14 @@ document.addEventListener("DOMContentLoaded", () => {
         bgMusic.pause();
         musicToggle.innerText = "🎵 OFF";
       }
-
     });
   }
 
-  if (volumeSlider) {
+  if (volumeSlider && bgMusic) {
     volumeSlider.addEventListener("input", (e) => {
-
       currentVolume = parseFloat(e.target.value);
+      bgMusic.volume = currentVolume;
       localStorage.setItem("musicVolume", currentVolume);
-
-      if (bgMusic) {
-        bgMusic.volume = currentVolume;
-      }
-
     });
   }
 
@@ -120,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let showLeft = true;
 
     function swapCharacter() {
-
       if (showLeft) {
         rightImg.style.opacity = 0;
         leftImg.src = leftImages[leftIndex];
@@ -132,13 +130,11 @@ document.addEventListener("DOMContentLoaded", () => {
         rightImg.style.opacity = 1;
         rightIndex = (rightIndex + 1) % rightImages.length;
       }
-
       showLeft = !showLeft;
     }
 
     leftImg.style.opacity = 1;
     rightImg.style.opacity = 0;
-
     setInterval(swapCharacter, 3000);
   }
 
@@ -173,30 +169,44 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ===============================
-     MODAIS
+     MODAL MANUAL
   ================================ */
 
-  function openManual() {
-    window.open(
-      "https://drive.google.com/file/d/1mlVRX4wJhj4qFmxtdtW6gic0qF9cJM76/view?usp=drive_link",
-      "_blank"
-    );
-  }
-
-  if (manualBtn) {
-    manualBtn.addEventListener("click", openManual);
-  }
-
-  if (contactBtn) {
-    contactBtn.addEventListener("click", () => {
-      document.getElementById("contactModal").style.display = "flex";
+  if (manualBtn && manualModal) {
+    manualBtn.addEventListener("click", () => {
+      manualModal.style.display = "flex";
     });
   }
 
-  const closeContactBtn = document.getElementById("closeContactBtn");
-  if (closeContactBtn) {
+  if (manualCancelBtn && manualModal) {
+    manualCancelBtn.addEventListener("click", () => {
+      manualModal.style.display = "none";
+    });
+  }
+
+  if (manualConfirmBtn && manualModal) {
+    manualConfirmBtn.addEventListener("click", () => {
+      window.open(
+        "https://drive.google.com/file/d/1mlVRX4wJhj4qFmxtdtW6gic0qF9cJM76/view?usp=drive_link",
+        "_blank"
+      );
+      manualModal.style.display = "none";
+    });
+  }
+
+  /* ===============================
+     MODAL CONTATO
+  ================================ */
+
+  if (contactBtn && contactModal) {
+    contactBtn.addEventListener("click", () => {
+      contactModal.style.display = "flex";
+    });
+  }
+
+  if (closeContactBtn && contactModal) {
     closeContactBtn.addEventListener("click", () => {
-      document.getElementById("contactModal").style.display = "none";
+      contactModal.style.display = "none";
     });
   }
 
@@ -206,13 +216,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (fullscreenBtn) {
     fullscreenBtn.addEventListener("click", () => {
-
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
       } else {
         document.exitFullscreen();
       }
-
     });
   }
 
@@ -222,7 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (createBtn) {
     createBtn.addEventListener("click", () => {
-
       const name = nicknameInput.value.trim();
       const role = roleSelect.value;
 
@@ -232,7 +239,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       socket.emit("createRoom", { name, role });
-
     });
   }
 
@@ -242,7 +248,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (joinBtn) {
     joinBtn.addEventListener("click", () => {
-
       const name = nicknameInput.value.trim();
       const role = roleSelect.value;
       const roomCode = roomCodeInput.value.trim().toUpperCase();
@@ -253,7 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       socket.emit("joinRoom", { name, role, roomCode });
-
     });
   }
 
@@ -262,29 +266,23 @@ document.addEventListener("DOMContentLoaded", () => {
   ================================ */
 
   socket.on("roomCreated", (roomCode) => {
-
     localStorage.setItem("playerName", nicknameInput.value);
     localStorage.setItem("playerRole", roleSelect.value);
 
-    if (deviceMode === "mobile") {
-      window.location.href = `/index-mobile.html?room=${roomCode}`;
-    } else {
-      window.location.href = `/index.html?room=${roomCode}`;
-    }
-
+    window.location.href =
+      deviceMode === "mobile"
+        ? `/index-mobile.html?room=${roomCode}`
+        : `/index.html?room=${roomCode}`;
   });
 
   socket.on("roomJoined", (roomCode) => {
-
     localStorage.setItem("playerName", nicknameInput.value);
     localStorage.setItem("playerRole", roleSelect.value);
 
-    if (deviceMode === "mobile") {
-      window.location.href = `/index-mobile.html?room=${roomCode}`;
-    } else {
-      window.location.href = `/index.html?room=${roomCode}`;
-    }
-
+    window.location.href =
+      deviceMode === "mobile"
+        ? `/index-mobile.html?room=${roomCode}`
+        : `/index.html?room=${roomCode}`;
   });
 
   socket.on("roomError", (msg) => {
