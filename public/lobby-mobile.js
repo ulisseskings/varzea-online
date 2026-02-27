@@ -286,8 +286,14 @@ if (manualBtn) {
   ================================ */
 
   socket.on("roomCreated", (roomCode) => {
-    localStorage.setItem("playerName", nicknameInput.value);
-    localStorage.setItem("playerRole", roleSelect.value);
+
+    const name = nicknameInput.value.trim();
+    const role = roleSelect.value;
+
+    // 🔥 SALVA NA SESSION (igual o index lê)
+    sessionStorage.setItem("playerName", name);
+    sessionStorage.setItem("playerRole", role);
+    sessionStorage.setItem("deviceMode", deviceMode);
 
     window.location.href =
       deviceMode === "mobile"
@@ -295,9 +301,16 @@ if (manualBtn) {
         : `index.html?room=${roomCode}`;
   });
 
+
   socket.on("roomJoined", (roomCode) => {
-    localStorage.setItem("playerName", nicknameInput.value);
-    localStorage.setItem("playerRole", roleSelect.value);
+
+    const name = nicknameInput.value.trim();
+    const role = roleSelect.value;
+
+    // 🔥 SALVA NA SESSION (igual o index lê)
+    sessionStorage.setItem("playerName", name);
+    sessionStorage.setItem("playerRole", role);
+    sessionStorage.setItem("deviceMode", deviceMode);
 
     window.location.href =
       deviceMode === "mobile"
