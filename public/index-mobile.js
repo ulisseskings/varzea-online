@@ -1,5 +1,5 @@
-if(sessionStorage.getItem("deviceMode") === "mobile"){
-  window.location.href = "/lobby-mobile.html";
+if(sessionStorage.getItem("deviceMode") !== "mobile"){
+  window.location.href = "/lobby.html";
 }
 
 let bgMusic;
