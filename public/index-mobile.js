@@ -1495,6 +1495,6 @@ rotateFullscreenBtn.addEventListener("click", ()=>{
 document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("restartBtnMobile")
-    ?.addEventListener("click", restartMatch);
+    ?.addEventListener("click", () => openModal("restart"));
 
 });
