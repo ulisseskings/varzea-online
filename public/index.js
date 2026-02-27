@@ -163,6 +163,16 @@ let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
 
+function applyAnchors(){
+  document.querySelectorAll(".piece").forEach(piece=>{
+    const anchor = document.getElementById(piece.dataset.anchor);
+    if(!anchor) return;
+
+    piece.style.left = anchor.style.left;
+    piece.style.top  = anchor.style.top;
+  });
+}
+
 function scaleBoard(){
 
   const baseWidth  = 1152;
