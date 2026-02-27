@@ -1,286 +1,309 @@
-const deviceMode = sessionStorage.getItem("deviceMode");
+document.addEventListener("DOMContentLoaded", () => {
 
-if(!deviceMode){
-  window.location.href = "/device.html";
-}
+  /* ===============================
+     VERIFICA DEVICE
+  ================================ */
 
-let bgMusic = document.getElementById("bgMusic");
-let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
-let currentVolume = parseFloat(localStorage.getItem("musicVolume")) || 0.2;
+  const deviceMode = sessionStorage.getItem("deviceMode");
+  if (!deviceMode) {
+    window.location.href = "/device.html";
+    return;
+  }
 
-bgMusic.volume = currentVolume;
+  /* ===============================
+     SOCKET
+  ================================ */
 
-if(musicEnabled){
-  document.addEventListener("click", ()=>{
-    bgMusic.play().catch(()=>{});
-  }, {once:true});
-}
+  const socket = io({
+    transports: ["websocket"],
+    upgrade: false
+  });
 
-document.getElementById("musicToggleLobby")
-  .addEventListener("click", ()=>{
+  /* ===============================
+     ELEMENTOS
+  ================================ */
 
-    musicEnabled = !musicEnabled;
+  const nicknameInput = document.getElementById("nickname");
+  const roleSelect = document.getElementById("role");
+  const roomCodeInput = document.getElementById("roomCode");
 
-    localStorage.setItem("musicEnabled", musicEnabled);
+  const createBtn = document.getElementById("createRoomBtn");
+  const joinBtn = document.getElementById("joinRoomBtn");
 
-    if(musicEnabled){
-      bgMusic.play();
-      document.getElementById("musicToggleLobby").innerText="🎵 ON";
-    }else{
-      bgMusic.pause();
-      document.getElementById("musicToggleLobby").innerText="🎵 OFF";
+  const musicToggle = document.getElementById("musicToggleLobby");
+  const volumeSlider = document.getElementById("volumeSliderLobby");
+  const bgMusic = document.getElementById("bgMusic");
+
+  const leftImg = document.getElementById("leftImg");
+  const rightImg = document.getElementById("rightImg");
+  const banner = document.getElementById("lobbyBanner");
+  const bannerImg = document.getElementById("bannerImg");
+
+  const manualBtn = document.getElementById("manualLobbyBtn");
+  const contactBtn = document.getElementById("contactBtn");
+  const fullscreenBtn = document.getElementById("fullscreenLobbyBtn");
+
+  const manualModal = document.getElementById("manualModal");
+  const manualConfirmBtn = document.getElementById("manualConfirmBtn");
+  const manualCancelBtn = document.getElementById("manualCancelBtn");
+
+  const contactModal = document.getElementById("contactModal");
+  
+  /* ===============================
+     MÚSICA
+  ================================ */
+
+  let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
+  let currentVolume = parseFloat(localStorage.getItem("musicVolume")) || 0.2;
+
+  if (bgMusic) {
+    bgMusic.volume = currentVolume;
+
+    if (musicEnabled) {
+      document.addEventListener("click", () => {
+        bgMusic.play().catch(() => {});
+      }, { once: true });
+    }
+  }
+
+  if (musicToggle) {
+    musicToggle.addEventListener("click", () => {
+      musicEnabled = !musicEnabled;
+      localStorage.setItem("musicEnabled", musicEnabled);
+
+      if (!bgMusic) return;
+
+      if (musicEnabled) {
+        bgMusic.play();
+        musicToggle.innerText = "🎵 ON";
+      } else {
+        bgMusic.pause();
+        musicToggle.innerText = "🎵 OFF";
+      }
+    });
+  }
+
+  if (volumeSlider && bgMusic) {
+    volumeSlider.addEventListener("input", (e) => {
+      currentVolume = parseFloat(e.target.value);
+      bgMusic.volume = currentVolume;
+      localStorage.setItem("musicVolume", currentVolume);
+    });
+  }
+
+  /* ===============================
+     IMAGENS LATERAIS
+  ================================ */
+
+  if (leftImg && rightImg) {
+
+    const leftImages = [
+      "https://i.imgur.com/uuEvIlD.png",
+      "https://i.imgur.com/rVXSF0A.png",
+      "https://i.imgur.com/8tdCynv.png",
+      "https://i.imgur.com/jJ84rBZ.png",
+      "https://i.imgur.com/dPxFK64.png"
+    ];
+
+    const rightImages = [
+      "https://i.imgur.com/Hmbou7i.png",
+      "https://i.imgur.com/ntYDKd7.png",
+      "https://i.imgur.com/SYlGinK.png",
+      "https://i.imgur.com/Gnbzgmi.png",
+      "https://i.imgur.com/lWXt4b8.png"
+    ];
+
+    let leftIndex = 0;
+    let rightIndex = 0;
+    let showLeft = true;
+
+    function swapCharacter() {
+      if (showLeft) {
+        rightImg.style.opacity = 0;
+        leftImg.src = leftImages[leftIndex];
+        leftImg.style.opacity = 1;
+        leftIndex = (leftIndex + 1) % leftImages.length;
+      } else {
+        leftImg.style.opacity = 0;
+        rightImg.src = rightImages[rightIndex];
+        rightImg.style.opacity = 1;
+        rightIndex = (rightIndex + 1) % rightImages.length;
+      }
+      showLeft = !showLeft;
     }
 
-});
-
-document.getElementById("volumeSliderLobby")
-  .addEventListener("input", (e)=>{
-    currentVolume = parseFloat(e.target.value);
-    bgMusic.volume = currentVolume;
-    localStorage.setItem("musicVolume", currentVolume);
-});
-
-
-const socket = io({
-  transports: ["websocket"],
-  upgrade: false
-});
-
-// 🔥 LISTENERS GLOBAIS
-
-socket.on("roomCreated",(roomCode)=>{
-  const name = document.getElementById("nickname").value;
-  const role = document.getElementById("role").value;
-
-  localStorage.setItem("playerName",name);
-  localStorage.setItem("playerRole",role);
-
-  const mode = localStorage.getItem("deviceMode") || "desktop";
-
-  if(mode === "mobile"){
-    window.location.href = `/index-mobile.html?room=${roomCode}`;
-  }else{
-    window.location.href = `/index.html?room=${roomCode}`;
+    leftImg.style.opacity = 1;
+    rightImg.style.opacity = 0;
+    setInterval(swapCharacter, 3000);
   }
 
-});
+  /* ===============================
+     BANNER
+  ================================ */
 
-socket.on("roomJoined",(roomCode)=>{
-  const name = document.getElementById("nickname").value;
-  const role = document.getElementById("role").value;
+  if (banner && bannerImg) {
 
-  localStorage.setItem("playerName", name);
-  localStorage.setItem("playerRole", role);
+    const bannerImages = [
+      "https://i.imgur.com/JelZIZD.png",
+      "https://i.imgur.com/rjnW253.png",
+      "https://i.imgur.com/cLGNSVy.png",
+      "https://i.imgur.com/E5KSaDt.png"
+    ];
 
-  const mode = localStorage.getItem("deviceMode") || "desktop";
+    let bannerIndex = 0;
 
-  if(mode === "mobile"){
-    window.location.href = `/index-mobile.html?room=${roomCode}`;
-  }else{
-    window.location.href = `/index.html?room=${roomCode}`;
+    setInterval(() => {
+      bannerIndex = (bannerIndex + 1) % bannerImages.length;
+      bannerImg.src = bannerImages[bannerIndex];
+    }, 200);
+
+    function randomFloat() {
+      return (Math.random() * 30 - 15).toFixed(2);
+    }
+
+    setInterval(() => {
+      banner.style.transform =
+        `translate(-50%, 0) translate(${randomFloat()}px, ${randomFloat()}px)`;
+    }, 2000);
   }
 
-});
+  /* ===============================
+     MODAL MANUAL
+  ================================ */
 
-socket.on("roomError",(msg)=>{
-  alert(msg);
-});
+if (manualBtn) {
+  manualBtn.addEventListener("click", () => {
 
-/* ============================= */
-/*   IMAGENS ANIMADAS           */
-/* ============================= */
+    const overlay = document.getElementById("modalOverlay");
+    const title   = document.getElementById("modalTitle");
+    const text    = document.getElementById("modalText");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const cancelBtn  = document.getElementById("cancelModalBtn");
 
-const leftImages=[
-  "https://i.imgur.com/uuEvIlD.png",
-  "https://i.imgur.com/rVXSF0A.png",
-  "https://i.imgur.com/8tdCynv.png",
-  "https://i.imgur.com/jJ84rBZ.png",
-  "https://i.imgur.com/dPxFK64.png"
-];
-
-const rightImages=[
-  "https://i.imgur.com/Hmbou7i.png",
-  "https://i.imgur.com/ntYDKd7.png",
-  "https://i.imgur.com/SYlGinK.png",
-  "https://i.imgur.com/Gnbzgmi.png",
-  "https://i.imgur.com/lWXt4b8.png"
-];
-
-let leftIndex=0;
-let rightIndex=0;
-let showLeft=true;
-
-const leftImg=document.getElementById("leftImg");
-const rightImg=document.getElementById("rightImg");
-
-function swapCharacter(){
-
-  if(showLeft){
-    rightImg.style.opacity=0;
-    leftImg.src=leftImages[leftIndex];
-    leftImg.style.opacity=1;
-    leftIndex=(leftIndex+1)%leftImages.length;
-  }else{
-    leftImg.style.opacity=0;
-    rightImg.src=rightImages[rightIndex];
-    rightImg.style.opacity=1;
-    rightIndex=(rightIndex+1)%rightImages.length;
-  }
-
-  showLeft=!showLeft;
-}
-
-window.onload=()=>{
-  leftImg.style.opacity=1;
-  rightImg.style.opacity=0;
-  swapCharacter();
-  setInterval(swapCharacter,3000);
-};
-
-const bannerImages = [
-  "https://i.imgur.com/JelZIZD.png",
-  "https://i.imgur.com/rjnW253.png",
-  "https://i.imgur.com/cLGNSVy.png",
-  "https://i.imgur.com/E5KSaDt.png"
-];
-
-let bannerIndex = 0;
-const banner = document.getElementById("lobbyBanner");
-const bannerImg = document.getElementById("bannerImg");
-
-// 🔁 troca imagem a cada 1 segundo
-setInterval(()=>{
-  bannerIndex = (bannerIndex + 1) % bannerImages.length;
-  bannerImg.src = bannerImages[bannerIndex];
-},200);
-
-// 🎲 movimento aleatório suave dentro de 15px
-function randomFloat(){
-  return (Math.random() * 30 - 15).toFixed(2);
-}
-
-setInterval(()=>{
-  const x = randomFloat();
-  const y = randomFloat();
-
-  banner.style.transform =
-    `translate(-50%, 0) translate(${x}px, ${y}px)`;
-
-},2000);
-
-function openModal(type){
-
-  const overlay = document.getElementById("modalOverlay");
-  const title   = document.getElementById("modalTitle");
-  const text    = document.getElementById("modalText");
-  const confirmBtn = document.getElementById("confirmBtn");
-
-  overlay.style.display = "flex";
-
-  if(type === "manual"){
+    overlay.style.display = "flex";
 
     title.innerText = "Manual de Regras";
-    text.innerText =
-      "Deseja acessar o Manual Oficial de Regras agora?";
+    text.innerText = "Deseja acessar o Manual Oficial de Regras agora?";
 
     confirmBtn.innerText = "Acessar";
 
-    confirmBtn.onclick = ()=>{
+    confirmBtn.onclick = () => {
       window.open(
         "https://drive.google.com/file/d/1mlVRX4wJhj4qFmxtdtW6gic0qF9cJM76/view?usp=drive_link",
         "_blank"
       );
-      closeModal();
+      overlay.style.display = "none";
     };
-  }
-}
 
-function closeModal(){
-  document.getElementById("modalOverlay").style.display = "none";
-}
-
-document.getElementById("manualLobbyBtn")
-  .addEventListener("click", ()=>{
-    openModal("manual");
-});
-
-document.getElementById("contactBtn")
-  .addEventListener("click", ()=>{
-    document.getElementById("contactModal").style.display = "flex";
-});
-
-function closeContactModal(){
-  document.getElementById("contactModal").style.display = "none";
-}
-
-function createRoom(){
-
-  const name = document.getElementById("nickname").value.trim();
-  const role = document.getElementById("role").value;
-
-  if(!name){
-    alert("Digite um nickname.");
-    return;
-  }
-
-  socket.emit("createRoom", {
-    name,
-    role
-  });
-
-}
-
-function joinRoom(){
-
-  const name = document.getElementById("nickname").value.trim();
-  const role = document.getElementById("role").value;
-  const roomCode = document.getElementById("roomCode").value.trim().toUpperCase();
-
-  if(!name){
-    alert("Digite um nickname.");
-    return;
-  }
-
-  if(!roomCode){
-    alert("Digite o código da sala.");
-    return;
-  }
-
-  socket.emit("joinRoom", {
-    name,
-    role,
-    roomCode
-  });
-
-}
-const fullscreenLobbyBtn = document.getElementById("fullscreenLobbyBtn");
-
-if(fullscreenLobbyBtn){
-
-  fullscreenLobbyBtn.addEventListener("click", ()=>{
-
-    if(!document.fullscreenElement){
-
-      document.documentElement.requestFullscreen().catch(err=>{
-        console.log("Erro fullscreen:", err);
-      });
-
-    }else{
-
-      document.exitFullscreen();
-
-    }
+    cancelBtn.onclick = () => {
+      overlay.style.display = "none";
+    };
 
   });
-
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+  /* ===============================
+     MODAL CONTATO
+  ================================ */
 
-  document.getElementById("createRoomBtn")
-    ?.addEventListener("click", createRoom);
+  if (contactBtn && contactModal) {
+  contactBtn.addEventListener("click", () => {
+    contactModal.style.display = "flex";
+  });
+} 
+  
+  const closeContactOkBtn = document.getElementById("closeContactOkBtn");
+  const closeContactCancelBtn = document.getElementById("closeContactCancelBtn");
 
-  document.getElementById("joinRoomBtn")
-    ?.addEventListener("click", joinRoom);
+  if (closeContactOkBtn) {
+    closeContactOkBtn.addEventListener("click", () => {
+      contactModal.style.display = "none";
+    });
+  }
+
+  if (closeContactCancelBtn) {
+    closeContactCancelBtn.addEventListener("click", () => {
+      contactModal.style.display = "none";
+    });
+  }
+
+  /* ===============================
+     FULLSCREEN
+  ================================ */
+
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    });
+  }
+
+  /* ===============================
+     CRIAR SALA
+  ================================ */
+
+  if (createBtn) {
+    createBtn.addEventListener("click", () => {
+      const name = nicknameInput.value.trim();
+      const role = roleSelect.value;
+
+      if (!name) {
+        alert("Digite um nickname.");
+        return;
+      }
+
+      socket.emit("createRoom", { name, role });
+    });
+  }
+
+  /* ===============================
+     ENTRAR SALA
+  ================================ */
+
+  if (joinBtn) {
+    joinBtn.addEventListener("click", () => {
+      const name = nicknameInput.value.trim();
+      const role = roleSelect.value;
+      const roomCode = roomCodeInput.value.trim().toUpperCase();
+
+      if (!name || !roomCode) {
+        alert("Preencha todos os campos.");
+        return;
+      }
+
+      socket.emit("joinRoom", { name, role, roomCode });
+    });
+  }
+
+  /* ===============================
+     SOCKET EVENTS
+  ================================ */
+
+  socket.on("roomCreated", (roomCode) => {
+    localStorage.setItem("playerName", nicknameInput.value);
+    localStorage.setItem("playerRole", roleSelect.value);
+
+    window.location.href =
+      deviceMode === "mobile"
+        ? `/index-mobile.html?room=${roomCode}`
+        : `/index.html?room=${roomCode}`;
+  });
+
+  socket.on("roomJoined", (roomCode) => {
+    localStorage.setItem("playerName", nicknameInput.value);
+    localStorage.setItem("playerRole", roleSelect.value);
+
+    window.location.href =
+      deviceMode === "mobile"
+        ? `/index-mobile.html?room=${roomCode}`
+        : `/index.html?room=${roomCode}`;
+  });
+
+  socket.on("roomError", (msg) => {
+    alert(msg);
+  });
 
 });

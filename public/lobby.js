@@ -48,8 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualCancelBtn = document.getElementById("manualCancelBtn");
 
   const contactModal = document.getElementById("contactModal");
-  const closeContactBtn = document.getElementById("closeContactBtn");
-
+  
   /* ===============================
      MÚSICA
   ================================ */
@@ -156,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(() => {
       bannerIndex = (bannerIndex + 1) % bannerImages.length;
       bannerImg.src = bannerImages[bannerIndex];
-    }, 2000);
+    }, 200);
 
     function randomFloat() {
       return (Math.random() * 30 - 15).toFixed(2);
@@ -172,40 +171,58 @@ document.addEventListener("DOMContentLoaded", () => {
      MODAL MANUAL
   ================================ */
 
-  if (manualBtn && manualModal) {
-    manualBtn.addEventListener("click", () => {
-      manualModal.style.display = "flex";
-    });
-  }
+if (manualBtn) {
+  manualBtn.addEventListener("click", () => {
 
-  if (manualCancelBtn && manualModal) {
-    manualCancelBtn.addEventListener("click", () => {
-      manualModal.style.display = "none";
-    });
-  }
+    const overlay = document.getElementById("modalOverlay");
+    const title   = document.getElementById("modalTitle");
+    const text    = document.getElementById("modalText");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const cancelBtn  = document.getElementById("cancelModalBtn");
 
-  if (manualConfirmBtn && manualModal) {
-    manualConfirmBtn.addEventListener("click", () => {
+    overlay.style.display = "flex";
+
+    title.innerText = "Manual de Regras";
+    text.innerText = "Deseja acessar o Manual Oficial de Regras agora?";
+
+    confirmBtn.innerText = "Acessar";
+
+    confirmBtn.onclick = () => {
       window.open(
         "https://drive.google.com/file/d/1mlVRX4wJhj4qFmxtdtW6gic0qF9cJM76/view?usp=drive_link",
         "_blank"
       );
-      manualModal.style.display = "none";
-    });
-  }
+      overlay.style.display = "none";
+    };
+
+    cancelBtn.onclick = () => {
+      overlay.style.display = "none";
+    };
+
+  });
+}
 
   /* ===============================
      MODAL CONTATO
   ================================ */
 
   if (contactBtn && contactModal) {
-    contactBtn.addEventListener("click", () => {
-      contactModal.style.display = "flex";
+  contactBtn.addEventListener("click", () => {
+    contactModal.style.display = "flex";
+  });
+} 
+  
+  const closeContactOkBtn = document.getElementById("closeContactOkBtn");
+  const closeContactCancelBtn = document.getElementById("closeContactCancelBtn");
+
+  if (closeContactOkBtn) {
+    closeContactOkBtn.addEventListener("click", () => {
+      contactModal.style.display = "none";
     });
   }
 
-  if (closeContactBtn && contactModal) {
-    closeContactBtn.addEventListener("click", () => {
+  if (closeContactCancelBtn) {
+    closeContactCancelBtn.addEventListener("click", () => {
       contactModal.style.display = "none";
     });
   }
