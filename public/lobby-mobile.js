@@ -14,7 +14,17 @@ document.addEventListener("DOMContentLoaded", () => {
      SOCKET
   ================================ */
 
-  const socket = io();
+  const socket = io(window.location.origin, {
+  transports: ["polling", "websocket"]
+  });
+
+  socket.on("connect", () => {
+    console.log("✅ MOBILE CONNECTED");
+  });
+
+  socket.on("connect_error", (err) => {
+    console.log("❌ MOBILE CONNECT ERROR:", err.message);
+  });
 
   /* ===============================
      ELEMENTOS
