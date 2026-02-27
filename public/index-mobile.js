@@ -117,22 +117,22 @@ window.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("musicVolume", volumeSlider.value);
     });
   }
+  // BOTÃO EFEITOS
+  document.getElementById("sfxToggle")
+    ?.addEventListener("click", ()=>{
 
+      sfxEnabled = !sfxEnabled;
+
+      sessionStorage.setItem("sfxEnabled", sfxEnabled);
+
+      document.getElementById("sfxToggle").innerText =
+        sfxEnabled ? "🔊 ON" : "🔇 OFF";
+  });
 });
 
 
 
-// BOTÃO EFEITOS
-document.getElementById("sfxToggle")
-  .addEventListener("click", ()=>{
 
-    sfxEnabled = !sfxEnabled;
-
-    sessionStorage.setItem("sfxEnabled", sfxEnabled);
-
-    document.getElementById("sfxToggle").innerText =
-      sfxEnabled ? "🔊 ON" : "🔇 OFF";
-});
 
 // 🔥 LISTENERS DEVEM VIR ANTES DO joinRoom
 
