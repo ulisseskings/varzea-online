@@ -105,10 +105,19 @@ const socket = io({
 // 🔊 SISTEMA DE ÁUDIO LOCAL
 // =============================
 
-const volumeSlider = document.getElementById("volumeSlider");
+window.addEventListener("DOMContentLoaded", () => {
 
-volumeSlider.addEventListener("input", () => {
-  bgMusic.volume = volumeSlider.value;
+  bgMusic = document.getElementById("bgMusic");
+
+  const volumeSlider = document.getElementById("volumeSlider");
+
+  if(volumeSlider){
+    volumeSlider.addEventListener("input", () => {
+      bgMusic.volume = volumeSlider.value;
+      sessionStorage.setItem("musicVolume", volumeSlider.value);
+    });
+  }
+
 });
 
 
