@@ -50,10 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const contactBtn = document.getElementById("contactBtn");
   const fullscreenBtn = document.getElementById("fullscreenLobbyBtn");
 
-  const manualModal = document.getElementById("manualModal");
-  const manualConfirmBtn = document.getElementById("manualConfirmBtn");
-  const manualCancelBtn = document.getElementById("manualCancelBtn");
-
   const contactModal = document.getElementById("contactModal");
   
   /* ===============================
