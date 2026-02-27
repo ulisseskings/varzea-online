@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
      VERIFICA DEVICE
   ================================ */
 
-  const deviceMode = sessionStorage.getItem("deviceMode");
+  const deviceMode = sessionStorage.getItem("deviceMode") ||  localStorage.getItem("deviceMode");
   if (!deviceMode) {
     window.location.href = "/device.html";
     return;
@@ -288,8 +288,8 @@ if (manualBtn) {
 
     window.location.href =
       deviceMode === "mobile"
-        ? `/index-mobile.html?room=${roomCode}`
-        : `/index.html?room=${roomCode}`;
+        ? `index-mobile.html?room=${roomCode}`
+        : `index.html?room=${roomCode}`;
   });
 
   socket.on("roomJoined", (roomCode) => {
@@ -298,8 +298,8 @@ if (manualBtn) {
 
     window.location.href =
       deviceMode === "mobile"
-        ? `/index-mobile.html?room=${roomCode}`
-        : `/index.html?room=${roomCode}`;
+        ? `index-mobile.html?room=${roomCode}`
+        : `index.html?room=${roomCode}`;
   });
 
   socket.on("roomError", (msg) => {

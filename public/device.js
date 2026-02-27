@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (desktopBtn) {
     desktopBtn.addEventListener("click", () => {
       sessionStorage.setItem("deviceMode", "desktop");
+      localStorage.setItem("deviceMode", "mobile");
       window.location.href = "lobby.html";
     });
   }
@@ -13,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (mobileBtn) {
     mobileBtn.addEventListener("click", () => {
       sessionStorage.setItem("deviceMode", "mobile");
+      localStorage.setItem("deviceMode", "mobile");
       window.location.href = "lobby-mobile.html";
     });
   }
