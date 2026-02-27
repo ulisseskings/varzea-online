@@ -14,10 +14,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   bgMusic = document.getElementById("bgMusic");
   // recuperar estado salvo
-  const savedMusic = localStorage.getItem("musicEnabled");
-  const savedVolume = localStorage.getItem("musicVolume");
+  const savedMusic = sessionStorage.getItem("musicEnabled");
+  const savedVolume = sessionStorage.getItem("musicVolume");
 
-  const savedSfx = localStorage.getItem("sfxEnabled");
+  const savedSfx = sessionStorage.getItem("sfxEnabled");
 if(savedSfx !== null){
   sfxEnabled = savedSfx === "true";
 }
@@ -84,7 +84,7 @@ document.getElementById("musicToggle")
 
     musicEnabled = !musicEnabled;
 
-    localStorage.setItem("musicEnabled", musicEnabled);
+    sessionStorage.setItem("musicEnabled", musicEnabled);
 
     if(musicEnabled){
       bgMusic.play();
@@ -121,7 +121,7 @@ document.getElementById("sfxToggle")
 
     sfxEnabled = !sfxEnabled;
 
-    localStorage.setItem("sfxEnabled", sfxEnabled);
+    sessionStorage.setItem("sfxEnabled", sfxEnabled);
 
     document.getElementById("sfxToggle").innerText =
       sfxEnabled ? "🔊 ON" : "🔇 OFF";
@@ -181,8 +181,8 @@ function scaleBoard(){
 window.addEventListener("resize", scaleBoard);
 window.addEventListener("load", scaleBoard);
 
-const playerRole = localStorage.getItem("playerRole");
-const playerName = localStorage.getItem("playerName");
+const playerRole = sessionStorage.getItem("playerRole");
+const playerName = sessionStorage.getItem("playerName");
 
 const urlParams = new URLSearchParams(window.location.search);
 const roomCode = urlParams.get("room");

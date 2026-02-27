@@ -1,4 +1,4 @@
-if(localStorage.getItem("deviceMode") === "mobile"){
+if(sessionStorage.getItem("deviceMode") === "mobile"){
   window.location.href = "/lobby-mobile.html";
 }
 
@@ -12,10 +12,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   bgMusic = document.getElementById("bgMusic");
   // recuperar estado salvo
-  const savedMusic = localStorage.getItem("musicEnabled");
-  const savedVolume = localStorage.getItem("musicVolume");
+  const savedMusic = sessionStorage.getItem("musicEnabled");
+  const savedVolume = sessionStorage.getItem("musicVolume");
 
-  const savedSfx = localStorage.getItem("sfxEnabled");
+  const savedSfx = sessionStorage.getItem("sfxEnabled");
 if(savedSfx !== null){
   sfxEnabled = savedSfx === "true";
 }
@@ -82,7 +82,7 @@ document.getElementById("musicToggle")
 
     musicEnabled = !musicEnabled;
 
-    localStorage.setItem("musicEnabled", musicEnabled);
+    sessionStorage.setItem("musicEnabled", musicEnabled);
 
     if(musicEnabled){
       bgMusic.play();
@@ -119,7 +119,7 @@ document.getElementById("sfxToggle")
 
     sfxEnabled = !sfxEnabled;
 
-    localStorage.setItem("sfxEnabled", sfxEnabled);
+    sessionStorage.setItem("sfxEnabled", sfxEnabled);
 
     document.getElementById("sfxToggle").innerText =
       sfxEnabled ? "🔊 ON" : "🔇 OFF";
@@ -162,8 +162,8 @@ const spectatorListEl = document.getElementById("spectatorList");
 const playerBlueNameEl = document.getElementById("playerBlueName");
 const playerRedNameEl  = document.getElementById("playerRedName");
 
-const playerRole = localStorage.getItem("playerRole");
-const playerName = localStorage.getItem("playerName");
+const playerRole = sessionStorage.getItem("playerRole");
+const playerName = sessionStorage.getItem("playerName");
 
 const handInnerBlue = handEl.querySelector(".hand-inner");
 const handInnerRed  = handRedEl.querySelector(".hand-inner");
