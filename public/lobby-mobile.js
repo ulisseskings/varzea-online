@@ -14,10 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
      SOCKET
   ================================ */
 
-  const socket = io({
-    transports: ["websocket"],
-    upgrade: false
-  });
+  const socket = io();
 
   /* ===============================
      ELEMENTOS

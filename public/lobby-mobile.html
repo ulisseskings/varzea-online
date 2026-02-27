@@ -302,6 +302,30 @@ hr{
 
 }
 
+#rotateWarning{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  padding:8px 10px;
+
+  background:rgba(0,0,0,0.9);
+  color:#ffcc00;
+
+  font-size:11px;
+  text-align:center;
+  z-index:999999;
+
+  display:none;
+}
+
+/* Mostrar apenas quando estiver em modo vertical */
+@media (orientation: portrait){
+  #rotateWarning{
+    display:block;
+  }
+}
+
 </style>
 </head>
 
@@ -309,6 +333,10 @@ hr{
 <script src="/lobby-mobile.js"></script>
 
 <body>
+
+<div id="rotateWarning">
+  📱 Para uma melhor experiência, jogue com o telefone na horizontal e com a tela cheia.
+</div>
 
 <button id="contactBtn">Contato</button>
 <button id="fullscreenLobbyBtn">⛶ Tela Cheia</button>
