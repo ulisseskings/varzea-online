@@ -119,34 +119,7 @@ const socket = io({
   upgrade: false
 });
 
-// =============================
-// 🔊 SISTEMA DE ÁUDIO LOCAL
-// =============================
 
-window.addEventListener("DOMContentLoaded", () => {
-
-  bgMusic = document.getElementById("bgMusic");
-
-  const volumeSlider = document.getElementById("volumeSlider");
-
-  if(volumeSlider){
-    volumeSlider.addEventListener("input", () => {
-      bgMusic.volume = volumeSlider.value;
-      sessionStorage.setItem("musicVolume", volumeSlider.value);
-    });
-  }
-  // BOTÃO EFEITOS
-  document.getElementById("sfxToggle")
-    ?.addEventListener("click", ()=>{
-
-      sfxEnabled = !sfxEnabled;
-
-      sessionStorage.setItem("sfxEnabled", sfxEnabled);
-
-      document.getElementById("sfxToggle").innerText =
-        sfxEnabled ? "🔊 ON" : "🔇 OFF";
-  });
-});
 
 
 
@@ -237,8 +210,8 @@ function scaleBoard(){
 
   const topbarHeight = document.getElementById("topbar").offsetHeight;
 
-  const handHeight = 90; // altura da mão azul
-  const safeBottom = 20; // margem de segurança
+  const handHeight = 90;
+  const safeBottom = 20;
 
   const availableWidth  = window.innerWidth;
   const availableHeight = window.innerHeight - topbarHeight - handHeight - safeBottom;
@@ -250,7 +223,7 @@ function scaleBoard(){
 
   if(playerRole === "red"){
     board.style.transform =
-      `translate(-50%, -50%) rotate(180deg) scale(${scale})`;
+      `translate(-50%, -50%) scale(${scale}) rotate(180deg)`;
   }else{
     board.style.transform =
       `translate(-50%, -50%) scale(${scale})`;
@@ -842,11 +815,14 @@ document.querySelectorAll(".piece").forEach(piece => {
 
     const anchor = document.getElementById(this.dataset.anchor);
     if(anchor){
-    moveQueue.push({
-      anchor: this.dataset.anchor,
-      x,
-      y
-    });
+
+      moveQueue.push({
+        anchor: this.dataset.anchor,
+        x,
+        y
+      });
+
+    }
 
     if(!moveScheduled){
 
