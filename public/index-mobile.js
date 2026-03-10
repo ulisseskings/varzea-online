@@ -43,6 +43,24 @@ if(savedSfx !== null){
 
 });
 
+function positionDecks(){
+
+  document.querySelectorAll(".deck-wrapper").forEach(deck => {
+
+    const anchorId = deck.dataset.anchor
+    const anchor   = document.getElementById(anchorId)
+
+    if(!anchor) return
+
+    deck.style.left = anchor.style.left
+    deck.style.top  = anchor.style.top
+
+  })
+
+}
+
+window.addEventListener("load", positionDecks)
+
 function startMusicOnFirstInteraction(){
 
   if(!musicEnabled) return;
@@ -520,11 +538,7 @@ function renderHand() {
       if(groups[type].length===0) return;
 
 
-      if(isRedHand){
-        groups[type].sort((a,b) => (b.value ?? 0) - (a.value ?? 0));
-      }else{
-        groups[type].sort((a,b) => (a.value ?? 0) - (b.value ?? 0));
-      }
+    groups[type].sort((a,b) => (a.value ?? 0) - (b.value ?? 0));
 
       const groupDiv = document.createElement("div");
       groupDiv.className="hand-group";
@@ -557,8 +571,10 @@ function renderHand() {
 
           const touch = e.touches[0];
 
-          this.style.left = touch.clientX - 45 + "px";
-          this.style.top  = touch.clientY - 60 + "px";
+          const p = getCorrectPoint(touch.clientX, touch.clientY);
+
+          this.style.left = (p.x - 45) + "px";
+          this.style.top  = (p.y - 60) + "px";
 
         }, { passive:false });
 
@@ -716,11 +732,14 @@ slot.addEventListener("touchstart",(e)=>{
 /* ===================== */
 /* DECK DRAG */
 
-document.querySelectorAll("[data-deck]").forEach(deck=>{
+document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
-  deck.addEventListener("touchstart", function(e){
+  wrapper.addEventListener("touchstart", function(e){
 
     e.preventDefault();
+
+    const deck = wrapper.querySelector("[data-deck]");
+    if(!deck) return;
 
     socket.emit("drawCard", deck.dataset.deck);
 
@@ -743,20 +762,19 @@ function getCorrectPoint(clientX, clientY){
 
   const rect = board.getBoundingClientRect();
 
-  let x = (clientX - rect.left) * (board.offsetWidth  / rect.width);
-  let y = (clientY - rect.top)  * (board.offsetHeight / rect.height);
+  const scaleX = board.offsetWidth  / rect.width;
+  const scaleY = board.offsetHeight / rect.height;
+
+  let x = (clientX - rect.left) * scaleX;
+  let y = (clientY - rect.top)  * scaleY;
 
   if(playerRole === "red"){
     x = board.offsetWidth  - x;
     y = board.offsetHeight - y;
   }
 
-  return {
-    x: rect.left + x,
-    y: rect.top  + y
-  };
+  return { x, y };
 }
-
 
 
 
@@ -791,10 +809,11 @@ document.querySelectorAll(".piece").forEach(piece => {
     if(this.dataset.touching !== "true") return;
 
     const touch = e.touches[0];
-    const rect = board.getBoundingClientRect();
 
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    const p = getCorrectPoint(touch.clientX, touch.clientY);
+
+    const x = p.x;
+    const y = p.y;
 
     const anchor = document.getElementById(this.dataset.anchor);
     if(anchor){
@@ -1492,7 +1511,7 @@ rotateFullscreenBtn.addEventListener("click", ()=>{
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("load", () => {
 
   document.getElementById("restartBtnMobile")
     ?.addEventListener("click", () => openModal("restart"));

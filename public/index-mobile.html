@@ -35,8 +35,8 @@
       height: 658px;
       position: absolute;
       left: 50%;
-      top: 1px;
-      transform: translateX(-50%);
+      top: 50%;
+      transform: translate(-50%, -50%);
     }
 
     .anchor {
@@ -64,7 +64,6 @@
 
   width: 74px;
   height: 103px;
-  display: block;
 }
     /* ===================== */
     /* SLOT PILHA */
@@ -73,6 +72,9 @@
       position: absolute;
       width: 74px;
       height: 103px;
+
+      transform: translate(-50%, -50%);
+      
       border: 2px solid transparent;
       border-radius: 10px;
       cursor: pointer;
@@ -198,7 +200,7 @@
 #matchBox{
   position: absolute;
   left: 50%;
-  top: 65px;
+  top: 55px;
 
   transform: translate(-50%, -50%);
 
@@ -231,13 +233,10 @@
 /* TOPBAR ESTILO GAME HUD */
 
 #spectatorBox{
-  top:55px;
-  right:120px;
-
   background:#065e2e;
   color:white;
 
-  padding:8px 14px;
+  padding:6px 8px;
   border-radius:10px;
 
   font-size:9px;
@@ -246,16 +245,20 @@
 
   border:1px solid rgb(0,151,20);
 
-  z-index:2000;
+  width:120px;
+  text-align:center;
 }
+
 #rightPanel{
-  position:absolute;
-  top:55px;
-  right:120px;
+  position: fixed;
+  top: 60px;
+  right: 15px;
 
   display:flex;
   flex-direction:column;
-  gap:10px;
+  align-items:center;   /* ⭐ centraliza tudo */
+
+  gap:8px;
 
   z-index:3000;
 }
@@ -264,7 +267,10 @@
   background:#065e2e;
   color:white;
 
-  padding:8px 14px;
+  width:80px;            /* largura fixa */
+  text-align:center;
+
+  padding:6px 6px;
   border-radius:10px;
 
   font-size:9px;
@@ -272,7 +278,6 @@
   font-family:Arial;
 
   border:1px solid rgb(0,151,20);
-
   cursor:pointer;
 }
 
@@ -454,12 +459,10 @@
   width: 74px;
   height: 103px;
 
-  /* ✅ igual as peças */
-  transform: translate(-100%, -100%);
-
   z-index: 50;
   pointer-events: auto;
 }
+
 .shuffle-btn {
   position: absolute;
   top: 4px;
@@ -508,11 +511,11 @@
 /* ANIMAÇÃO SHUFFLE */
 
 @keyframes shakeDeck {
-  0%   { transform: translate(-105%, -105%) rotate(0deg); }
-  25%  { transform: translate(-105%, -105%) rotate(-3deg); }
-  50%  { transform: translate(-105%, -105%) rotate(3deg); }
-  75%  { transform: translate(-105%, -105%) rotate(-3deg); }
-  100% { transform: translate(-105%, -105%) rotate(0deg); }
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-3deg); }
+  50%  { transform: rotate(3deg); }
+  75%  { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
 }
 
 /* classe aplicada durante shuffle */
@@ -703,7 +706,7 @@
   padding: 6px 14px;
   border-radius: 10px;
 
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
   font-family: Arial;
 
@@ -716,16 +719,18 @@
   background: rgb(37, 37, 37);
   color: white;
 
-  padding: 6px 14px;
+  padding: 4px 8px;
   border-radius: 10px;
 
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
   font-family: Arial;
 
   border: 1px solid rgb(0, 151, 20);
-  position: absolute;
-  left: 225px;
+
+  position: fixed;   /* 🔥 fixa na tela */
+  left: 15px;        /* 🔥 15px da borda */
+  top: 12px;         /* alinhado com topbar */
 }
 
 .hand-inner {
@@ -754,34 +759,34 @@
   transform: translate(-50%, -50%);
 }
 #audioControls{
-  position:absolute;
-  right:135px;
-
-  /* 🔥 distância abaixo da spectatorBox */
-  top:95px;
-
   display:flex;
   flex-direction:column;
-  gap:1px;
+  align-items:center;   /* ⭐ centraliza */
+  gap:6px;
 
-  z-index:3000;
+  width:120px;
 }
 
 #volumeSlider{
-  width: 50px;
-  accent-color: rgb(0, 255, 120);
-  cursor: pointer;
+  width:70px;
+  accent-color: rgb(0,255,120);
+  cursor:pointer;
 }
 
 
 #audioControls button{
   background:#111;
   color:white;
+
   border:1px solid #555;
-  padding:6px 15px;
+
+  width:50px;         /* ⭐ menor */
+  padding:5px 0;
+
   border-radius:30px;
   cursor:pointer;
-  font-size:10px;
+
+  font-size:9px;
 }
 
 #audioControls button:hover{
@@ -815,13 +820,13 @@
 
 #contactBtn{
   position: fixed;
-  bottom: 75px;
-  right: 20px;
+  bottom: 80px;
+  right: 15px;   /* 🔥 alinhado com os outros */
 
-  min-width: 95px;
-  height: 36px;
+  min-width: 70px;
+  height: 26px;
 
-  font-size: 12px;
+  font-size: 11px;
   font-weight: bold;
 
   border-radius: 10px;
@@ -885,10 +890,10 @@
     border-radius: 8px;
   }
 
-  .topbox,
   #tempoStatus{
-    font-size: 9px;
-    padding: 4px 8px;
+    position: fixed;
+    top: 10px;
+    right: 15px;     /* 🔥 colado na direita */
   }
 
 }
@@ -1126,18 +1131,18 @@ body{
 <!-- ===================== -->
 <!-- DECK ANCHORS (MANTÉM!) -->
 
-<div class="anchor" id="deckA" style="left:655px; top:567px;"></div>
-<div class="anchor" id="deckM" style="left:738px; top:567px;"></div>
-<div class="anchor" id="deckD" style="left:820px; top:567px;"></div>
-<div class="anchor" id="deckG" style="left:905px; top:567px;"></div>
-<div class="anchor" id="deckP" style="left:406px; top:567px;"></div>
-<div class="anchor" id="deckT" style="left:100px; top:320px;"></div>
+<div class="anchor" id="deckA" style="left:579px; top:462px;"></div>
+<div class="anchor" id="deckM" style="left:663px; top:462px;"></div>
+<div class="anchor" id="deckD" style="left:748px; top:462px;"></div>
+<div class="anchor" id="deckG" style="left:832px; top:462px;"></div>
+<div class="anchor" id="deckP" style="left:332px; top:462px;"></div>
+<div class="anchor" id="deckT" style="left:20px; top:320px;"></div>
 
-<div class="anchor" id="deckA_red" style="left:586px; top:195px;"></div>
-<div class="anchor" id="deckM_red" style="left:502px; top:195px;"></div>
-<div class="anchor" id="deckD_red" style="left:419px; top:195px;"></div>
-<div class="anchor" id="deckG_red" style="left:335px; top:195px;"></div>
-<div class="anchor" id="deckP_red" style="left:833px; top:195px;"></div>
+<div class="anchor" id="deckA_red" style="left:512px; top:90px;"></div>
+<div class="anchor" id="deckM_red" style="left:428px; top:90px;"></div>
+<div class="anchor" id="deckD_red" style="left:344px; top:90px;"></div>
+<div class="anchor" id="deckG_red" style="left:258px; top:90px;"></div>
+<div class="anchor" id="deckP_red" style="left:760px; top:90px;"></div>
 
 
 <!-- ===================== -->
