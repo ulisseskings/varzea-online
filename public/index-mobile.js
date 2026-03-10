@@ -176,6 +176,28 @@ let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
 
+let moveQueue = [];
+let moveScheduled = false;
+
+function processMoveQueue(){
+
+  moveQueue.forEach(move => {
+
+    const anchor = document.getElementById(move.anchor);
+    if(!anchor) return;
+
+    anchor.style.left = move.x + "px";
+    anchor.style.top  = move.y + "px";
+
+  });
+
+  applyAnchors();
+
+  moveQueue = [];
+  moveScheduled = false;
+
+}
+
 function applyAnchors(){
   document.querySelectorAll(".piece").forEach(piece=>{
     const anchor = document.getElementById(piece.dataset.anchor);
@@ -213,22 +235,25 @@ function scaleBoard(){
   const baseWidth  = 1152;
   const baseHeight = 658;
 
-  const screenWidth  = window.innerWidth;
   const topbarHeight = document.getElementById("topbar").offsetHeight;
-  const screenHeight = window.innerHeight - topbarHeight;
 
-  const scaleX = screenWidth  / baseWidth;
-  const scaleY = screenHeight / baseHeight;
+  const handHeight = 90; // altura da mão azul
+  const safeBottom = 20; // margem de segurança
 
-  const scale = Math.min(scaleX, scaleY); 
+  const availableWidth  = window.innerWidth;
+  const availableHeight = window.innerHeight - topbarHeight - handHeight - safeBottom;
 
+  const scaleX = availableWidth  / baseWidth;
+  const scaleY = availableHeight / baseHeight;
 
-  if (playerRole === "red") {
+  const scale = Math.min(scaleX, scaleY);
+
+  if(playerRole === "red"){
     board.style.transform =
-      `translateX(-50%) rotate(180deg) scale(${scale})`;
-  } else {
+      `translate(-50%, -50%) rotate(180deg) scale(${scale})`;
+  }else{
     board.style.transform =
-      `translateX(-50%) scale(${scale})`;
+      `translate(-50%, -50%) scale(${scale})`;
   }
 
 }
@@ -817,9 +842,18 @@ document.querySelectorAll(".piece").forEach(piece => {
 
     const anchor = document.getElementById(this.dataset.anchor);
     if(anchor){
-      anchor.style.left = x + "px";
-      anchor.style.top  = y + "px";
-      applyAnchors();
+    moveQueue.push({
+      anchor: this.dataset.anchor,
+      x,
+      y
+    });
+
+    if(!moveScheduled){
+
+      moveScheduled = true;
+
+      requestAnimationFrame(processMoveQueue);
+
     }
 
   }, { passive:false });
