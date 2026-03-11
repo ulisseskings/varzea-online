@@ -504,12 +504,13 @@ socket.on("createRoom", ({ name, role }) => {
     },
     twists:[],
     tokens:[],
-    decks: JSON.parse(JSON.stringify(decks)),
+    decks: createShuffledDecks(),
     subTokens:{},
     blueConnected:false,
     redConnected:false,
     spectators:[]
   };
+
 
   // 🔥 ENTRA NA SALA
   socket.role = role;
@@ -649,10 +650,7 @@ socket.on("restartMatch", ()=>{
 
   if(!room) return;
 
-  room.decks = JSON.parse(JSON.stringify(decks));
-  Object.keys(room.decks).forEach(type=>{
-    shuffle(room.decks[type]);
-  });
+  room.decks = createShuffledDecks();
 
   room.hands.blue = [];
   room.hands.red  = [];
@@ -697,40 +695,35 @@ socket.on("restartMatch", ()=>{
     COMPRAR CARTA
   ================================ */
 
-  socket.on("drawCard", (deckType) => {
+socket.on("drawCard", (deckType) => {
 
-    const room = rooms[socket.roomCode];
-    if(!room) return;
+  const room = rooms[socket.roomCode];
+  if(!room) return;
 
-    const deck = room.decks[deckType];
-    if(!deck || deck.length === 0) return;
+  const deck = room.decks[deckType];
+  if(!deck || deck.length === 0) return;
 
-    const rawCard = deck.pop();
+  const index = Math.floor(Math.random() * deck.length);
+  const rawCard = deck.splice(index,1)[0];
 
-    const card = {
-      ...rawCard,
-      id: Date.now() + Math.random()
-    };
+  const card = {
+    ...rawCard,
+    id: Date.now() + Math.random()
+  };
 
-    if(socket.role === "blue"){
-      room.hands.blue.push(card);
-      socket.emit("yourHand", room.hands.blue);
-      io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
-    }
+  if(socket.role === "blue"){
+    room.hands.blue.push(card);
+    socket.emit("yourHand", room.hands.blue);
+  }
 
-    if(socket.role === "red"){
-      room.hands.red.push(card);
-      socket.emit("yourHand", room.hands.red);
-      io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+  if(socket.role === "red"){
+    room.hands.red.push(card);
+    socket.emit("yourHand", room.hands.red);
+  }
 
-    }
+  io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
 
-        io.to(socket.roomCode).emit("syncHands", {
-      blue: room.hands.blue,
-      red: room.hands.red
-    });
-
-  });
+});
 
   socket.on("shuffleDeck", (deckType) => {
 
@@ -780,3 +773,18 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log("Servidor rodando na porta:", PORT);
 });
+
+function createShuffledDecks(){
+
+  const newDecks = {};
+
+  Object.keys(decks).forEach(type => {
+
+    newDecks[type] = [...decks[type]];
+
+    shuffle(newDecks[type]);
+
+  });
+
+  return newDecks;
+}

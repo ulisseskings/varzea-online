@@ -36,9 +36,28 @@ if(savedSfx !== null){
     musicBtn.innerText = musicEnabled ? "🎵 ON" : "🎵 OFF";
   }
 
+  const sfxBtn = document.getElementById("sfxToggle");
+
+  if(sfxBtn){
+    sfxBtn.innerText = sfxEnabled ? "🔊 ON" : "🔇 OFF";
+  }
+
   const slider = document.getElementById("volumeSlider");
+
   if(slider){
+
     slider.value = currentVolume;
+
+    slider.addEventListener("input", ()=>{
+
+      currentVolume = parseFloat(slider.value);
+
+      bgMusic.volume = currentVolume;
+
+      sessionStorage.setItem("musicVolume", currentVolume);
+
+    });
+
   }
 
 });
@@ -59,7 +78,10 @@ function positionDecks(){
 
 }
 
-window.addEventListener("load", positionDecks)
+window.addEventListener("load", ()=>{
+  positionDecks();
+  positionSlots();
+});
 
 function startMusicOnFirstInteraction(){
 
@@ -112,6 +134,17 @@ document.getElementById("musicToggle")
 
 });
 
+document.getElementById("sfxToggle")
+?.addEventListener("click", ()=>{
+
+  sfxEnabled = !sfxEnabled;
+
+  sessionStorage.setItem("sfxEnabled", sfxEnabled);
+
+  document.getElementById("sfxToggle").innerText =
+    sfxEnabled ? "🔊 ON" : "🔇 OFF";
+
+});
 
 
 const socket = io({
@@ -181,6 +214,38 @@ function applyAnchors(){
   });
 }
 
+function positionSlots(){
+
+  document.querySelectorAll(".slot-pile").forEach(slot=>{
+
+    const anchorId = slot.dataset.anchor;
+    const anchor = document.getElementById(anchorId);
+
+    if(!anchor) return;
+
+    slot.style.left = anchor.style.left;
+    slot.style.top  = anchor.style.top;
+
+    slot.style.transform = "translate(-50%, -50%)";
+
+  });
+
+}
+
+const slotPositionsSecondHalf = {
+
+  A: {left: "783px", top: "370px"},
+  M: {left: "626px", top: "370px"},
+  D: {left: "464px", top: "370px"},
+  G: {left: "305px", top: "370px"},
+
+  A_red: {left: "344px", top: "235px"},
+  M_red: {left: "502px", top: "235px"},
+  D_red: {left: "663px", top: "235px"},
+  G_red: {left: "823px", top: "235px"}
+};
+
+
 // ===========================
 // 🔥 CACHE DE ELEMENTOS FIXOS
 // ===========================
@@ -219,7 +284,9 @@ function scaleBoard(){
   const scaleX = availableWidth  / baseWidth;
   const scaleY = availableHeight / baseHeight;
 
-  const scale = Math.min(scaleX, scaleY);
+  let scale = Math.min(scaleX, scaleY);
+
+  scale *= 1.4; // ⭐ aumenta o tabuleiro em 15%
 
   if(playerRole === "red"){
     board.style.transform =
@@ -254,6 +321,8 @@ socket.emit("reconnectRoom", {
 
 // 4️⃣ Mostra código
   roomCodeBoxEl.innerText = "Sala: " + roomCode;
+
+  roomCodeBoxEl.addEventListener("click", copyRoomCode);
 
 
 if(roomCode && playerRole === "spectator"){
@@ -331,10 +400,7 @@ let hand_red = [];
 /* EMBARALHAR TODOS OS DECKS NO INÍCIO */
 
 function shuffleAllDecks(){
-  Object.keys(decks).forEach(type=>{
-  });
-
-  console.log("✅ Todos os decks foram embaralhados!");
+  console.log("Decks sincronizados pelo servidor.");
 }
 
 
@@ -448,9 +514,13 @@ function updateHandCounters(){
   const totalBlue =
     blue.A + blue.M + blue.D + blue.G;
 
-  document.getElementById("counter_blue").innerHTML =
-    `A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}<br>`+
-    `Total: ${totalBlue}`;
+    document.getElementById("counter_blue").innerHTML =
+    `<span style="font-size:16px;font-weight:bold">
+    A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}
+    </span><br>
+    <span style="font-size:16px">
+    Total: ${totalBlue}/13
+    </span>`;
 
   // Vermelho
   const red = countTypes(hand_red);
@@ -458,9 +528,13 @@ function updateHandCounters(){
   const totalRed =
     red.A_red + red.M_red + red.D_red + red.G_red;
 
-  document.getElementById("counter_red").innerHTML =
-    `A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}<br>`+
-    `Total: ${totalRed}`;
+    document.getElementById("counter_red").innerHTML =
+    `<span style="font-size:16px;font-weight:bold">
+    A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}
+    </span><br>
+    <span style="font-size:16px">
+    Total: ${totalRed}/13
+    </span>`;
 }
 /* ===================== */
 /* BLOQUEIO DE JOGADA ATÉ TER 13 CARTAS */
@@ -536,16 +610,28 @@ function renderHand() {
       if(groups[type].length===0) return;
 
 
-    groups[type].sort((a,b) => (a.value ?? 0) - (b.value ?? 0));
-
       const groupDiv = document.createElement("div");
       groupDiv.className="hand-group";
 
-      groups[type].forEach(card=>{
+      const sortedCards = isRedHand
+        ? [...groups[type]].sort((a,b)=>b.value-a.value) // vermelho decrescente
+        : [...groups[type]].sort((a,b)=>a.value-b.value); // azul crescente
+
+      sortedCards.forEach((card,i)=>{
 
         const img = document.createElement("img");
         img.src = card.front;
         img.className="hand-card";
+
+        // ⭐ leque visível
+        img.style.marginLeft = i === 0 ? "0px" : "-25px";
+
+        // ⭐ ordem visual correta
+        if(isRedHand){
+          img.style.zIndex = sortedCards.length - i; // invertido
+        }else{
+          img.style.zIndex = i + 1;
+        }
 
         let touchCard = null;
 
@@ -607,11 +693,21 @@ function renderHand() {
           // 🎯 jogar no slot
           if(slot){
 
-            socket.emit("playCardToSlot", {
-              cardId: card.id,
-              slot: slot.dataset.slot
-            });
+          const player = playerRole === "blue" ? "blue" : "red";
 
+          const currentHand = player === "blue" ? hand : hand_red;
+
+          const totalAMDG = currentHand.filter(c =>
+            c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
+            c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
+          ).length;
+
+          // só bloqueia se tiver menos de 13
+          if(totalAMDG < 13 && mustRefillHand(player)){
+            showJoinMessage("⚠️ Complete 13 cartas antes de jogar.");
+            renderHand();
+            return;
+          }
           }
 
           clearHighlight();
@@ -625,11 +721,6 @@ function renderHand() {
 
         }, { passive:false });
         
-        if(isRedHand){
-          img.style.zIndex = groups[type].length - groups[type].indexOf(card);
-        } else {
-          img.style.zIndex = groups[type].indexOf(card);
-        }
 
         groupDiv.appendChild(img);
       });
@@ -732,16 +823,52 @@ slot.addEventListener("touchstart",(e)=>{
 
 document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
-  wrapper.addEventListener("touchstart", function(e){
+  wrapper.addEventListener("click", function(e){
 
     e.preventDefault();
 
     const deck = wrapper.querySelector("[data-deck]");
     if(!deck) return;
 
-    socket.emit("drawCard", deck.dataset.deck);
+    const deckType = deck.dataset.deck;
+
+    // 👁 espectador não pode comprar
+    if(playerRole === "spectator") return;
+
+    // 🔵 jogador azul só pode usar decks azuis
+    // 🔵 jogador azul
+    if(playerRole === "blue"){
+      if(deckType.endsWith("_red")) return;
+    }
+
+    // 🔴 jogador vermelho
+    if(playerRole === "red"){
+      if(
+        deckType === "A" ||
+        deckType === "M" ||
+        deckType === "D" ||
+        deckType === "G" ||
+        deckType === "P"
+      ) return;
+}
+
+    const player = playerRole === "blue" ? "blue" : "red";
+
+    if(!mustRefillHand(player)){
+      return;
+    }
+
+    socket.emit("drawCard", deckType);
 
   }, { passive:false });
+  
+    if(socket.role === "blue"){
+    if(room.hands.blue.length >= 13) return;
+  }
+
+    if(socket.role === "blue"){
+    if(room.hands.blue.length >= 13) return;
+  }
 
 });
 
@@ -1349,6 +1476,12 @@ socket.on("secondHalfStarted", ()=>{
 
   firstHalfEnded = true;
 
+  // 🔥 limpa mãos locais (cartas voltam pro deck no servidor)
+  hand = [];
+  hand_red = [];
+
+renderHand();
+
   tempoStatusEl.innerText = "2º Tempo";
 
   // 🏟️ trocar campo
@@ -1359,7 +1492,7 @@ socket.on("secondHalfStarted", ()=>{
   // 🔁 mover slots
   Object.keys(slotPositionsSecondHalf).forEach(slotId => {
 
-    const anchor = document.getElementById(slotId);
+    const anchor = document.getElementById("slot" + slotId);
     if(!anchor) return;
 
     anchor.style.left = slotPositionsSecondHalf[slotId].left;
@@ -1373,7 +1506,11 @@ socket.on("secondHalfStarted", ()=>{
     }
 
   });
+    positionSlots();
+  
     updateEmptyDeckVisuals();
+
+    shuffleAllDecks();
 });
 
   socket.on("syncDeckSizes", (serverDecks)=>{
@@ -1411,20 +1548,6 @@ function showJoinMessage(text){
     box.style.display = "none";
   },3000);
 }
-const slotPositionsSecondHalf = {
-
-  // Azul vai para cima
-  slotA: {left: "743px", top: "320px"},
-  slotM: {left: "586px", top: "320px"},
-  slotD: {left: "424px", top: "320px"},
-  slotG: {left: "265px", top: "320px"},
-
-  // Vermelho vai para baixo
-  slotA_red: {left: "344px", top: "235px"},
-  slotM_red: {left: "502px", top: "235px"},
-  slotD_red: {left: "663px", top: "235px"},
-  slotG_red: {left: "823px", top: "235px"}
-};
 
 document.getElementById("contactBtn")
   .addEventListener("click", ()=>{
@@ -1526,4 +1649,35 @@ window.addEventListener("load", () => {
   document.getElementById("restartBtnMobile")
     ?.addEventListener("click", () => openModal("restart"));
 
+});
+
+function copyRoomCode(){
+
+  if(!roomCode) return;
+
+  navigator.clipboard.writeText(roomCode).then(()=>{
+
+    showJoinMessage("📋 Código da sala copiado!");
+
+  }).catch(()=>{
+
+    showJoinMessage("❌ Não foi possível copiar.");
+
+  });
+
+}
+
+document.getElementById("manualBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("manual");
+});
+
+document.getElementById("guiaBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("guia");
+});
+
+document.getElementById("tempoBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("tempo");
 });
