@@ -6,6 +6,7 @@ let bgMusic;
 let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
+let selectedSlotCard = null;
 
 // 🔥 carregar preferências salvas
 window.addEventListener("DOMContentLoaded", () => {
@@ -391,12 +392,11 @@ console.log("Jogador entrou como:", playerRole);
 /* ===================== */
 /* DADOS */
 let draggedFreeCard = null;
-let selectedCard = null;
 
 let hand = [];
 let hand_red = [];
 
-
+let selectedCard = null;
 /* ===================== */
 /* EMBARALHAR TODOS OS DECKS NO INÍCIO */
 
@@ -637,20 +637,22 @@ function renderHand() {
 
         let touchCard = null;
 
-      img.addEventListener("click", function(e){
+img.addEventListener("touchstart", function(e){
 
-        e.preventDefault();
+  e.preventDefault();
 
-        selectedCard = card;
+  selectedCard = card;
 
-        highlightSlot(card.type);
+  touchCard = true;
 
-        document.querySelectorAll(".hand-card")
-          .forEach(c => c.classList.remove("selected-card"));
+  highlightSlot(card.type);
 
-        this.classList.add("selected-card");
+  document.querySelectorAll(".hand-card")
+    .forEach(c => c.classList.remove("selected-card"));
 
-      });
+  this.classList.add("selected-card");
+
+});
 
         
 
@@ -677,7 +679,16 @@ function renderHand() {
           if(!touchCard) return;
 
           const touch = e.changedTouches[0];
-          const slot = cardTouchesSlot(this);
+          this.style.pointerEvents = "none";
+
+          const elementBelow = document.elementFromPoint(
+            touch.clientX,
+            touch.clientY
+          );
+
+          this.style.pointerEvents = "auto";
+
+          const slot = elementBelow?.closest(".slot-pile");
 
           const deck = getTargetDeck(
             touch.clientX,
@@ -797,7 +808,43 @@ function renderSlot(type) {
   slotEl.style.backgroundImage="none";
 
   pile.forEach((card,i)=>{
-    const fan=document.createElement("img");
+    const fan = document.createElement("img");
+
+fan.src = card.front;
+fan.className = "fan-card";
+fan.dataset.slot = type;
+fan.dataset.cardId = card.id;
+
+fan.addEventListener("touchstart", function(e){
+
+  e.preventDefault();
+
+  if(selectedSlotCard === card.id){
+
+    socket.emit("returnCardFromSlot", {
+      cardId: card.id,
+      slot: type
+    });
+
+    selectedSlotCard = null;
+
+    document.querySelectorAll(".fan-card")
+      .forEach(c => c.classList.remove("selected-card"));
+
+    return;
+  }
+
+  selectedSlotCard = card.id;
+
+  highlightSlot(card.type);
+
+  document.querySelectorAll(".fan-card")
+    .forEach(c => c.classList.remove("selected-card"));
+
+  this.classList.add("selected-card");
+
+}, { passive:false });
+
     fan.src=card.front;
     fan.className="fan-card";
     fan.dataset.slot=type;
@@ -822,21 +869,6 @@ function renderSlot(type) {
 /* DUPLO CLIQUE */
 document.querySelectorAll(".slot-pile").forEach(slot=>{
   let tapTimer = null;
-
-slot.addEventListener("click", ()=>{
-
-  if(!selectedCard) return;
-
-  socket.emit("playCardToSlot", {
-    cardId: selectedCard.id,
-    slot: slot.dataset.slot
-  });
-
-  selectedCard = null;
-
-  clearHighlight();
-
-});
 
 slot.addEventListener("touchstart",(e)=>{
   e.preventDefault();
@@ -863,7 +895,7 @@ slot.addEventListener("touchstart",(e)=>{
 
 document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
-  wrapper.addEventListener("click", function(e){
+  wrapper.addEventListener("touchstart", function(e){
 
     e.preventDefault();
 
@@ -902,19 +934,6 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
       }
 
     }
-    if(selectedCard){
-
-    socket.emit("returnCardToDeck", {
-      cardId: selectedCard.id,
-      deck: selectedCard.type
-    });
-
-    selectedCard = null;
-
-    clearHighlight();
-
-    return;
-  }
 
     socket.emit("drawCard", deckType);
 
@@ -934,32 +953,7 @@ function getTargetDeck(x, y){
   return elementBelow.closest("[data-deck]");
 }
 
-function cardTouchesSlot(cardEl){
 
-  const cardRect = cardEl.getBoundingClientRect();
-
-  const slots = document.querySelectorAll(".slot-pile");
-
-  for(const slot of slots){
-
-    const slotRect = slot.getBoundingClientRect();
-
-    const padding = 40;
-
-    const overlap =
-      cardRect.left < slotRect.right + padding &&
-      cardRect.right > slotRect.left - padding &&
-      cardRect.top < slotRect.bottom + padding &&
-      cardRect.bottom > slotRect.top - padding;
-
-    if(overlap){
-      return slot;
-    }
-
-  }
-
-  return null;
-}
 
 
 function getCorrectPoint(clientX, clientY){
@@ -1389,6 +1383,7 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
   renderHand();
 });
 socket.on("updateBoardSlots", (serverSlots)=>{
+  selectedSlotCard = null;
   playSFX(SOUNDS.throw);
   slotPiles = serverSlots;
 

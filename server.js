@@ -490,6 +490,33 @@ socket.on("rotateTwist", ({id})=>{
 
   });
 
+socket.on("returnCardFromSlot", ({cardId, slot})=>{
+
+  const room = rooms[socket.roomCode];
+  if(!room) return;
+
+  const pile = room.boardSlots[slot];
+  if(!pile) return;
+
+  const index = pile.findIndex(c=>c.id === cardId);
+  if(index === -1) return;
+
+  const card = pile.splice(index,1)[0];
+
+  if(socket.role === "blue"){
+    room.hands.blue.push(card);
+    socket.emit("yourHand", room.hands.blue);
+  }
+
+  if(socket.role === "red"){
+    room.hands.red.push(card);
+    socket.emit("yourHand", room.hands.red);
+  }
+
+  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+
+});
+
 socket.on("createRoom", ({ name, role }) => {
 
   const roomCode = generateRoomCode();
