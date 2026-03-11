@@ -286,7 +286,7 @@ function scaleBoard(){
 
   let scale = Math.min(scaleX, scaleY);
 
-  scale *= 1.4; // ⭐ aumenta o tabuleiro em 15%
+  scale *= 1.6; // ⭐ aumenta o tabuleiro em 15%
 
   if(playerRole === "red"){
     board.style.transform =
@@ -701,7 +701,6 @@ function renderHand() {
 
           }
 
-          // 🎯 jogar no slot
           if(slot){
 
             const player = playerRole === "blue" ? "blue" : "red";
@@ -723,6 +722,12 @@ function renderHand() {
               }
 
             }
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: slot.dataset.slot
+            });
+
           }
 
           clearHighlight();
