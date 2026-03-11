@@ -183,6 +183,8 @@ let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
 
+let pinchZoom = 1;
+let pinchStartDist = null;
 let moveQueue = [];
 let moveScheduled = false;
 
@@ -204,6 +206,18 @@ function processMoveQueue(){
   moveScheduled = false;
 
 }
+
+document.addEventListener("touchstart", function(e){
+
+  const clickable = e.target.closest(
+    ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece"
+  );
+
+  if(!clickable){
+    clearSelections();
+  }
+
+});
 
 function applyAnchors(){
   document.querySelectorAll(".piece").forEach(piece=>{
@@ -285,7 +299,7 @@ function scaleBoard(){
   const scaleX = availableWidth  / baseWidth;
   const scaleY = availableHeight / baseHeight;
 
-  let scale = Math.min(scaleX, scaleY);
+  let scale = Math.min(scaleX, scaleY) * pinchZoom;
 
   scale *= 1.6; // ⭐ aumenta o tabuleiro em 15%
 
@@ -298,6 +312,41 @@ function scaleBoard(){
   }
 
 }
+board.addEventListener("touchstart", (e)=>{
+
+  if(e.touches.length === 2){
+
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+
+    pinchStartDist = Math.sqrt(dx*dx + dy*dy);
+
+  }
+
+},{ passive:false });
+
+
+board.addEventListener("touchmove", (e)=>{
+
+  if(e.touches.length !== 2 || !pinchStartDist) return;
+
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  const zoom = dist / pinchStartDist;
+
+  pinchZoom = Math.min(Math.max(zoom, 1), 2);
+
+  scaleBoard();
+
+},{ passive:false });
+
+
+board.addEventListener("touchend", ()=>{
+  pinchStartDist = null;
+});
 
 window.addEventListener("resize", scaleBoard);
 window.addEventListener("load", scaleBoard);
@@ -1755,3 +1804,15 @@ document.getElementById("tempoBtn")
   ?.addEventListener("click", ()=>{
     openModal("tempo");
 });
+
+function clearSelections(){
+
+  selectedCard = null;
+  selectedSlotCard = null;
+
+  document.querySelectorAll(".selected-card")
+    .forEach(el => el.classList.remove("selected-card"));
+
+  clearHighlight();
+
+}
