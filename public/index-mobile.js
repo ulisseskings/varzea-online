@@ -568,6 +568,7 @@ function mustRefillHand(player){
 let firstHalfEnded = false;
 
 
+
 function renderHand() {
 
     const handDiv = handInnerBlue;
@@ -643,24 +644,21 @@ function renderHand() {
 
           highlightSlot(card.type);
 
-          this.style.position = "fixed";
-          this.style.zIndex = 99999;
-          this.style.opacity = "0.8";
 
         }, { passive:false });
 
-        img.addEventListener("touchmove", function(e){
+        
 
-          if(!touchCard) return;
 
-          const touch = e.touches[0];
 
-          const p = getCorrectPoint(touch.clientX, touch.clientY);
 
-          this.style.left = (p.x - 45) + "px";
-          this.style.top  = (p.y - 60) + "px";
 
-        }, { passive:false });
+
+
+
+
+
+
 
         img.addEventListener("touchend", function(e){
 
@@ -674,14 +672,27 @@ function renderHand() {
           if(!touchCard) return;
 
           const touch = e.changedTouches[0];
-          const elementBelow =
-            document.elementFromPoint(touch.clientX, touch.clientY);
+          const slot = cardTouchesSlot(this);
 
-          const slot = elementBelow?.closest(".slot-pile");
-          const deck = elementBelow?.closest("[data-deck]");
+          const deck = getTargetDeck(
+            touch.clientX,
+            touch.clientY
+          );
 
           // 🔁 devolver ao deck
           if(deck && deck.dataset.deck === card.type){
+
+            // devolver para mão
+          const handZone = document.elementFromPoint(
+            touch.clientX,
+            touch.clientY
+          )?.closest("#hand, #hand_red");
+
+          if(handZone){
+            socket.emit("returnCardToHand", {
+              cardId: card.id
+            });
+          }
 
             socket.emit("returnCardToDeck", {
               cardId: card.id,
@@ -693,21 +704,25 @@ function renderHand() {
           // 🎯 jogar no slot
           if(slot){
 
-          const player = playerRole === "blue" ? "blue" : "red";
+            const player = playerRole === "blue" ? "blue" : "red";
 
-          const currentHand = player === "blue" ? hand : hand_red;
+            const currentHand = player === "blue" ? hand : hand_red;
 
-          const totalAMDG = currentHand.filter(c =>
-            c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
-            c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
-          ).length;
+            const totalAMDG = currentHand.filter(c =>
+              c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
+              c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
+            ).length;
 
-          // só bloqueia se tiver menos de 13
-          if(totalAMDG < 13 && mustRefillHand(player)){
-            showJoinMessage("⚠️ Complete 13 cartas antes de jogar.");
-            renderHand();
-            return;
-          }
+            // ⭐ cartas de pênalti podem sempre ser jogadas
+            if(card.type !== "P" && card.type !== "P_red"){
+
+              if(totalAMDG < 13 && mustRefillHand(player)){
+                showJoinMessage("⚠️ Complete 13 cartas antes de jogar.");
+                renderHand();
+                return;
+              }
+
+            }
           }
 
           clearHighlight();
@@ -854,21 +869,20 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
     const player = playerRole === "blue" ? "blue" : "red";
 
-    if(!mustRefillHand(player)){
-      return;
+    // ⭐ cartas de pênalti podem sempre ser compradas
+    if(deckType !== "P" && deckType !== "P_red"){
+
+      if(!mustRefillHand(player)){
+        return;
+      }
+
     }
 
     socket.emit("drawCard", deckType);
 
   }, { passive:false });
   
-    if(socket.role === "blue"){
-    if(room.hands.blue.length >= 13) return;
-  }
 
-    if(socket.role === "blue"){
-    if(room.hands.blue.length >= 13) return;
-  }
 
 });
 
@@ -880,6 +894,33 @@ function getTargetDeck(x, y){
   const elementBelow = document.elementFromPoint(x, y);
   if(!elementBelow) return null;
   return elementBelow.closest("[data-deck]");
+}
+
+function cardTouchesSlot(cardEl){
+
+  const cardRect = cardEl.getBoundingClientRect();
+
+  const slots = document.querySelectorAll(".slot-pile");
+
+  for(const slot of slots){
+
+    const slotRect = slot.getBoundingClientRect();
+
+    const padding = 40;
+
+    const overlap =
+      cardRect.left < slotRect.right + padding &&
+      cardRect.right > slotRect.left - padding &&
+      cardRect.top < slotRect.bottom + padding &&
+      cardRect.bottom > slotRect.top - padding;
+
+    if(overlap){
+      return slot;
+    }
+
+  }
+
+  return null;
 }
 
 
