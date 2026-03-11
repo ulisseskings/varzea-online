@@ -105,9 +105,15 @@ function playSFX(src){
     audioCache[src] = new Audio(src);
   }
 
-  const sound = audioCache[src].cloneNode();
+function playSFX(src){
+
+  if(!sfxEnabled) return;
+
+  const sound = new Audio(src);
   sound.volume = 0.5;
   sound.play();
+
+};
 }
   const SOUNDS = {
   drag: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/dragtoken_th8vbx.mp3",
@@ -207,7 +213,7 @@ function processMoveQueue(){
 
 }
 
-document.addEventListener("touchstart", function(e){
+board.addEventListener("touchstart", (e)=>{
 
   const clickable = e.target.closest(
     ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece"
@@ -283,36 +289,51 @@ const handInnerRed  = handRedEl.querySelector(".hand-inner");
 const slotPileEls = document.querySelectorAll(".slot-pile");
 const deckWrapperEls = document.querySelectorAll(".deck-wrapper");
 
-function scaleBoard(){
+function updateBoardTransform(){
 
   const baseWidth  = 1152;
   const baseHeight = 658;
 
   const topbarHeight = document.getElementById("topbar").offsetHeight;
-
   const handHeight = 90;
   const safeBottom = 20;
 
   const availableWidth  = window.innerWidth;
   const availableHeight = window.innerHeight - topbarHeight - handHeight - safeBottom;
 
-  const scaleX = availableWidth  / baseWidth;
+  const scaleX = availableWidth / baseWidth;
   const scaleY = availableHeight / baseHeight;
 
-  let scale = Math.min(scaleX, scaleY) * pinchZoom;
-
-  scale *= 1.6; // ⭐ aumenta o tabuleiro em 15%
+  let scale = Math.min(scaleX, scaleY);
+  scale *= 1.6 * pinchZoom;
 
   if(playerRole === "red"){
     board.style.transform =
-      `translate(-50%, -50%) scale(${scale}) rotate(180deg)`;
+      `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale}) rotate(180deg)`;
   }else{
     board.style.transform =
-      `translate(-50%, -50%) scale(${scale})`;
+      `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;
   }
 
 }
+
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let startX = 0;
+let startY = 0;
+
+
 board.addEventListener("touchstart", (e)=>{
+
+  if(e.touches.length === 1){
+
+    isPanning = true;
+
+    startX = e.touches[0].clientX - panX;
+    startY = e.touches[0].clientY - panY;
+
+  }
 
   if(e.touches.length === 2){
 
@@ -323,33 +344,56 @@ board.addEventListener("touchstart", (e)=>{
 
   }
 
-},{ passive:false });
+},{passive:false});
 
 
 board.addEventListener("touchmove", (e)=>{
 
-  if(e.touches.length !== 2 || !pinchStartDist) return;
+  if(e.touches.length === 2){
 
-  const dx = e.touches[0].clientX - e.touches[1].clientX;
-  const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
 
-  const dist = Math.sqrt(dx*dx + dy*dy);
+    const dist = Math.sqrt(dx*dx + dy*dy);
 
-  const zoom = dist / pinchStartDist;
+    if(pinchStartDist){
 
-  pinchZoom = Math.min(Math.max(zoom, 1), 2);
+      const ratio = dist / pinchStartDist;
 
-  scaleBoard();
+      pinchZoom *= ratio;
 
-},{ passive:false });
+      pinchZoom = Math.max(0.5, Math.min(3, pinchZoom));
+
+      pinchStartDist = dist;
+
+      updateBoardTransform();
+
+    }
+
+    return;
+  }
+
+  if(!isPanning) return;
+
+  panX = e.touches[0].clientX - startX;
+  panY = e.touches[0].clientY - startY;
+
+  updateBoardTransform();
+
+},{passive:false});
+
+
+board.addEventListener("touchend", ()=>{
+  isPanning = false;
+});
 
 
 board.addEventListener("touchend", ()=>{
   pinchStartDist = null;
 });
 
-window.addEventListener("resize", scaleBoard);
-window.addEventListener("load", scaleBoard);
+window.addEventListener("resize", updateBoardTransform);
+window.addEventListener("load", updateBoardTransform);
 
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -754,9 +798,18 @@ img.addEventListener("touchstart", function(e){
           )?.closest("#hand, #hand_red");
 
           if(handZone){
+
             socket.emit("returnCardToHand", {
               cardId: card.id
             });
+
+          }else if(deck && deck.dataset.deck === card.type){
+
+            socket.emit("returnCardToDeck", {
+              cardId: card.id,
+              deck: card.type
+            });
+
           }
 
             socket.emit("returnCardToDeck", {
@@ -894,7 +947,7 @@ fan.addEventListener("touchstart", function(e){
 
 }, { passive:false });
 
-    fan.src=card.front;
+
     fan.className="fan-card";
     fan.dataset.slot=type;
 
@@ -1622,14 +1675,14 @@ renderHand();
     anchor.style.top  = slotPositionsSecondHalf[slotId].top;
 
     // 🔥 atualizar também slot-pile visual
-    const pile = document.querySelector(`.slot-pile[data-anchor="${slotId}"]`);
+    const pile = document.querySelector(`.slot-pile[data-slot="${slotId}"]`);
     if(pile){
       pile.style.left = slotPositionsSecondHalf[slotId].left;
       pile.style.top  = slotPositionsSecondHalf[slotId].top;
     }
 
   });
-    positionSlots();
+
   
     updateEmptyDeckVisuals();
 
