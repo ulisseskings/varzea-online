@@ -391,6 +391,7 @@ console.log("Jogador entrou como:", playerRole);
 /* ===================== */
 /* DADOS */
 let draggedFreeCard = null;
+let selectedCard = null;
 
 let hand = [];
 let hand_red = [];
@@ -636,16 +637,20 @@ function renderHand() {
 
         let touchCard = null;
 
-        img.addEventListener("touchstart", function(e){
+      img.addEventListener("click", function(e){
 
-          e.preventDefault();
+        e.preventDefault();
 
-          touchCard = card;
+        selectedCard = card;
 
-          highlightSlot(card.type);
+        highlightSlot(card.type);
 
+        document.querySelectorAll(".hand-card")
+          .forEach(c => c.classList.remove("selected-card"));
 
-        }, { passive:false });
+        this.classList.add("selected-card");
+
+      });
 
         
 
@@ -818,6 +823,21 @@ function renderSlot(type) {
 document.querySelectorAll(".slot-pile").forEach(slot=>{
   let tapTimer = null;
 
+slot.addEventListener("click", ()=>{
+
+  if(!selectedCard) return;
+
+  socket.emit("playCardToSlot", {
+    cardId: selectedCard.id,
+    slot: slot.dataset.slot
+  });
+
+  selectedCard = null;
+
+  clearHighlight();
+
+});
+
 slot.addEventListener("touchstart",(e)=>{
   e.preventDefault();
 
@@ -882,6 +902,19 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
       }
 
     }
+    if(selectedCard){
+
+    socket.emit("returnCardToDeck", {
+      cardId: selectedCard.id,
+      deck: selectedCard.type
+    });
+
+    selectedCard = null;
+
+    clearHighlight();
+
+    return;
+  }
 
     socket.emit("drawCard", deckType);
 
