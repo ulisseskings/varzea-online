@@ -174,7 +174,27 @@ socket.on("syncSpectators", (list)=>{
     return;
   }
 
-  el.innerText = list.join(", ");
+  el.innerText = "\n" + list.join("\n");
+});
+
+socket.on("syncTokens", (tokens)=>{
+
+  setTimeout(()=>{
+
+    Object.keys(tokens).forEach(anchor=>{
+
+      const el = document.getElementById(anchor);
+      if(!el) return;
+
+      el.style.left = tokens[anchor].x + "px";
+      el.style.top  = tokens[anchor].y + "px";
+
+    });
+
+    applyAnchors();
+
+  }, 50);
+
 });
 
 let decks = {}; // cliente não controla decks, apenas evita erro
@@ -208,7 +228,7 @@ function processMoveQueue(){
 board.addEventListener("touchstart", (e)=>{
 
   const clickable = e.target.closest(
-    ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece"
+  ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .twist-card"
   );
 
   if(!clickable){
@@ -273,6 +293,17 @@ const playerBlueNameEl = document.getElementById("playerBlueName");
 const playerRedNameEl  = document.getElementById("playerRedName");
 
 const playerRole = sessionStorage.getItem("playerRole");
+  if(playerRole === "blue"){
+  document.body.classList.add("blue-view");
+}
+
+if(playerRole === "red"){
+  document.body.classList.add("red-view");
+}
+
+  if(playerRole === "red"){
+  document.body.classList.add("red-player");
+}
 const playerName = sessionStorage.getItem("playerName");
 
 const handInnerBlue = handEl.querySelector(".hand-inner");
@@ -424,9 +455,9 @@ if(roomCode && playerRole === "spectator"){
 
       board.addEventListener("click", (e)=>{
 
-        const rect = board.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+      const p = getCorrectPoint(e.clientX, e.clientY);
+      const x = p.x;
+      const y = p.y;
 
         if(markVisible){
           socket.emit("removeMark");
@@ -470,11 +501,11 @@ if(roomCode && playerRole === "spectator"){
 console.log("Jogador:", playerName, "Role:", playerRole);
 
 if (playerRole !== "blue") {
-  handEl.style.display = "none";
+  handInnerBlue.style.display = "none";
 }
 
 if (playerRole !== "red") {
-  handRedEl.style.display = "none";
+  handInnerRed.style.display = "none";
 }
 
 
@@ -580,55 +611,16 @@ function clearHighlight() {
 }
 
 
-/* ===================== */
-/* CONTAGEM DE CARTAS */
+function highlightTwistDeck(){
 
-function updateHandCounters(){
+  clearHighlight();
 
-  function countTypes(handArray){
-    return {
-      A: handArray.filter(c=>c.type==="A").length,
-      M: handArray.filter(c=>c.type==="M").length,
-      D: handArray.filter(c=>c.type==="D").length,
-      G: handArray.filter(c=>c.type==="G").length,
-      P: handArray.filter(c=>c.type==="P").length,
+  document.querySelector('[data-deck="T"]')
+    ?.closest(".deck-wrapper")
+    ?.classList.add("highlight-zone");
 
-      A_red: handArray.filter(c=>c.type==="A_red").length,
-      M_red: handArray.filter(c=>c.type==="M_red").length,
-      D_red: handArray.filter(c=>c.type==="D_red").length,
-      G_red: handArray.filter(c=>c.type==="G_red").length,
-      P_red: handArray.filter(c=>c.type==="P_red").length,
-    };
-  }
-
-  // Azul
-  const blue = countTypes(hand);
-
-  const totalBlue =
-    blue.A + blue.M + blue.D + blue.G;
-
-    document.getElementById("counter_blue").innerHTML =
-    `<span style="font-size:16px;font-weight:bold">
-    A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}
-    </span><br>
-    <span style="font-size:16px">
-    Total: ${totalBlue}/13
-    </span>`;
-
-  // Vermelho
-  const red = countTypes(hand_red);
-
-  const totalRed =
-    red.A_red + red.M_red + red.D_red + red.G_red;
-
-    document.getElementById("counter_red").innerHTML =
-    `<span style="font-size:16px;font-weight:bold">
-    A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}
-    </span><br>
-    <span style="font-size:16px">
-    Total: ${totalRed}/13
-    </span>`;
 }
+
 /* ===================== */
 /* BLOQUEIO DE JOGADA ATÉ TER 13 CARTAS */
 
@@ -660,7 +652,40 @@ function mustRefillHand(player){
 
 let firstHalfEnded = false;
 
+socket.on("handCounts", (counts)=>{
 
+  console.log("HAND COUNTS RECEBIDO:", counts);
+
+  const blue = counts.blue;
+  const red = counts.red;
+
+  const totalBlue = blue.A + blue.M + blue.D + blue.G;
+  const totalRed  = red.A_red + red.M_red + red.D_red + red.G_red;
+
+  const blueCounter = document.getElementById("counter_blue");
+  const redCounter  = document.getElementById("counter_red");
+
+  if(blueCounter){
+    blueCounter.innerHTML =
+    `<span style="font-size:16px;font-weight:bold">
+    A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}
+    </span><br>
+    <span style="font-size:16px">
+    Total: ${totalBlue}/13
+    </span>`;
+  }
+
+  if(redCounter){
+    redCounter.innerHTML =
+    `<span style="font-size:16px;font-weight:bold">
+    A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}
+    </span><br>
+    <span style="font-size:16px">
+    Total: ${totalRed}/13
+    </span>`;
+  }
+
+});
 
 function renderHand() {
 
@@ -811,11 +836,6 @@ img.addEventListener("touchstart", function(e){
 
           }
 
-            socket.emit("returnCardToDeck", {
-              cardId: card.id,
-              deck: card.type
-            });
-
           }
 
           if(slot){
@@ -879,8 +899,7 @@ if (playerRole === "red") {
 // Espectador não renderiza nenhuma mão
 
 
-  // ✅ atualiza contador sempre
-updateHandCounters();
+
 }
 
 
@@ -1005,6 +1024,28 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
     const deckType = deck.dataset.deck;
 
+    if(deckType === "T"){
+
+      let tapTimer = wrapper.dataset.tapTimer;
+
+      if(tapTimer){
+        clearTimeout(tapTimer);
+
+        wrapper.dataset.tapTimer = "";
+
+        socket.emit("shuffleDeck","T");
+
+        return;
+      }
+
+      wrapper.dataset.tapTimer = setTimeout(()=>{
+        wrapper.dataset.tapTimer = "";
+        socket.emit("drawTwist");
+      },250);
+
+      return;
+    }
+
     // 👁 espectador não pode comprar
     if(playerRole === "spectator") return;
 
@@ -1086,6 +1127,8 @@ function checkDeckEnd(){
   /* ===================== */
   /* MOVER TOKENS LIVREMENTE */
 
+function enablePieceDragging(){
+
 document.querySelectorAll(".piece").forEach(piece => {
 
   const isRedPiece = piece.classList.contains("red");
@@ -1093,7 +1136,7 @@ document.querySelectorAll(".piece").forEach(piece => {
 
   if(playerRole === "spectator") return;
   if(playerRole === "blue" && isRedPiece) return;
-  if(playerRole === "red" && !isRedPiece && !isBall) return;
+  if(playerRole === "red" && !isRedPiece && !isBall && !piece.classList.contains("twist-token")) return;
   if(piece.classList.contains("token27")) return;
 
   piece.dataset.touching = "false";
@@ -1144,13 +1187,15 @@ document.querySelectorAll(".piece").forEach(piece => {
 
     socket.emit("moveToken", {
       anchor: this.dataset.anchor,
-      x: anchor.style.left,
-      y: anchor.style.top
+      x: parseFloat(anchor.style.left),
+      y: parseFloat(anchor.style.top)
     });
 
   });
 
 });
+
+}
 
   const SUB_BACK = "https://i.imgur.com/d6JyQJQ.png";
 
@@ -1227,6 +1272,15 @@ document.querySelectorAll(".piece").forEach(piece => {
   spawnTwistStack();
 
 
+  // salvar posição inicial dos anchors
+document.querySelectorAll(".anchor").forEach(anchor=>{
+  anchor.dataset.initialLeft = anchor.style.left;
+  anchor.dataset.initialTop  = anchor.style.top;
+});
+
+  enablePieceDragging();
+
+
   renderHand();
 
   /* ✅ marca decks vazios logo no início */
@@ -1236,7 +1290,7 @@ document.querySelectorAll(".piece").forEach(piece => {
 function spawnTwistCard(card){
 
   if(document.querySelector(`[data-id="${card.id}"]`)){
-  return;
+    return;
   }
 
   const img = document.createElement("img");
@@ -1257,25 +1311,49 @@ function spawnTwistCard(card){
   img.style.transform =
     `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
 
+let dragging = false;
+let startX = 0;
+let startY = 0;
 
-  /* ===================== */
-  /* 1 CLIQUE = GIRAR */
-  img.addEventListener("click",(e)=>{
+let holdTimer = null;
+let lastTap = 0;
 
-    // evita conflito com dblclick
-    if(e.detail === 1){
-      setTimeout(()=>{
-        if(e.detail === 1){
-          socket.emit("rotateTwist", { id: card.id });
-        }
-      }, 200);
-    }
+/* TOUCH START */
 
-  });
+img.addEventListener("touchstart",(e)=>{
 
-  /* ===================== */
-  /* 2 CLIQUES = ZOOM */
-  img.addEventListener("dblclick", ()=>{
+  const touch = e.touches[0];
+
+  startX = touch.clientX;
+  startY = touch.clientY;
+
+  dragging = false;
+
+  img.classList.add("selected-card");
+  highlightTwistDeck();
+
+  const now = Date.now();
+
+  /* DUPLO TOQUE → GIRAR */
+
+  if(now - lastTap < 250){
+
+    clearTimeout(holdTimer);
+
+    socket.emit("rotateTwist",{ id: card.id });
+
+    lastTap = 0;
+    return;
+
+  }
+
+  lastTap = now;
+
+  /* SEGURAR → ZOOM */
+
+  holdTimer = setTimeout(()=>{
+
+    if(dragging) return;
 
     const overlay = document.getElementById("twistZoomOverlay");
     const zoomImg = document.getElementById("twistZoomImg");
@@ -1283,7 +1361,88 @@ function spawnTwistCard(card){
     zoomImg.src = img.dataset.front;
     overlay.style.display = "flex";
 
+  },1000);
+
+},{passive:false});
+
+/* DRAG */
+
+img.addEventListener("touchmove",(e)=>{
+
+  const touch = e.touches[0];
+
+  const dx = Math.abs(touch.clientX - startX);
+  const dy = Math.abs(touch.clientY - startY);
+
+  if(dx > 8 || dy > 8){
+    dragging = true;
+    clearTimeout(holdTimer);
+  }
+
+  if(!dragging) return;
+
+  const p = getCorrectPoint(touch.clientX, touch.clientY);
+
+  img.style.left = p.x + "px";
+  img.style.top  = p.y + "px";
+
+},{passive:false});
+
+/* TOUCH END */
+
+img.addEventListener("touchend",(e)=>{
+
+  clearTimeout(holdTimer);
+
+  const touch = e.changedTouches[0];
+
+  img.style.pointerEvents = "none";
+
+  const elementBelow = document.elementFromPoint(
+    touch.clientX,
+    touch.clientY
+  );
+
+  img.style.pointerEvents = "auto";
+
+  let deck = elementBelow?.closest("[data-deck]");
+
+  if(!deck){
+    const wrapper = elementBelow?.closest(".deck-wrapper");
+    deck = wrapper?.querySelector("[data-deck]");
+  }
+
+  if(deck && deck.dataset.deck === "T"){
+
+    socket.emit("returnTwistToDeck",{
+      id: card.id
+    });
+
+    img.remove();
+    clearHighlight();
+    return;
+
+  }
+
+  if(dragging){
+
+    socket.emit("moveTwist", {
+      id: card.id,
+      x: parseFloat(img.style.left),
+      y: parseFloat(img.style.top)
+    });
+
+  }
+
+  clearHighlight();
+
+});
+
+  img.addEventListener("dblclick", ()=>{
+    socket.emit("rotateTwist",{ id: card.id });
   });
+
+  
 
   board.appendChild(img);
 }
@@ -1528,8 +1687,8 @@ socket.on("tokenMoved", (data)=>{
   const anchor = document.getElementById(data.anchor);
   if(!anchor) return;
 
-  anchor.style.left = data.x + "px";
-  anchor.style.top  = data.y + "px";
+  anchor.style.left = parseFloat(data.x) + "px";
+  anchor.style.top  = parseFloat(data.y) + "px";
 
   applyAnchors();
 
@@ -1689,12 +1848,33 @@ renderHand();
 });
 
   socket.on("syncDeckSizes", (serverDecks)=>{
+
     decks = serverDecks;
+
     updateEmptyDeckVisuals();
+    updateDeckCounters();
+
   });
 
   document.getElementById("cancelReload")
     .addEventListener("click", closeModal);
+
+    function updateDeckCounters(){
+
+  document.querySelectorAll("[data-deckcount]").forEach(el=>{
+
+    const type = el.dataset.deckcount;
+
+    if(!decks[type]){
+      el.innerText = "0";
+      return;
+    }
+
+    el.innerText = decks[type].length;
+
+  });
+
+}
 
 function openZoom(src){
 
@@ -1749,6 +1929,7 @@ socket.on("matchRestarted", ()=>{
 
   hand = [];
   hand_red = [];
+
   slotPiles = {
     A:[],M:[],D:[],G:[],
     A_red:[],M_red:[],D_red:[],G_red:[],
@@ -1761,7 +1942,28 @@ socket.on("matchRestarted", ()=>{
     renderSlot(type);
   });
 
+  // 🧹 remover cartas twist
+  document.querySelectorAll(".twist-card")
+    .forEach(el => el.remove());
+
+  // 🔄 resetar tokens
+  document.querySelectorAll(".anchor").forEach(anchor=>{
+    if(anchor.dataset.initialLeft){
+      anchor.style.left = anchor.dataset.initialLeft;
+      anchor.style.top  = anchor.dataset.initialTop;
+    }
+  });
+
+  applyAnchors();
+
+  // 🎥 resetar câmera
+  pinchZoom = 1;
+  panX = 0;
+  panY = 0;
+  updateBoardTransform();
+
   document.getElementById("tempoStatus").innerText = "1º Tempo";
+
   document.getElementById("boardBg").src =
     "https://i.imgur.com/GUyhwlh.png";
 
@@ -1868,3 +2070,4 @@ function clearSelections(){
   clearHighlight();
 
 }
+
