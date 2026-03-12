@@ -101,19 +101,11 @@ function playSFX(src){
 
   if(!sfxEnabled) return;
 
-  if(!audioCache[src]){
-    audioCache[src] = new Audio(src);
-  }
-
-function playSFX(src){
-
-  if(!sfxEnabled) return;
-
   const sound = new Audio(src);
   sound.volume = 0.5;
   sound.play();
 
-};
+
 }
   const SOUNDS = {
   drag: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/dragtoken_th8vbx.mp3",
@@ -325,6 +317,13 @@ let startY = 0;
 
 
 board.addEventListener("touchstart", (e)=>{
+
+  const clickable = e.target.closest(
+    ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece"
+  );
+
+  // 🔥 se tocou em algo interativo, NÃO faz pan
+  if(clickable) return;
 
   if(e.touches.length === 1){
 
