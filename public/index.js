@@ -309,12 +309,12 @@ if(roomCode){
   console.log("Jogador:", playerName, "Role:", playerRole);
 
   if (playerRole === "blue") {
-  document.getElementById("hand_red").style.display = "none";
-}
+    document.querySelector("#hand_red .hand-inner").style.display = "none";
+  }
 
-if (playerRole === "red") {
-  document.getElementById("hand").style.display = "none";
-}
+  if (playerRole === "red") {
+    document.querySelector("#hand .hand-inner").style.display = "none";
+  }
 
 if (playerRole === "spectator") {
   document.getElementById("hand").style.display = "none";

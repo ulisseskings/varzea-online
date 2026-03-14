@@ -646,10 +646,16 @@ body.red-player .deck-count{
 #counter_red{
   top: 125px;
   left: 925px;
-  transform: rotate(180deg);
 
   background: rgba(255, 40, 40, 0.55);
   border: 1px solid rgba(255, 120, 120, 0.85);
+}
+/* gira somente para quem é jogador vermelho */
+body.red-player #counter_red{
+  transform: rotate(180deg);
+}
+body.red-player #counter_blue{
+  transform: rotate(180deg);
 }
 /* ===================== */
 /* CARTAS FIXAS DO TABULEIRO */
