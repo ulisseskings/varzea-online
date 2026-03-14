@@ -7,6 +7,8 @@ let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
 let selectedSlotCard = null;
+let lastPlayedCard = null;
+let lastPlayedColor = null;
 
 // 🔥 carregar preferências salvas
 window.addEventListener("DOMContentLoaded", () => {
@@ -755,36 +757,19 @@ function renderHand() {
 
         let touchCard = null;
 
-img.addEventListener("touchstart", function(e){
+    img.addEventListener("touchstart", function(e){
 
-  e.preventDefault();
+      e.preventDefault();
 
-  selectedCard = card;
+      selectedCard = card;
 
-  touchCard = true;
+      touchCard = true;
 
-  highlightSlot(card.type);
+      highlightSlot(card.type);
 
-  document.querySelectorAll(".hand-card")
-    .forEach(c => c.classList.remove("selected-card"));
-
-  this.classList.add("selected-card");
-
-});
+    });
 
         
-
-
-
-
-
-
-
-
-
-
-
-
         img.addEventListener("touchend", function(e){
 
           this.style.transition = "0.15s ease";
@@ -869,6 +854,8 @@ img.addEventListener("touchstart", function(e){
           }
 
           clearHighlight();
+          clearSelections();
+        
 
           this.style.position = "";
           this.style.left = "";
@@ -935,6 +922,23 @@ fan.src = card.front;
 fan.className = "fan-card";
 fan.dataset.slot = type;
 fan.dataset.cardId = card.id;
+
+// ⭐ destaque da última carta jogada
+if(i === pile.length - 1){
+
+  // remove destaque antigo
+  document.querySelectorAll(".last-blue, .last-red")
+    .forEach(el=>{
+      el.classList.remove("last-blue","last-red");
+    });
+
+  if(card.type.includes("_red")){
+    fan.classList.add("last-red");
+  }else{
+    fan.classList.add("last-blue");
+  }
+
+}
 
 fan.addEventListener("touchstart", function(e){
 

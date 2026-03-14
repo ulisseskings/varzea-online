@@ -9,6 +9,8 @@ let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
 let manualZoom = 1;
+let lastPlayedCard = null;
+let lastPlayedColor = null;
 
 // 🔥 carregar preferências salvas
 window.addEventListener("DOMContentLoaded", () => {
@@ -560,12 +562,7 @@ function renderHand() {
 
         img.style.zIndex = groups[type].length - i;
 
-        img.addEventListener("click", ()=>{
-          document.querySelectorAll(".hand-card")
-            .forEach(c=>c.classList.remove("selected-card"));
 
-          img.classList.add("selected-card");
-        });
 
         // drag
         img.draggable = true;
@@ -642,6 +639,23 @@ function renderSlot(type) {
     fan.src=card.front;
     fan.className="fan-card";
     fan.dataset.slot=type;
+
+        // ⭐ destaque da última carta jogada
+    if(i === pile.length - 1){
+
+      // remove destaque antigo
+      document.querySelectorAll(".last-blue, .last-red")
+        .forEach(el=>{
+          el.classList.remove("last-blue","last-red");
+        });
+
+      if(card.type.includes("_red")){
+        fan.classList.add("last-red");
+      }else{
+        fan.classList.add("last-blue");
+      }
+
+    }
 
     fan.style.left = slotEl.style.left;
     fan.style.top  = slotEl.style.top;
