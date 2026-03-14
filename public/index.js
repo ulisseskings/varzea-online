@@ -263,9 +263,9 @@ if(roomCode){
 
         
 
-        const rect = board.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const p = getCorrectPoint(e.clientX, e.clientY);
+        const x = p.x;
+        const y = p.y;
 
         if(markVisible){
           socket.emit("removeMark");
@@ -708,18 +708,21 @@ function getCorrectPoint(clientX, clientY){
 
   const rect = board.getBoundingClientRect();
 
-  let x = (clientX - rect.left) * (board.offsetWidth  / rect.width);
-  let y = (clientY - rect.top)  * (board.offsetHeight / rect.height);
+  // posição do clique dentro do board transformado
+  let x = (clientX - rect.left) / rect.width;
+  let y = (clientY - rect.top) / rect.height;
 
+  // converter para coordenada real do board
+  x *= board.offsetWidth;
+  y *= board.offsetHeight;
+
+  // corrigir rotação do jogador vermelho
   if(playerRole === "red"){
     x = board.offsetWidth  - x;
     y = board.offsetHeight - y;
   }
 
-  return {
-    x: rect.left + x,
-    y: rect.top  + y
-  };
+  return {x, y};
 }
 
 
