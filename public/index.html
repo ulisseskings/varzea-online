@@ -95,7 +95,7 @@
   justify-content: center;
   align-items: flex-end;
 
-  z-index: 100;
+  z-index: 10000;
   background: transparent;
 
 }
@@ -169,7 +169,7 @@
     }
 
     .token14 { width: 14px; height: 14px; }
-    .token27 { width: 27px; height: 27px; }
+    .token27 { width: 27px; height: 27px; z-index: 5000;}
     .bonus-token {width: 20px !important; height: 20px !important;}
     .cardred { width: 11px; height: 17px; }
     .ball    { width: 30px; height: 30px; z-index: 5000 !important; position: absolute;
@@ -268,7 +268,12 @@
 
   cursor:pointer;
 }
-
+#spectatorList{
+  margin-top:4px;
+  color:yellow;
+  max-height:80px;
+  overflow-y:auto;
+}
 .rightPanelBtn:hover{
   background:#08783c;
 }
@@ -517,7 +522,7 @@
 /* PEÇAS SEMPRE ACIMA */
 
 .piece {
-  z-index: 5000 !important;
+  z-index: 5000;
 }
 
 /* Cartas abertas abaixo das peças */
@@ -537,7 +542,7 @@
   justify-content: center;
   align-items: flex-start;
 
-  z-index: 100;
+  z-index: 10000;
 }
 
 
@@ -551,6 +556,13 @@
 }
 
 
+.deck-wrapper.red-zone.deck-count{
+  transform: rotate(180deg);
+}
+
+body.red-player .deck-count{
+  transform: rotate(180deg);
+}
 /* ===================== */
 /* ZOOM TWIST */
 
@@ -598,6 +610,11 @@
 
   line-height: 1.3;
 }
+
+.twist-card{
+  z-index: 9000;
+  position: absolute;
+}
 /* ===================== */
 /* CONTADOR DE CARTAS NA MÃO */
 
@@ -629,7 +646,7 @@
 #counter_red{
   top: 125px;
   left: 925px;
-  rotate: 180deg;
+  transform: rotate(180deg);
 
   background: rgba(255, 40, 40, 0.55);
   border: 1px solid rgba(255, 120, 120, 0.85);
@@ -856,18 +873,155 @@
   }
 }
 
-img,
-.piece,
-.hand-card,
-.slot{
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-user-drag: none;
+img{
+  -webkit-user-drag: element;
 }
 
 img {
   pointer-events: auto;
+}
+
+#helpBtn{
+  position: fixed;
+  bottom: 110px;
+  right: 27px;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+  border: none;
+
+  background: gold;
+  color: black;
+
+  font-weight: bold;
+  font-size: 12px;
+
+  cursor: pointer;
+  z-index: 999999;
+}
+
+#helpOverlay{
+  position: fixed;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:9999999;
+}
+
+#helpBox{
+  position:fixed;
+  top:70px;
+  left:50%;
+  transform:translateX(-50%) scale(0.7);
+
+  width:360px;
+  max-width:90%;
+
+  background:#0f0f0f;
+  border:2px solid gold;
+  border-radius:14px;
+
+  padding:18px;
+
+  font-family:Arial;
+  color:white;
+}
+
+.help-highlight{
+  outline:3px solid gold;
+  box-shadow:0 0 15px gold;
+  border-radius:8px;
+}
+
+.deck-count{
+
+position:absolute;
+right:1px;
+bottom:1px;
+
+width:18px;
+height:18px;
+
+border-radius:50%;
+
+background:rgba(0,0,0,0.3);
+color:white;
+
+font-size:9px;
+font-family:Arial;
+font-weight:bold;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+pointer-events:none;
+z-index:9999;
+
+}
+
+.selected-card{
+transform: translateY(-25px) scale(1.05);
+filter: drop-shadow(0 0 10px gold);
+}
+
+#rotateOverlay{
+position:fixed;
+inset:0;
+background:linear-gradient(180deg,#0b5e2b,#003b1a);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:9999999;
+}
+
+*{
+-webkit-user-select:none;
+user-select:none;
+}
+
+.card-hover-zoom{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  width: 280px;
+  z-index: 999999;
+  pointer-events: none;
+  display: none;
+}
+
+#discordBtn{
+  position: fixed;
+  bottom: 140px;
+  right: 27px;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+  border: none;
+
+  background: white;
+
+  cursor: pointer;
+  z-index: 999999;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#discordBtn img{
+  width:14px;
+  height:14px;
+}
+
+#discordBtn:hover{
+  transform:scale(1.1);
 }
 
   </style>
@@ -878,7 +1032,27 @@ img {
 
 <body>
 
+  <button id="discordBtn">
+  <img src="https://i.imgur.com/2Czv8Fd.png">
+</button>
 
+  <button id="helpBtn">?</button>
+
+<div id="helpOverlay">
+  <div id="helpBox">
+    <div id="helpTitle"></div>
+    <div id="helpText"></div>
+    <button id="helpNextBtn">Próximo</button>
+  </div>
+</div>
+
+<div id="rotateOverlay">
+<div class="rotateBox">
+<div class="phoneIcon">📱</div>
+<h2>Gire o dispositivo</h2>
+<button onclick="location.reload()">Atualizar</button>
+</div>
+</div>
 
 <div id="rotateWarning">
   🔄 Gire o celular para o modo horizontal
@@ -898,7 +1072,7 @@ img {
   </button>
 
   <div id="spectatorBox">
-    Espectadores: <span id="spectatorList">Nenhum</span>
+    Espectadores: <div id="spectatorList">Nenhum</div>
   </div>
 
   <div id="audioControls">
@@ -1026,24 +1200,28 @@ img {
 <div class="deck-wrapper" data-anchor="deckA">
   <img class="deck-slot" src="https://i.imgur.com/9xzQNTb.png"
        draggable="true" data-deck="A">
-  class="shuffle-btn" data-deck="A"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+       <div class="deck-count" data-count="A"></div>
+  <button class="shuffle-btn" data-deck="A"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckM">
   <img class="deck-slot" src="https://i.imgur.com/XxdG1vW.png"
        draggable="true" data-deck="M">
-  class="shuffle-btn" data-deck="M"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+       <div class="deck-count" data-count="M"></div>
+  <button class="shuffle-btn" data-deck="M"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckD">
   <img class="deck-slot" src="https://i.imgur.com/RUEsxIt.png"
        draggable="true" data-deck="D">
+       <div class="deck-count" data-count="D"></div>
   <button class="shuffle-btn" data-deck="D"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper" data-anchor="deckG">
   <img class="deck-slot" src="https://i.imgur.com/l7eDrIo.png"
        draggable="true" data-deck="G">
+       <div class="deck-count" data-count="G"></div>
   <button class="shuffle-btn" data-deck="G"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
@@ -1066,24 +1244,28 @@ img {
 <div class="deck-wrapper red-zone" data-anchor="deckA_red">
   <img class="deck-slot" src="https://i.imgur.com/xRIC9Aq.png"
        draggable="true" data-deck="A_red">
+       <div class="deck-count" data-count="A_red"></div>
   <button class="shuffle-btn" data-deck="A_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper red-zone" data-anchor="deckM_red">
   <img class="deck-slot" src="https://i.imgur.com/ItO2wFO.png"
        draggable="true" data-deck="M_red">
+       <div class="deck-count" data-count="M_red"></div>
   <button class="shuffle-btn" data-deck="M_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper red-zone" data-anchor="deckD_red">
   <img class="deck-slot" src="https://i.imgur.com/2e3i2cY.png"
        draggable="true" data-deck="D_red">
+       <div class="deck-count" data-count="D_red"></div>
   <button class="shuffle-btn" data-deck="D_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
 <div class="deck-wrapper red-zone" data-anchor="deckG_red">
   <img class="deck-slot" src="https://i.imgur.com/Brr9kXs.png"
        draggable="true" data-deck="G_red">
+       <div class="deck-count" data-count="G_red"></div>
   <button class="shuffle-btn" data-deck="G_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
 </div>
 
@@ -1233,6 +1415,7 @@ img {
   <source src="https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868321/background_x393rd.mp3" type="audio/mpeg">
 </audio>
 
+<img id="cardHoverZoom" class="card-hover-zoom">
 
 <script src="/index.js"></script>
 </body>

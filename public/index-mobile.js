@@ -174,7 +174,9 @@ socket.on("syncSpectators", (list)=>{
     return;
   }
 
-  el.innerText = "\n" + list.join("\n");
+   el.innerHTML = list
+    .map(name => `<span style="color:yellow">${name}</span>`)
+    .join(", ");
 });
 
 socket.on("syncTokens", (tokens)=>{
@@ -228,12 +230,11 @@ function processMoveQueue(){
 board.addEventListener("touchstart", (e)=>{
 
   const clickable = e.target.closest(
-  ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .twist-card"
+  ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece, .twist-card"
   );
 
-  if(!clickable){
-    clearSelections();
-  }
+  // 🔥 se tocou em algo interativo, NÃO faz pan
+  if(clickable) return;
 
 });
 
@@ -350,7 +351,7 @@ let startY = 0;
 board.addEventListener("touchstart", (e)=>{
 
   const clickable = e.target.closest(
-    ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece"
+  ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece, .twist-card"
   );
 
   // 🔥 se tocou em algo interativo, NÃO faz pan
@@ -982,7 +983,13 @@ fan.addEventListener("touchstart", function(e){
       fan.style.transform += " rotate(180deg)";
     }
 
-    board.appendChild(fan);
+    const firstPiece = board.querySelector(".piece");
+
+    if(firstPiece){
+      board.insertBefore(fan, firstPiece);
+    }else{
+      board.appendChild(fan);
+    }
   });
 }
 
@@ -1296,7 +1303,7 @@ function spawnTwistCard(card){
   const img = document.createElement("img");
 
   img.src = card.front;
-  img.className = "piece twist-card";
+  img.className = "twist-card";
 
   img.style.width = "74px";
   img.style.height = "103px";
@@ -1524,6 +1531,7 @@ img.addEventListener("touchend",(e)=>{
       };
     }
     if(type === "guia"){
+
       title.innerText = "Guia de Referências";
       text.innerText =
         "Deseja acessar o Guia de Referências agora?";
@@ -1537,7 +1545,25 @@ img.addEventListener("touchend",(e)=>{
         closeModal();
       };
     }
-  }
+
+    if(type === "discord"){
+
+      title.innerText = "Comunidade no Discord";
+
+      text.innerText =
+        "Deseja acessar o Discord oficial do jogo agora?";
+
+      confirmBtn.innerText = "Acessar";
+
+      confirmBtn.onclick = ()=>{
+        window.open(
+          "https://discord.gg/xGV2ku9f",
+          "_blank"
+        );
+        closeModal();
+      };
+    }
+}
 
   function closeModal(){
     document.getElementById("modalOverlay").style.display = "none";
@@ -2070,4 +2096,174 @@ function clearSelections(){
   clearHighlight();
 
 }
+let helpStep = 0;
+const steps=[
 
+{
+title:"Bem-vindo ao Várzea Online",
+text:"Este guia explica regras básicas e como usar a interface.",
+highlight:null
+},
+
+{
+title:"Objetivo do jogo",
+text:"Vencer disputas de cartas para avançar no campo e marcar gols.",
+highlight:".ball"
+},
+
+{
+  title:"Decks de compra",
+  text:"Toque nos decks para comprar cartas para sua mão. O número de cartas de cada deck deve respeitar a formação que você escolheu.",
+  highlight:'[data-deck="A"], [data-deck="M"], [data-deck="D"], [data-deck="G"], .fixed-board-card'
+},
+
+{
+title:"Sua mão",
+text:"Cartas compradas aparecem aqui.",
+highlight:"#hand"
+},
+
+{
+title:"Como jogar cartas",
+text:"Arraste uma carta da mão até um espaço do tabuleiro.",
+highlight:".slot-pile"
+},
+
+{
+title:"Disputa de cartas",
+text:"Cartas vão de 1 a 11. O valor mais alto vence a disputa.",
+highlight:".fan-card"
+},
+
+{
+title:"Movimento de tokens",
+text:"Segure um token e arraste pelo campo.",
+highlight:".piece"
+},
+
+{
+title:"Tokens de substituição",
+text:"Tokens de substituição funcionam diferente. Apenas um clique vira o token.",
+highlight:".token27"
+},
+
+{
+title:"Recuperar cartas do campo",
+text:"Dê duplo clique na pilha para ver todas cartas jogadas.",
+highlight:".slot-pile"
+},
+
+{
+title:"Retirar carta da pilha",
+text:"Depois de abrir a pilha, selecione a carta para retornar à mão.",
+highlight:".fan-card"
+},
+
+{
+title:"Fim do primeiro tempo",
+text:"Quando um dos jogadores não puder mais colocar em campo uma carta de uma das posições é o fim do primeiro tempo, então clique no botão Iniciar o 2º Tempo para continuar a partida",
+highlight:"#tempoBtn"
+},
+
+{
+title:"Cartas Twist",
+text:"Apenas cartas Twist podem ser ampliadas ou giradas.",
+highlight:'[data-deck="T"]'
+},
+
+{
+title:"Zoom das Twist",
+text:"Segure a carta Twist para ver ampliada.",
+highlight:".twist-card"
+},
+
+{
+title:"Giro das Twist",
+text:"Toque duas vezes na Twist para girar.",
+highlight:".twist-card"
+},
+
+{
+title:"Fim do tutorial",
+text:"Use o botão ? para abrir novamente este guia. Para mais detalhes sobre o jogo clique no botão Manual de Regras.",
+highlight:null
+}
+
+];
+
+
+
+function showHelpStep(){
+
+document.querySelectorAll(".help-highlight")
+.forEach(el=>el.classList.remove("help-highlight"));
+
+const step=steps[helpStep];
+
+document.getElementById("helpTitle").innerText=step.title;
+document.getElementById("helpText").innerText=step.text;
+
+if(step.highlight){
+
+document.querySelectorAll(step.highlight)
+.forEach(el=>el.classList.add("help-highlight"));
+
+}
+
+}
+
+document.getElementById("helpBtn").onclick = ()=>{
+
+helpStep = 0;
+
+document.getElementById("helpOverlay").style.display="flex";
+
+showHelpStep();
+
+};
+
+document.getElementById("helpNext").onclick = ()=>{
+
+helpStep++;
+
+if(helpStep >= steps.length){
+
+closeHelp();
+
+return;
+
+}
+
+showHelpStep();
+
+};
+
+function closeHelp(){
+
+document.getElementById("helpOverlay").style.display = "none";
+
+document.querySelectorAll(".help-highlight")
+.forEach(el=>el.classList.remove("help-highlight"));
+
+
+
+}
+
+document.getElementById("helpClose").onclick = closeHelp;
+
+document.getElementById("helpPrev").onclick = ()=>{
+
+helpStep--;
+
+if(helpStep < 0){
+helpStep = 0;
+}
+
+showHelpStep();
+
+};
+
+document.getElementById("discordBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("discord");
+});

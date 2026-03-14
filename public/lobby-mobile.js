@@ -321,5 +321,28 @@ if (manualBtn) {
   socket.on("roomError", (msg) => {
     alert(msg);
   });
+document.getElementById("discordBtnLobby")
+  ?.addEventListener("click", ()=>{
+
+  const overlay = document.getElementById("modalOverlay");
+  const title   = document.getElementById("modalTitle");
+  const text    = document.getElementById("modalText");
+  const confirmBtn = document.getElementById("confirmBtn");
+
+  overlay.style.display = "flex";
+
+  title.innerText = "Comunidade no Discord";
+
+  text.innerText =
+    "Deseja acessar o Discord oficial do jogo agora?";
+
+  confirmBtn.innerText = "Acessar";
+
+  confirmBtn.onclick = ()=>{
+    window.open("https://discord.gg/xGV2ku9f","_blank");
+    overlay.style.display = "none";
+  };
 
 });
+});
+

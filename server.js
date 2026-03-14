@@ -733,30 +733,62 @@ socket.on("restartMatch", ()=>{
 
   const room = rooms[socket.roomCode];
 
-    // 🚫 BLOQUEIO DE ESPECTADOR
-  if(socket.role === "spectator") return;
-
-  // 🔒 Opcional: só jogadores podem reiniciar
-  if(socket.role !== "blue" && socket.role !== "red") return;
-
   if(!room) return;
 
-  room.decks = createShuffledDecks();
+  // 🚫 espectador não pode
+  if(socket.role === "spectator") return;
 
+  // 🔒 só jogadores
+  if(socket.role !== "blue" && socket.role !== "red") return;
+
+  // 🔁 devolver cartas das mãos
+  room.hands.blue.forEach(card=>{
+    room.decks[card.type].push(card);
+  });
+
+  room.hands.red.forEach(card=>{
+    room.decks[card.type].push(card);
+  });
+
+  // 🔁 devolver cartas dos slots
+  Object.keys(room.boardSlots).forEach(slot=>{
+    room.boardSlots[slot].forEach(card=>{
+      room.decks[card.type].push(card);
+    });
+  });
+
+  // 🔀 embaralhar todos os decks
+  Object.keys(room.decks).forEach(type=>{
+    shuffle(room.decks[type]);
+  });
+
+  // limpa mãos
   room.hands.blue = [];
   room.hands.red  = [];
 
+  // limpa slots
   room.boardSlots = {
     A:[],M:[],D:[],G:[],
     A_red:[],M_red:[],D_red:[],G_red:[],
     P1:[],P2:[],P1_red:[],P2_red:[]
   };
 
+  // limpa twists
   room.twists = [];
+
+  // limpa sub tokens
   room.subTokens = {};
 
+  // limpa posições de tokens
+  room.tokens = {};
+
+  // 🔥 envia estado completo
   io.to(socket.roomCode).emit("matchRestarted");
 
+  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+  io.to(socket.roomCode).emit("syncTwists", room.twists);
+  io.to(socket.roomCode).emit("syncSubTokens", room.subTokens);
+  io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
 });
 
 

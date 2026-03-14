@@ -8,6 +8,7 @@ let bgMusic;
 let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
+let manualZoom = 1;
 
 // 🔥 carregar preferências salvas
 window.addEventListener("DOMContentLoaded", () => {
@@ -68,8 +69,8 @@ function playSFX(src){
 
   const sound = audioCache[src].cloneNode();
   sound.volume = 0.5;
-  sound.play();
-}
+  sound.play().catch(()=>{});}
+
   const SOUNDS = {
   drag: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/dragtoken_th8vbx.mp3",
   draw: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/drawcard_ui0b56.mp3",
@@ -156,22 +157,14 @@ socket.on("syncSpectators", (list)=>{
     return;
   }
 
-  el.innerText = list.join(", ");
+   el.innerHTML = list
+    .map(name => `<span style="color:yellow">${name}</span>`)
+    .join(", ");
 });
 
 let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
-
-function applyAnchors(){
-  document.querySelectorAll(".piece").forEach(piece=>{
-    const anchor = document.getElementById(piece.dataset.anchor);
-    if(!anchor) return;
-
-    piece.style.left = anchor.style.left;
-    piece.style.top  = anchor.style.top;
-  });
-}
 
 function scaleBoard(){
 
@@ -184,7 +177,7 @@ function scaleBoard(){
   const scaleX = screenWidth  / baseWidth;
   const scaleY = screenHeight / baseHeight;
 
-  const scale = Math.max(scaleX, scaleY); 
+  const scale = Math.max(scaleX, scaleY) * 0.8 * manualZoom;
   // 👆 era Math.min, isso deixava pequeno
 
   if (playerRole === "red") {
@@ -196,11 +189,29 @@ function scaleBoard(){
   }
 
 }
+board.addEventListener("wheel", (e)=>{
+
+  e.preventDefault();
+
+  if(e.deltaY < 0){
+    manualZoom += 0.05;
+  }else{
+    manualZoom -= 0.05;
+  }
+
+  manualZoom = Math.max(0.6, Math.min(1.4, manualZoom));
+
+  scaleBoard();
+
+});
 
 window.addEventListener("resize", scaleBoard);
 window.addEventListener("load", scaleBoard);
 
 const playerRole = sessionStorage.getItem("playerRole");
+  if(playerRole === "red"){
+  document.body.classList.add("red-player");
+}
 const playerName = sessionStorage.getItem("playerName");
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -208,14 +219,12 @@ const roomCode = urlParams.get("room");
 
 if(!roomCode){
   console.log("Sem código de sala.");
-  return;
 }
 
 if(!playerName || !playerRole){
-  console.log("Dados não encontrados no localStorage.");
+  console.log("Dados não encontrados no sessionStorage.");
   alert("Sessão expirada. Volte ao lobby.");
   window.location.href = "/";
-  return;
 }
 
 // 🚀 ENTRA NA SALA
@@ -229,15 +238,30 @@ socket.emit("reconnectRoom", {
 
 // 4️⃣ Mostra código
   document.getElementById("roomCodeBox").innerText = "Sala: " + roomCode;
+  
+  const roomBox = document.getElementById("roomCodeBox");
 
+  roomBox.addEventListener("click", () => {
 
-if(roomCode)
+    navigator.clipboard.writeText(roomCode);
+
+    roomBox.innerText = "Copiado!";
+
+    setTimeout(()=>{
+      roomBox.innerText = "Sala: " + roomCode;
+    },1500);
+
+  });
+
+if(roomCode){
 
     if(playerRole === "spectator"){
 
       let markVisible = false;
 
       board.addEventListener("click", (e)=>{
+
+        
 
         const rect = board.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -254,7 +278,7 @@ if(roomCode)
       });
 
     }
-
+  }
 
   socket.on("spawnMark", ({x,y})=>{
 
@@ -281,10 +305,10 @@ if(roomCode)
     const existing = document.querySelector(".spectator-cross");
     if(existing) existing.remove();
   });
-  
-console.log("Jogador:", playerName, "Role:", playerRole);
 
-if (playerRole === "blue") {
+  console.log("Jogador:", playerName, "Role:", playerRole);
+
+  if (playerRole === "blue") {
   document.getElementById("hand_red").style.display = "none";
 }
 
@@ -296,7 +320,6 @@ if (playerRole === "spectator") {
   document.getElementById("hand").style.display = "none";
   document.getElementById("hand_red").style.display = "none";
 }
-
 
 
 console.log("Jogador entrou como:", playerRole);
@@ -478,6 +501,8 @@ let firstHalfEnded = false;
 
 function renderHand() {
 
+
+
   const handDiv = document.querySelector("#hand .hand-inner");
   const handDivRed = document.querySelector("#hand_red .hand-inner");
   
@@ -527,25 +552,28 @@ function renderHand() {
       const groupDiv = document.createElement("div");
       groupDiv.className="hand-group";
 
-      groups[type].forEach(card=>{
+      groups[type].forEach((card,i)=>{
 
         const img = document.createElement("img");
         img.src = card.front;
         img.className="hand-card";
 
-        // 🔥 desktop continua usando drag
-        img.draggable = true;
+        img.style.zIndex = groups[type].length - i;
 
-        // 🔥 bloqueia drag nativo do navegador
-        img.addEventListener("dragstart", (e)=>{
-          e.stopPropagation();
+        img.addEventListener("click", ()=>{
+          document.querySelectorAll(".hand-card")
+            .forEach(c=>c.classList.remove("selected-card"));
+
+          img.classList.add("selected-card");
         });
+
+        // drag
+        img.draggable = true;
 
         img.addEventListener("dragstart",(e)=>{
           e.dataTransfer.setData("fromHand", JSON.stringify(card));
           highlightSlot(card.type);
 
-          // 🔥 Ativa zona correta da mão
           if(card.type.includes("_red")){
             document.getElementById("hand_red").classList.add("active-zone");
           } else {
@@ -555,19 +583,12 @@ function renderHand() {
 
         img.addEventListener("dragend",()=>{
           clearHighlight();
-
-          // 🔥 Remove fundo das duas mãos
           document.getElementById("hand").classList.remove("active-zone");
           document.getElementById("hand_red").classList.remove("active-zone");
         });
 
-          if(isRedHand){
-          img.style.zIndex = groups[type].length - groups[type].indexOf(card);
-        } else {
-          img.style.zIndex = groups[type].indexOf(card);
-        }
-
         groupDiv.appendChild(img);
+
       });
 
       targetDiv.appendChild(groupDiv);
@@ -847,8 +868,7 @@ if(draggedFreeCard){
 
   const card = JSON.parse(fromHand);
 
-  const p = getCorrectPoint(corrected.x, corrected.y);
-  const targetDeck = getTargetDeck(p.x, p.y);
+  const targetDeck = getTargetDeck(e.clientX, e.clientY);
 
   if(targetDeck && targetDeck.dataset.deck === card.type){
 
@@ -879,7 +899,7 @@ if(draggedFreeCard){
 
   if(isAMDG && !firstHalfEnded &&
     mustRefillHand(card.type.includes("_red") ? "red" : "blue")){
-    alert("Reponha sua mão até que fique 13 cartas para jogar em campo.");
+    alert("Reponha sua mão até que fique com 13 cartas antes de jogar em campo.");
     return;
   }
 
@@ -940,7 +960,7 @@ if(draggedFreeCard){
   const data = JSON.parse(fromSlot);
   const card = slotPiles[data.type].splice(data.index,1)[0];
 
-  const p = getCorrectPoint(corrected.x, corrected.y);
+  const p = corrected;
   const targetDeck = getTargetDeck(p.x, p.y);
 
   // devolveu no deck correto
@@ -1165,7 +1185,7 @@ document.querySelectorAll(".piece").forEach(piece=>{
       token.dataset.anchor = anchor.id;
       token.draggable = true;
 
-      token.style.zIndex = 6000 + i;
+      token.style.zIndex = 12000 + i;
 
       token.addEventListener("dragstart", (e)=>{
         e.dataTransfer.setData("movePiece", anchor.id);
@@ -1188,20 +1208,25 @@ document.querySelectorAll(".piece").forEach(piece=>{
   const TWIST_BACK = "https://i.imgur.com/D40CPCK.png";
 
 function spawnTwistCard(card){
+  
 
-  if(document.querySelector(`[data-id="${card.id}"]`)){
-  return;
+  if(document.querySelector(`.twist-card[data-id="${card.id}"]`)){
+    return;
   }
 
   const img = document.createElement("img");
 
   img.src = card.front;
+
   img.className = "piece twist-card";
+  img.style.zIndex = 9000;   // 👈 ADICIONE AQUI
+ 
 
   img.style.width = "74px";
   img.style.height = "103px";
 
   img.dataset.id = card.id;
+  img.id = "twist_" + card.id;
   img.dataset.front = card.front;
   img.dataset.rotation = card.rotation || 0;
 
@@ -1221,22 +1246,28 @@ function spawnTwistCard(card){
 
   /* ===================== */
   /* 1 CLIQUE = GIRAR */
-  img.addEventListener("click",(e)=>{
+    let clickTimer = null;
 
-    // evita conflito com dblclick
-    if(e.detail === 1){
-      setTimeout(()=>{
-        if(e.detail === 1){
-          socket.emit("rotateTwist", { id: card.id });
-        }
-      }, 200);
-    }
+    img.addEventListener("click", ()=>{
 
-  });
+      if(clickTimer){
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        return;
+      }
+
+      clickTimer = setTimeout(()=>{
+        socket.emit("rotateTwist", { id: card.id });
+        clickTimer = null;
+      }, 250);
+
+    });
 
   /* ===================== */
   /* 2 CLIQUES = ZOOM */
   img.addEventListener("dblclick", ()=>{
+
+  clearTimeout(clickTimer);
 
     const overlay = document.getElementById("twistZoomOverlay");
     const zoomImg = document.getElementById("twistZoomImg");
@@ -1290,7 +1321,7 @@ function spawnTwistCard(card){
     }
 
     if(type === "restart"){
-      title.innerText = "Reiniciar Partida";
+      title.innerText = "Reiniciar partida";
       text.innerText =
         "Ao concordar, TODO o jogo será reiniciado.\n\n" +
         "Cartas, peças e estado da partida voltarão ao início.";
@@ -1326,6 +1357,7 @@ function spawnTwistCard(card){
       };
     }
     if(type === "guia"){
+
       title.innerText = "Guia de Referências";
       text.innerText =
         "Deseja acessar o Guia de Referências agora?";
@@ -1339,8 +1371,25 @@ function spawnTwistCard(card){
         closeModal();
       };
     }
-  }
 
+    if(type === "discord"){
+
+      title.innerText = "Comunidade no Discord";
+
+      text.innerText =
+        "Deseja acessar o Discord oficial do jogo agora?";
+
+      confirmBtn.innerText = "Acessar";
+
+      confirmBtn.onclick = ()=>{
+        window.open(
+          "https://discord.gg/xGV2ku9f",
+          "_blank"
+        );
+        closeModal();
+      };
+    }
+}
   function closeModal(){
     document.getElementById("modalOverlay").style.display = "none";
   }
@@ -1458,6 +1507,32 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
 
   renderHand();
 });
+
+socket.on("handCounts", (counts)=>{
+
+  const blue = counts.blue;
+  const red  = counts.red;
+
+  const totalBlue = blue.A + blue.M + blue.D + blue.G;
+  const totalRed  = red.A_red + red.M_red + red.D_red + red.G_red;
+
+  const blueCounter = document.getElementById("counter_blue");
+  const redCounter  = document.getElementById("counter_red");
+
+  if(blueCounter){
+    blueCounter.innerHTML =
+      `A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}<br>
+       Total: ${totalBlue}/13`;
+  }
+
+  if(redCounter){
+    redCounter.innerHTML =
+      `A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}<br>
+       Total: ${totalRed}/13`;
+  }
+
+});
+
 socket.on("updateBoardSlots", (serverSlots)=>{
   playSFX(SOUNDS.throw);
   slotPiles = serverSlots;
@@ -1653,8 +1728,9 @@ socket.on("secondHalfStarted", ()=>{
 });
 
   socket.on("syncDeckSizes", (serverDecks)=>{
-    decks = serverDecks;
-    updateEmptyDeckVisuals();
+  decks = serverDecks;
+  updateEmptyDeckVisuals();
+  updateDeckCounters();
   });
 
   document.getElementById("cancelReload")
@@ -1727,11 +1803,18 @@ socket.on("matchRestarted", ()=>{
 
   hand = [];
   hand_red = [];
+
   slotPiles = {
     A:[],M:[],D:[],G:[],
     A_red:[],M_red:[],D_red:[],G_red:[],
     P1:[],P2:[],P1_red:[],P2_red:[]
   };
+
+  // limpa cartas twist
+  document.querySelectorAll(".twist-card").forEach(el=>el.remove());
+
+  // limpa marcas de espectador
+  document.querySelectorAll(".spectator-cross").forEach(el=>el.remove());
 
   renderHand();
 
@@ -1740,8 +1823,12 @@ socket.on("matchRestarted", ()=>{
   });
 
   document.getElementById("tempoStatus").innerText = "1º Tempo";
+
   document.getElementById("boardBg").src =
     "https://i.imgur.com/GUyhwlh.png";
+
+  // atualiza decks
+  socket.emit("syncDeckSizes");
 
 });
 
@@ -1792,4 +1879,158 @@ document.addEventListener("DOMContentLoaded", () => {
 
   });
 
+});
+
+const helpSteps = [
+
+{
+title:"Decks de compra",
+text:"Arraste os decks para comprar cartas para sua mão.",
+highlight:".deck-wrapper"
+},
+
+{
+title:"Cartas fixas",
+text:"Essas cartas representam regras especiais.",
+highlight:".fixed-board-card"
+},
+
+{
+title:"Sua mão",
+text:"Arraste cartas da mão para jogar no campo.",
+highlight:"#hand"
+},
+
+{
+title:"Slots",
+text:"Aqui você coloca as cartas em campo.",
+highlight:".slot-pile"
+}
+
+];
+
+let helpIndex = 0;
+
+const helpBtn = document.getElementById("helpBtn");
+const helpOverlay = document.getElementById("helpOverlay");
+const helpTitle = document.getElementById("helpTitle");
+const helpText = document.getElementById("helpText");
+const helpNextBtn = document.getElementById("helpNextBtn");
+
+helpBtn.onclick = () => {
+helpOverlay.style.display = "flex";
+helpIndex = 0;
+showHelpStep();
+};
+
+helpNextBtn.onclick = () => {
+helpIndex++;
+
+if(helpIndex >= helpSteps.length){
+closeHelp();
+return;
+}
+
+showHelpStep();
+};
+
+function showHelpStep(){
+
+document.querySelectorAll(".help-highlight")
+.forEach(el=>el.classList.remove("help-highlight"));
+
+const step = helpSteps[helpIndex];
+
+helpTitle.innerText = step.title;
+helpText.innerText = step.text;
+
+const el = document.querySelector(step.highlight);
+if(el) el.classList.add("help-highlight");
+
+}
+
+function closeHelp(){
+helpOverlay.style.display = "none";
+document.querySelectorAll(".help-highlight")
+.forEach(el=>el.classList.remove("help-highlight"));
+}
+
+function updateDeckCounters(){
+
+document.querySelectorAll(".deck-count").forEach(counter=>{
+
+const deck = counter.dataset.count;
+
+if(!decks[deck]){
+counter.innerText = "0";
+return;
+}
+
+counter.innerText = decks[deck].length;
+
+});
+
+}
+
+function checkOrientation(){
+
+if(window.innerHeight > window.innerWidth){
+document.getElementById("rotateOverlay").style.display = "flex";
+}else{
+document.getElementById("rotateOverlay").style.display = "none";
+}
+
+}
+
+window.addEventListener("resize",checkOrientation);
+window.addEventListener("load",checkOrientation);
+
+document.getElementById("tempoBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("tempo");
+});
+
+document.getElementById("restartBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("restart");
+});
+
+document.getElementById("manualBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("manual");
+});
+
+document.getElementById("guiaBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("guia");
+});
+
+board.addEventListener("click", (e)=>{
+
+  // se clicou em algo interativo, não remove seleção
+  if(
+    e.target.closest(".hand-card") ||
+    e.target.closest(".slot-pile") ||
+    e.target.closest(".deck-wrapper") ||
+    e.target.closest(".piece") ||
+    e.target.closest(".twist-card") ||
+    e.target.closest(".fan-card")
+  ){
+    return;
+  }
+
+  // remove destaque das cartas
+  document.querySelectorAll(".selected-card")
+    .forEach(card => card.classList.remove("selected-card"));
+
+});
+
+document.addEventListener("dragstart", ()=>{
+  document.querySelectorAll(".selected-card")
+    .forEach(card => card.classList.remove("selected-card"));
+});
+
+document.getElementById("discordBtn")
+  ?.addEventListener("click", ()=>{
+    openModal("discord");
 });
