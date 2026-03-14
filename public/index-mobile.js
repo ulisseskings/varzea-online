@@ -2097,95 +2097,114 @@ function clearSelections(){
 
 }
 let helpStep = 0;
+
 const steps=[
 
 {
 title:"Bem-vindo ao Várzea Online",
-text:"Este guia explica regras básicas e como usar a interface.",
+text:"Este guia rápido mostra como jogar e usar os controles na tela.\n\nToque em Próximo para continuar.",
 highlight:null
 },
 
 {
 title:"Objetivo do jogo",
-text:"Vencer disputas de cartas para avançar no campo e marcar gols.",
+text:"Vença disputas de cartas para avançar no campo e marcar gols.\n\nA bola se move conforme o resultado das disputas.",
 highlight:".ball"
 },
 
 {
-  title:"Decks de compra",
-  text:"Toque nos decks para comprar cartas para sua mão. O número de cartas de cada deck deve respeitar a formação que você escolheu.",
-  highlight:'[data-deck="A"], [data-deck="M"], [data-deck="D"], [data-deck="G"], .fixed-board-card'
+title:"Posições do time",
+text:"Cada carta representa uma posição:\n\nA = Atacante\nM = Meio-campo\nD = Defesa\nG = Goleiro\n\nCada posição disputa apenas contra a mesma posição do adversário.",
+highlight:".fixed-board-card"
 },
 
 {
-title:"Sua mão",
-text:"Cartas compradas aparecem aqui.",
+title:"Decks de compra",
+text:"Toque em um deck para comprar uma carta.\n\nVocê deve manter 13 cartas na mão antes de jogar no campo.",
+highlight:'[data-deck="A"], [data-deck="M"], [data-deck="D"], [data-deck="G"]'
+},
+
+{
+title:"Sua mão de cartas",
+text:"As cartas compradas aparecem aqui.\n\nToque em uma carta para selecioná-la.",
 highlight:"#hand"
 },
 
 {
-title:"Como jogar cartas",
-text:"Arraste uma carta da mão até um espaço do tabuleiro.",
+title:"Jogando cartas",
+text:"Depois de selecionar uma carta, arraste ela até a posição correspondente no campo.",
 highlight:".slot-pile"
 },
 
 {
 title:"Disputa de cartas",
-text:"Cartas vão de 1 a 11. O valor mais alto vence a disputa.",
+text:"Cada carta possui valor de 1 a 11.\n\nA carta de maior valor vence a disputa.",
 highlight:".fan-card"
 },
 
 {
-title:"Movimento de tokens",
-text:"Segure um token e arraste pelo campo.",
+title:"Movimento da bola",
+text:"Quando você vence uma disputa, a bola avança no campo em direção ao gol adversário.",
+highlight:".ball"
+},
+
+{
+title:"Movendo peças",
+text:"Segure uma peça do campo e arraste para mover.\n\nIsso inclui jogadores e a bola.",
 highlight:".piece"
 },
 
 {
 title:"Tokens de substituição",
-text:"Tokens de substituição funcionam diferente. Apenas um clique vira o token.",
+text:"Tokens de substituição viram com um toque simples.\n\nUse isso para indicar substituições.",
 highlight:".token27"
 },
 
 {
-title:"Recuperar cartas do campo",
-text:"Dê duplo clique na pilha para ver todas cartas jogadas.",
+title:"Pilhas de cartas",
+text:"Toque duas vezes em uma pilha para ver todas as cartas jogadas naquela posição.",
 highlight:".slot-pile"
 },
 
 {
 title:"Retirar carta da pilha",
-text:"Depois de abrir a pilha, selecione a carta para retornar à mão.",
+text:"Depois de abrir a pilha, arraste uma carta para devolver à mão ou ao deck.",
 highlight:".fan-card"
 },
 
 {
-title:"Fim do primeiro tempo",
-text:"Quando um dos jogadores não puder mais colocar em campo uma carta de uma das posições é o fim do primeiro tempo, então clique no botão Iniciar o 2º Tempo para continuar a partida",
-highlight:"#tempoBtn"
-},
-
-{
 title:"Cartas Twist",
-text:"Apenas cartas Twist podem ser ampliadas ou giradas.",
+text:"Cartas Twist criam eventos especiais na partida.",
 highlight:'[data-deck="T"]'
 },
 
 {
 title:"Zoom das Twist",
-text:"Segure a carta Twist para ver ampliada.",
+text:"Segure a carta Twist para ampliar e ver melhor.",
 highlight:".twist-card"
 },
 
 {
-title:"Giro das Twist",
-text:"Toque duas vezes na Twist para girar.",
+title:"Girar Twist",
+text:"Toque duas vezes na carta Twist para girar.",
 highlight:".twist-card"
+},
+
+{
+title:"Fim do primeiro tempo",
+text:"Quando um jogador não puder mais jogar cartas de uma posição, o primeiro tempo termina.\n\nToque no botão para iniciar o 2º tempo.",
+highlight:"#tempoBtn"
+},
+
+{
+title:"Dica de estratégia",
+text:"Controlar o meio-campo ajuda a dominar a posse da bola.\n\nDefesa protege seu gol e ataque pressiona o adversário.",
+highlight:".slot-pile"
 },
 
 {
 title:"Fim do tutorial",
-text:"Use o botão ? para abrir novamente este guia. Para mais detalhes sobre o jogo clique no botão Manual de Regras.",
+text:"Você pode abrir este guia novamente pelo botão ?.\n\nPara aprender todas as regras consulte o Manual de Regras.",
 highlight:null
 }
 

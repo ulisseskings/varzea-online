@@ -1887,27 +1887,93 @@ document.addEventListener("DOMContentLoaded", () => {
 const helpSteps = [
 
 {
-title:"Decks de compra",
-text:"Arraste os decks para comprar cartas para sua mão.",
-highlight:".deck-wrapper"
+title:"Objetivo do jogo",
+text:"O objetivo é marcar mais gols que o adversário.\n\nA bola avança pelo campo conforme as disputas entre cartas de cada posição.",
+highlight:"#board"
 },
 
 {
-title:"Cartas fixas",
-text:"Essas cartas representam regras especiais.",
+title:"As posições do time",
+text:"Cada carta representa um jogador:\n\nA = Atacante\nM = Meio-campo\nD = Defesa\nG = Goleiro\n\nCada posição disputa apenas com a mesma posição do adversário.",
 highlight:".fixed-board-card"
 },
 
 {
-title:"Sua mão",
-text:"Arraste cartas da mão para jogar no campo.",
-highlight:"#hand"
+title:"Sua mão de cartas",
+text:"Você começa com 13 cartas na mão.\n\nAntes de jogar no campo você deve sempre manter 13 cartas na mão, comprando dos decks.",
+highlight:"#hand, #hand_red"
 },
 
 {
-title:"Slots",
-text:"Aqui você coloca as cartas em campo.",
+title:"Comprar cartas",
+text:"Arraste um deck para comprar uma carta.\n\nCada deck contém cartas de uma posição específica.",
+highlight:'[data-deck="A"], [data-deck="M"], [data-deck="D"], [data-deck="G"], [data-deck="A_red"], [data-deck="M_red"], [data-deck="D_red"], [data-deck="G_red"]'
+},
+
+{
+title:"Disputar posições",
+text:"Arraste uma carta da sua mão para a posição correspondente no campo.\n\nO adversário disputará com uma carta da mesma posição.",
 highlight:".slot-pile"
+},
+
+{
+title:"Resultado da disputa",
+text:"A carta com maior valor vence.\n\nQuem vencer empurra a bola para o lado do adversário.",
+highlight:".ball"
+},
+
+{
+title:"Movimento da bola",
+text:"A bola avança ou recua conforme as disputas.\n\nSe ela chegar ao gol do adversário, você marca um gol.",
+highlight:".ball"
+},
+
+{
+title:"Cartas Twist",
+text:"Cartas Twist criam eventos especiais durante o jogo.\n\nElas podem alterar posições, efeitos ou situações da partida.",
+highlight:'[data-deck="T"]'
+},
+
+{
+title:"Penaltis",
+text:"Cartas de penalti podem ser jogadas nas áreas de penalti.\n\nElas criam disputas diretas que podem resultar em gol.",
+highlight:'[data-slot="P1"],[data-slot="P2"],[data-slot="P1_red"],[data-slot="P2_red"]'
+},
+
+{
+title:"Primeiro e segundo tempo",
+text:"Quando um jogador não puder mais jogar cartas em campo, o primeiro tempo termina.\n\nO segundo tempo começa com as cartas retornando aos decks.",
+highlight:"#tempoBtn"
+},
+
+{
+title:"Movendo peças",
+text:"As peças do campo e a bola podem ser movidas livremente pelos jogadores.\n\nUse isso para organizar o jogo.",
+highlight:".piece"
+},
+
+{
+title:"Zoom em cartas",
+text:"Clique duas vezes em uma carta Twist ou carta do campo para ampliar e ver melhor.",
+highlight:".twist-card"
+},
+
+{
+title:"Espectadores",
+text:"Espectadores podem clicar no campo para marcar pontos e chamar atenção dos jogadores.",
+highlight:"#board"
+},
+
+{
+title:"Dica estratégica",
+text:"Controle o meio-campo para dominar a posse da bola.\n\nDefesa protege seu gol.\n\nAtaque pressiona o adversário.",
+highlight:".slot-pile"
+},
+
+{
+title:"Pronto para jogar!",
+text:"Agora você já sabe o básico.\n\nBoa partida e que vença o melhor time!",
+highlight:"#board"
 }
 
 ];
@@ -1918,7 +1984,9 @@ const helpBtn = document.getElementById("helpBtn");
 const helpOverlay = document.getElementById("helpOverlay");
 const helpTitle = document.getElementById("helpTitle");
 const helpText = document.getElementById("helpText");
+const helpPrevBtn = document.getElementById("helpPrevBtn");
 const helpNextBtn = document.getElementById("helpNextBtn");
+const helpExitBtn = document.getElementById("helpExitBtn");
 
 helpBtn.onclick = () => {
 helpOverlay.style.display = "flex";
@@ -1927,28 +1995,49 @@ showHelpStep();
 };
 
 helpNextBtn.onclick = () => {
-helpIndex++;
 
-if(helpIndex >= helpSteps.length){
-closeHelp();
-return;
-}
+  helpIndex++;
 
-showHelpStep();
+  if(helpIndex >= helpSteps.length){
+    closeHelp();
+    return;
+  }
+
+  showHelpStep();
+};
+helpPrevBtn.onclick = () => {
+
+  helpIndex--;
+
+  if(helpIndex < 0){
+    helpIndex = 0;
+  }
+
+  showHelpStep();
+};
+
+helpExitBtn.onclick = () => {
+  closeHelp();
 };
 
 function showHelpStep(){
 
-document.querySelectorAll(".help-highlight")
-.forEach(el=>el.classList.remove("help-highlight"));
+  document.querySelectorAll(".help-highlight")
+    .forEach(el => el.classList.remove("help-highlight"));
 
-const step = helpSteps[helpIndex];
+  const step = helpSteps[helpIndex];
 
-helpTitle.innerText = step.title;
-helpText.innerText = step.text;
+  helpTitle.innerText = step.title;
+  helpText.innerText  = step.text;
 
-const el = document.querySelector(step.highlight);
-if(el) el.classList.add("help-highlight");
+  // 🔥 agora suporta múltiplos highlights
+  const elements = document.querySelectorAll(step.highlight);
+
+  elements.forEach(el=>{
+    el.classList.add("help-highlight");
+  });
+
+  updateHelpButtons();
 
 }
 
@@ -1956,6 +2045,20 @@ function closeHelp(){
 helpOverlay.style.display = "none";
 document.querySelectorAll(".help-highlight")
 .forEach(el=>el.classList.remove("help-highlight"));
+
+updateHelpButtons();
+}
+
+function updateHelpButtons(){
+
+  helpPrevBtn.style.display =
+    helpIndex === 0 ? "none" : "inline-block";
+
+  helpNextBtn.innerText =
+    helpIndex === helpSteps.length - 1
+      ? "Finalizar"
+      : "Próximo ➡";
+
 }
 
 function updateDeckCounters(){
@@ -1971,8 +2074,7 @@ return;
 
 counter.innerText = decks[deck].length;
 
-});
-
+  });
 }
 
 function checkOrientation(){

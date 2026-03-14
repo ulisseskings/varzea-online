@@ -942,6 +942,28 @@ img {
   border-radius:8px;
 }
 
+#helpControls{
+  margin-top:15px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+#helpControls button{
+  background:#065e2e;
+  color:white;
+  border:1px solid rgb(0,151,20);
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:bold;
+}
+
+#helpControls button:hover{
+  background:#08783c;
+}
+
 .deck-count{
 
 position:absolute;
@@ -1042,14 +1064,22 @@ user-select:none;
   <img src="https://i.imgur.com/2Czv8Fd.png">
 </button>
 
-  <button id="helpBtn">?</button>
+<button id="helpBtn">?</button>
 
 <div id="helpOverlay">
-  <div id="helpBox">
-    <div id="helpTitle"></div>
-    <div id="helpText"></div>
-    <button id="helpNextBtn">Próximo</button>
-  </div>
+
+<div id="helpBox">
+
+<h3 id="helpTitle"></h3>
+<p id="helpText"></p>
+
+<div id="helpControls">
+<button id="helpPrevBtn">⬅ Voltar</button>
+<button id="helpNextBtn">Próximo ➡</button>
+<button id="helpExitBtn">Sair</button>
+</div>
+
+</div>
 </div>
 
 <div id="rotateOverlay">
