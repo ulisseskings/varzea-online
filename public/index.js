@@ -678,8 +678,8 @@ function renderSlot(type) {
       fan.classList.add("last-card");
     }
 
-    fan.style.left = slotEl.style.left;
-    fan.style.top  = slotEl.style.top;
+    fan.style.left = slotEl.offsetLeft + "px";
+    fan.style.top  = slotEl.offsetTop + "px";
     fan.style.transform =
       `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`;
 
