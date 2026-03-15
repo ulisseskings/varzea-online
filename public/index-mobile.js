@@ -7,7 +7,22 @@ let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
 let selectedSlotCard = null;
-let lastPlayedCard = null;
+let lastPlayedCardId = null;
+let lastPlayedSlot = null;
+
+function setLastPlayedCard(el){
+
+  if(lastPlayedCardEl){
+    lastPlayedCardEl.classList.remove("last-played-card");
+  }
+
+  lastPlayedCardEl = el;
+
+  if(lastPlayedCardEl){
+    lastPlayedCardEl.classList.add("last-played-card");
+  }
+
+}
 let lastPlayedColor = null;
 
 // 🔥 carregar preferências salvas
@@ -115,7 +130,8 @@ function playSFX(src){
   shuffle: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/shufflecard_k795un.mp3",
   throw: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/throwingcard_uf8his.mp3",
   kick: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771880976/kickball_ebq3wi.mp3",
-  whistle: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/whistle_zwznax.mp3"
+  whistle: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/whistle_zwznax.mp3",
+  drop: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1773593574/dragcard_qgappw.mp3",
 };
 
 document.getElementById("musicToggle")
@@ -845,11 +861,15 @@ function renderHand() {
               }
 
             }
+          
+            
 
-            socket.emit("playCardToSlot", {
-              cardId: card.id,
-              slot: slot.dataset.slot
-            });
+          socket.emit("playCardToSlot", {
+            cardId: card.id,
+            slot: slot.dataset.slot
+          });
+
+            playSFX(SOUNDS.drop);
 
           }
 
@@ -909,7 +929,16 @@ function renderSlot(type) {
   }
 
   if(!slotFanOpen[type]) {
+
     slotEl.style.backgroundImage = `url(${pile[pile.length-1].front})`;
+
+    document.querySelectorAll(".slot-pile")
+      .forEach(el=>el.classList.remove("last-card"));
+
+    if(type === lastPlayedSlot){
+      slotEl.classList.add("last-card");
+    }
+
     return;
   }
 
@@ -923,22 +952,17 @@ fan.className = "fan-card";
 fan.dataset.slot = type;
 fan.dataset.cardId = card.id;
 
-// ⭐ destaque da última carta jogada
-if(i === pile.length - 1){
+// ⭐ última carta jogada
+    if(type === lastPlayedSlot && i === pile.length - 1){
 
-  // remove destaque antigo
-  document.querySelectorAll(".last-blue, .last-red")
-    .forEach(el=>{
-      el.classList.remove("last-blue","last-red");
-    });
+      document.querySelectorAll(".last-card")
+        .forEach(el=>{
+          el.classList.remove("last-card");
+        });
 
-  if(card.type.includes("_red")){
-    fan.classList.add("last-red");
-  }else{
-    fan.classList.add("last-blue");
-  }
+      fan.classList.add("last-card");
 
-}
+    }
 
 fan.addEventListener("touchstart", function(e){
 
@@ -1672,15 +1696,36 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
 
   renderHand();
 });
-socket.on("updateBoardSlots", (serverSlots)=>{
-  selectedSlotCard = null;
-  playSFX(SOUNDS.throw);
-  slotPiles = serverSlots;
+socket.on("updateBoardSlots", (data)=>{
+
+  if(data.slots){
+    slotPiles = data.slots
+    lastPlayedSlot = data.lastSlot
+  }else{
+    slotPiles = data
+  }
 
   Object.keys(slotPiles).forEach(type=>{
-    renderSlot(type);
-  });
-});
+    renderSlot(type)
+  })
+
+  // 🔥 aplicar animação
+  document.querySelectorAll(".slot-pile")
+    .forEach(el=>el.classList.remove("last-card"))
+
+  if(lastPlayedSlot){
+
+    const slotEl =
+      document.querySelector(`.slot-pile[data-slot="${lastPlayedSlot}"]`)
+
+    if(slotEl){
+      slotEl.classList.add("last-card")
+    }
+
+  }
+
+})
+
 socket.on("deckShuffled", (type)=>{
 
   playSFX(SOUNDS.shuffle);

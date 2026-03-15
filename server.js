@@ -514,9 +514,14 @@ socket.on("rotateTwist", ({id})=>{
 
     room.boardSlots[slot].push(card);
 
+    room.lastSlotPlayed = slot;
+
     socket.emit("yourHand", playerHand);
 
-    io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+    io.to(socket.roomCode).emit("updateBoardSlots", {
+  slots: room.boardSlots,
+  lastSlot: room.lastSlotPlayed
+});
 
     io.to(socket.roomCode).emit("handCounts", {
       blue: countHandTypes(room.hands.blue),

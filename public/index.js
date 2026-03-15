@@ -9,7 +9,23 @@ let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
 let manualZoom = 1;
-let lastPlayedCard = null;
+let lastPlayedCardId = null;
+let lastPlayedSlot = null;
+let lastPlayedCardEl = null;
+
+  function setLastPlayedCard(el){
+
+  if(lastPlayedCardEl){
+    lastPlayedCardEl.classList.remove("last-played-card");
+  }
+
+  lastPlayedCardEl = el;
+
+  if(lastPlayedCardEl){
+    lastPlayedCardEl.classList.add("last-played-card");
+  }
+
+}
 let lastPlayedColor = null;
 
 // 🔥 carregar preferências salvas
@@ -79,7 +95,8 @@ function playSFX(src){
   shuffle: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/shufflecard_k795un.mp3",
   throw: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/throwingcard_uf8his.mp3",
   kick: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771880976/kickball_ebq3wi.mp3",
-  whistle: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/whistle_zwznax.mp3"
+  whistle: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/whistle_zwznax.mp3",
+  drop: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1773593574/dragcard_qgappw.mp3",
 };
 
 document.getElementById("musicToggle")
@@ -560,7 +577,11 @@ function renderHand() {
         img.src = card.front;
         img.className="hand-card";
 
-        img.style.zIndex = groups[type].length - i;
+        if(isRedHand){
+          img.style.zIndex = groups[type].length - i;
+        }else{
+          img.style.zIndex = i + 1;
+        }
 
 
 
@@ -628,7 +649,16 @@ function renderSlot(type) {
   }
 
   if(!slotFanOpen[type]) {
+
     slotEl.style.backgroundImage = `url(${pile[pile.length-1].front})`;
+
+    document.querySelectorAll(".slot-pile")
+      .forEach(el=>el.classList.remove("last-card"));
+
+    if(type === lastPlayedSlot){
+      slotEl.classList.add("last-card");
+    }
+
     return;
   }
 
@@ -640,21 +670,12 @@ function renderSlot(type) {
     fan.className="fan-card";
     fan.dataset.slot=type;
 
-        // ⭐ destaque da última carta jogada
-    if(i === pile.length - 1){
+    // ⭐ última carta jogada
+    document.querySelectorAll(".last-card")
+      .forEach(el=>el.classList.remove("last-card"));
 
-      // remove destaque antigo
-      document.querySelectorAll(".last-blue, .last-red")
-        .forEach(el=>{
-          el.classList.remove("last-blue","last-red");
-        });
-
-      if(card.type.includes("_red")){
-        fan.classList.add("last-red");
-      }else{
-        fan.classList.add("last-blue");
-      }
-
+    if(type === lastPlayedSlot && i === pile.length - 1){
+      fan.classList.add("last-card");
     }
 
     fan.style.left = slotEl.style.left;
@@ -722,21 +743,17 @@ function getCorrectPoint(clientX, clientY){
 
   const rect = board.getBoundingClientRect();
 
-  // posição do clique dentro do board transformado
-  let x = (clientX - rect.left) / rect.width;
-  let y = (clientY - rect.top) / rect.height;
+  const boardWidth  = 1152;
+  const boardHeight = 658;
 
-  // converter para coordenada real do board
-  x *= board.offsetWidth;
-  y *= board.offsetHeight;
+  const scaleX = rect.width  / boardWidth;
+  const scaleY = rect.height / boardHeight;
 
-  // corrigir rotação do jogador vermelho
-  if(playerRole === "red"){
-    x = board.offsetWidth  - x;
-    y = board.offsetHeight - y;
-  }
+  const x = (clientX - rect.left) / scaleX;
+  const y = (clientY - rect.top)  / scaleY;
 
-  return {x, y};
+  return { x, y };
+
 }
 
 
@@ -757,8 +774,8 @@ board.addEventListener("drop",(e)=>{
 
     const anchor = document.getElementById(moveAnchor);
 
-    let x = corrected.x - rect.left;
-    let y = corrected.y - rect.top;
+    let x = corrected.x;
+    let y = corrected.y;
 
 
     // limites tabuleiro
@@ -786,8 +803,8 @@ board.addEventListener("drop",(e)=>{
 
     const rect = board.getBoundingClientRect();
 
-    const x = corrected.x - rect.left;
-    const y = corrected.y - rect.top;
+    const x = corrected.x;
+    const y = corrected.y;
 
     socket.emit("moveTwist", {
       id: moveTwistId,
@@ -805,8 +822,8 @@ board.addEventListener("drop",(e)=>{
 
   if(moveFree && draggedFreeCard){
 
-    let x = corrected.x - rect.left;
-    let y = corrected.y - rect.top;
+    let x = corrected.x;
+    let y = corrected.y;
 
     x = Math.max(0, Math.min(board.clientWidth, x));
     y = Math.max(80, Math.min(board.clientHeight - 80, y));
@@ -956,10 +973,13 @@ if(draggedFreeCard){
         hand = hand.filter(c => c.id !== card.id);
       }
 
-      socket.emit("playCardToSlot", {
-        cardId: card.id,
-        slot: slotType
-      });
+    lastPlayedCardId = card.id;
+
+    socket.emit("playCardToSlot", {
+      cardId: card.id,
+      slot: slotType
+    });
+      playSFX(SOUNDS.drop);
 
       renderHand();
       renderSlot(slotType);
@@ -1550,14 +1570,36 @@ socket.on("handCounts", (counts)=>{
 
 });
 
-socket.on("updateBoardSlots", (serverSlots)=>{
-  playSFX(SOUNDS.throw);
-  slotPiles = serverSlots;
+socket.on("updateBoardSlots", (data)=>{
+
+  if(data.slots){
+    slotPiles = data.slots
+    lastPlayedSlot = data.lastSlot
+  }else{
+    slotPiles = data
+  }
 
   Object.keys(slotPiles).forEach(type=>{
-    renderSlot(type);
-  });
-});
+    renderSlot(type)
+  })
+
+  // 🔥 aplicar animação
+  document.querySelectorAll(".slot-pile")
+    .forEach(el=>el.classList.remove("last-card"))
+
+  if(lastPlayedSlot){
+
+    const slotEl =
+      document.querySelector(`.slot-pile[data-slot="${lastPlayedSlot}"]`)
+
+    if(slotEl){
+      slotEl.classList.add("last-card")
+    }
+
+  }
+
+})
+
 socket.on("deckShuffled", (type)=>{
 
   playSFX(SOUNDS.shuffle);

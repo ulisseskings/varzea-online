@@ -1234,14 +1234,17 @@ animation:helpPulse 1.2s infinite;
   transform:scale(1.1);
 }
 
-.last-blue{
-  box-shadow:0 0 14px 4px #2da8ff;
-  border-radius:8px;
+/* ===================== */
+/* ÚLTIMA CARTA JOGADA */
+
+.last-card{
+  animation: cardSwing 1.2s infinite ease-in-out;
 }
 
-.last-red{
-  box-shadow:0 0 14px 4px #ff2d2d;
-  border-radius:8px;
+@keyframes cardSwing{
+  0%{ transform: translate(-50%,-50%) rotate(-2deg); }
+  50%{ transform: translate(-50%,-50%) rotate(2deg); }
+  100%{ transform: translate(-50%,-50%) rotate(-2deg); }
 }
 
   </style>
