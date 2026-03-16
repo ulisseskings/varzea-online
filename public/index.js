@@ -12,6 +12,7 @@ let manualZoom = 1;
 let lastPlayedCardId = null;
 let lastPlayedSlot = null;
 let lastPlayedCardEl = null;
+let lastServerSlots = null;
 
 
 let lastPlayedColor = null;
@@ -625,8 +626,10 @@ updateHandCounters();
 /* SLOT */
 
 function renderSlot(type) {
-  document.querySelectorAll(`.fan-card[data-slot="${type}"]`)
-    .forEach(c=>c.remove());
+  if(slotFanOpen[type]){
+    document.querySelectorAll(`.fan-card[data-slot="${type}"]`)
+      .forEach(c=>c.remove());
+  }
 
   const pile = slotPiles[type];
   const slotEl = document.querySelector(`.slot-pile[data-slot="${type}"]`);
@@ -652,6 +655,9 @@ function renderSlot(type) {
 
   slotEl.style.backgroundImage="none";
 
+      document.querySelectorAll(".last-card")
+      .forEach(el=>el.classList.remove("last-card"));
+
   pile.forEach((card,i)=>{
     const fan=document.createElement("img");
     fan.src=card.front;
@@ -659,8 +665,7 @@ function renderSlot(type) {
     fan.dataset.slot=type;
 
     // ⭐ última carta jogada
-    document.querySelectorAll(".last-card")
-      .forEach(el=>el.classList.remove("last-card"));
+
 
     if(type === lastPlayedSlot && i === pile.length - 1){
       fan.classList.add("last-card");
@@ -1041,7 +1046,7 @@ function checkDeckEnd(){
 /* ===================== */
 /* DROP GLOBAL (fora do tabuleiro) */
 
-document.addEventListener("drop", (e) => {
+/*document.addEventListener("drop", (e) => {
 
   const corrected = getCorrectPoint(e.clientX, e.clientY);
 
@@ -1066,7 +1071,7 @@ document.addEventListener("drop", (e) => {
   anchor.style.top  = `${y - rect.top}px`;
 
   applyAnchors();
-  });
+  });/*
 
 /* ===================== */
 /* APPLY ANCHORS (VOLTOU!) */
@@ -1565,9 +1570,17 @@ socket.on("updateBoardSlots", (data)=>{
     slotPiles = data
   }
 
-  Object.keys(slotPiles).forEach(type=>{
-    renderSlot(type)
-  })
+  if(!lastServerSlots){
+    Object.keys(slotPiles).forEach(type=>renderSlot(type));
+  }else{
+    Object.keys(slotPiles).forEach(type=>{
+      if(JSON.stringify(slotPiles[type]) !== JSON.stringify(lastServerSlots[type])){
+        renderSlot(type);
+      }
+    });
+  }
+
+  lastServerSlots = JSON.parse(JSON.stringify(slotPiles));
 
   // 🔥 aplicar animação
   document.querySelectorAll(".slot-pile")
