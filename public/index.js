@@ -673,11 +673,11 @@ function renderSlot(type) {
       fan.classList.add("last-card");
     }
 
-    const offsetX = 39;
-    const offsetY = 67;
+    const rect = slotEl.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
 
-    fan.style.left = (parseFloat(slotEl.style.left) + offsetX) + "px";
-    fan.style.top  = (parseFloat(slotEl.style.top)  + offsetY) + "px";
+    fan.style.left = (rect.left - boardRect.left + rect.width/2) + "px";
+    fan.style.top  = (rect.top  - boardRect.top  + rect.height/2) + "px";
 
     if(i === pile.length - 1){
       fan.style.transform = `translate(-50%,-50%)`
