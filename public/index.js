@@ -752,8 +752,14 @@ function getCorrectPoint(clientX, clientY){
   const scaleX = rect.width  / boardWidth;
   const scaleY = rect.height / boardHeight;
 
-  const x = (clientX - rect.left) / scaleX;
-  const y = (clientY - rect.top)  / scaleY;
+  let x = (clientX - rect.left) / scaleX;
+  let y = (clientY - rect.top)  / scaleY;
+
+  // 🔥 corrigir rotação do tabuleiro vermelho
+  if(playerRole === "red"){
+    x = boardWidth  - x;
+    y = boardHeight - y;
+  }
 
   return { x, y };
 
@@ -782,8 +788,11 @@ board.addEventListener("drop",(e)=>{
 
 
     // limites tabuleiro
-    x = Math.max(-400, Math.min(board.clientWidth + 400, x));
-    y = Math.max(-400, Math.min(board.clientHeight + 400, y));
+    const boardWidth = 1152;
+    const boardHeight = 658;
+
+    x = Math.max(-400, Math.min(boardWidth + 400, x));
+    y = Math.max(-400, Math.min(boardHeight + 400, y));
 
 
   socket.emit("moveToken", {
