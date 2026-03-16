@@ -658,6 +658,9 @@ function renderSlot(type) {
       document.querySelectorAll(".last-card")
       .forEach(el=>el.classList.remove("last-card"));
 
+    const centerX = slotEl.offsetLeft + slotEl.offsetWidth / 2
+    const centerY = slotEl.offsetTop  + slotEl.offsetHeight / 2
+
   pile.forEach((card,i)=>{
     const fan=document.createElement("img");
     fan.src=card.front;
@@ -671,8 +674,8 @@ function renderSlot(type) {
       fan.classList.add("last-card");
     }
 
-    fan.style.left = slotEl.offsetLeft + slotEl.offsetWidth / 2 + "px";
-    fan.style.top  = slotEl.offsetTop  + slotEl.offsetHeight / 2 + "px";
+    fan.style.left = centerX + "px";
+    fan.style.top  = centerY + "px";
 
     fan.style.transform =
       `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`;
