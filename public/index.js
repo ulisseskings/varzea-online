@@ -1269,7 +1269,7 @@ function spawnTwistCard(card){
 
   img.src = card.front;
 
-  img.className = "piece twist-card";
+  img.className = "twist-card";
   img.style.zIndex = 9000;   // 👈 ADICIONE AQUI
  
 
