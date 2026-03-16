@@ -1471,7 +1471,11 @@ function startSecondHalf(){
   });
 
   document.addEventListener("drop", (e) => {
+
+    if(e.target.closest("#board")) return;
+
     e.preventDefault();
+
   });
 
 
