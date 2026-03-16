@@ -1088,11 +1088,19 @@ function checkDeckEnd(){
         el.style.top=anchor.style.top;
       }
     });
+    document.querySelectorAll(".slot-pile").forEach(slot=>{
+      const anchor = document.getElementById(slot.dataset.anchor);
+      if(anchor){
+        slot.style.left = anchor.style.left;
+        slot.style.top  = anchor.style.top;
+      }
+    });
   }
 
   applyAnchors();
   /* ===================== */
   /* MOVER TOKENS LIVREMENTE */
+
 
 document.querySelectorAll(".piece").forEach(piece => {
 
