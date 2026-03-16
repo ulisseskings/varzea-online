@@ -1292,7 +1292,7 @@ function spawnTwistCard(card){
   /* ===================== */
   /* DRAG */
   img.addEventListener("dragstart",(e)=>{
-    e.dataTransfer.setData("moveTwist", card.id);
+    e.dataTransfer.setData("moveTwist", String(card.id));
   });
 
   /* ===================== */
