@@ -677,8 +677,12 @@ function renderSlot(type) {
     fan.style.left = slotEl.style.left;
     fan.style.top  = slotEl.style.top;
 
-    fan.style.transform =
-      `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`;
+    if(i === pile.length - 1){
+      fan.style.transform = `translate(-50%,-50%)`
+    }else{
+      fan.style.transform =
+        `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`
+    }
 
     fan.draggable=true;
 
