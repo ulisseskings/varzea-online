@@ -13,19 +13,7 @@ let lastPlayedCardId = null;
 let lastPlayedSlot = null;
 let lastPlayedCardEl = null;
 
-  function setLastPlayedCard(el){
 
-  if(lastPlayedCardEl){
-    lastPlayedCardEl.classList.remove("last-played-card");
-  }
-
-  lastPlayedCardEl = el;
-
-  if(lastPlayedCardEl){
-    lastPlayedCardEl.classList.add("last-played-card");
-  }
-
-}
 let lastPlayedColor = null;
 
 // 🔥 carregar preferências salvas
@@ -787,17 +775,11 @@ board.addEventListener("drop",(e)=>{
     y = Math.max(-400, Math.min(board.clientHeight + 400, y));
 
 
-    anchor.style.left = `${x}px`;
-    anchor.style.top  = `${y}px`;
-
-    applyAnchors();
-
-    // 🔥 ENVIA PARA SERVIDOR
-    socket.emit("moveToken", {
-      anchor: moveAnchor,
-      x: x,
-      y: y
-    });
+  socket.emit("moveToken", {
+    anchor: moveAnchor,
+    x: x,
+    y: y
+  });
 
     return;
   }
@@ -986,7 +968,7 @@ if(draggedFreeCard){
       playSFX(SOUNDS.drop);
 
       renderHand();
-      renderSlot(slotType);
+      
       return;
     }
   }
