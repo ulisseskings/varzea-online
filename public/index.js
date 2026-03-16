@@ -669,13 +669,15 @@ function renderSlot(type) {
 
     // ⭐ última carta jogada
 
-
-    if(type === lastPlayedSlot && i === pile.length - 1){
+    if(type === lastPlayedSlot && i === pile.length - 1 && !slotEl.classList.contains("open")){
       fan.classList.add("last-card");
     }
 
-    fan.style.left = slotEl.style.left;
-    fan.style.top  = slotEl.style.top;
+    const offsetX = 39;
+    const offsetY = 67;
+
+    fan.style.left = (parseFloat(slotEl.style.left) + offsetX) + "px";
+    fan.style.top  = (parseFloat(slotEl.style.top)  + offsetY) + "px";
 
     if(i === pile.length - 1){
       fan.style.transform = `translate(-50%,-50%)`
