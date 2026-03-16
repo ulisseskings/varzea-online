@@ -869,7 +869,6 @@ function renderHand() {
             slot: slot.dataset.slot
           });
 
-            playSFX(SOUNDS.drop);
 
           }
 
@@ -1697,6 +1696,10 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
   renderHand();
 });
 socket.on("updateBoardSlots", (data)=>{
+
+  if(data.lastSlot){
+    playSFX(SOUNDS.drop);
+  }
 
   if(data.slots){
     slotPiles = data.slots

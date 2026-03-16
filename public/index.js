@@ -985,7 +985,7 @@ if(draggedFreeCard){
       cardId: card.id,
       slot: slotType
     });
-      playSFX(SOUNDS.drop);
+
 
       renderHand();
       
@@ -1585,6 +1585,10 @@ socket.on("handCounts", (counts)=>{
 });
 
 socket.on("updateBoardSlots", (data)=>{
+
+  if(data.lastSlot){
+    playSFX(SOUNDS.drop);
+  }  
 
   if(data.slots){
     slotPiles = data.slots
