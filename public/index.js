@@ -766,7 +766,10 @@ function getCorrectPoint(clientX, clientY){
 }
 
 
-board.addEventListener("dragover", e => e.preventDefault());
+board.addEventListener("dragover", (e)=>{
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+});
 
 board.addEventListener("drop",(e)=>{
   e.preventDefault();
@@ -1472,7 +1475,9 @@ function startSecondHalf(){
 
   document.addEventListener("drop", (e) => {
 
-    if(e.target.closest("#board")) return;
+    const boardEl = document.getElementById("board");
+
+    if(boardEl.contains(e.target)) return;
 
     e.preventDefault();
 
