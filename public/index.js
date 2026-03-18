@@ -933,9 +933,24 @@ if(draggedFreeCard){
     // soltou em slot
     const boardRect = board.getBoundingClientRect();
 
-    const el = document.elementFromPoint(e.clientX, e.clientY);
+    let targetSlot = null;
 
-    let targetSlot = el?.closest(".slot-pile");
+    // 🔥 tenta pegar direto
+    let el = document.elementFromPoint(e.clientX, e.clientY);
+    targetSlot = el?.closest(".slot-pile");
+
+    // 🔥 fallback FORTE (corrige scale + zoom + rotate)
+    if(!targetSlot){
+
+      const boardRect = board.getBoundingClientRect();
+
+      const px = boardRect.left + (corrected.x / 1152) * boardRect.width;
+      const py = boardRect.top  + (corrected.y / 658) * boardRect.height;
+
+      const el2 = document.elementFromPoint(px, py);
+      targetSlot = el2?.closest(".slot-pile");
+
+    }
 
     // 🔥 fallback corrigido usando posição relativa ao board
     if(!targetSlot){
@@ -1031,7 +1046,7 @@ if(draggedFreeCard){
     return;
   }
 
-  const elementBelow = document.elementFromPoint(corrected.x, corrected.y);
+  const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
   const targetSlot = elementBelow?.closest(".slot-pile");
 
   if(targetSlot){
@@ -1287,6 +1302,7 @@ function spawnTwistCard(card){
   img.className = "twist-card";
   img.style.position = "absolute";
   img.style.zIndex = 9000;   // 👈 ADICIONE AQUI
+  img.style.pointerEvents = "auto";
  
 
   img.style.width = "74px";
