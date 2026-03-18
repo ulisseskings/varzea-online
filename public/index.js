@@ -606,6 +606,7 @@ function renderHand() {
         });
 
         groupDiv.appendChild(img);
+        
 
       });
 
@@ -1323,6 +1324,8 @@ function spawnTwistCard(card){
 
     draggingTwist = card.id;
 
+    highlightSlot("T");
+
     e.dataTransfer.setData("text/plain", "twist"); // só pra ativar drag
   });
     
@@ -1342,6 +1345,7 @@ img.addEventListener("dragend", ()=>{
     });
 
     draggingTwist = null;
+    clearHighlight();
     return;
   }
 
@@ -1365,11 +1369,15 @@ img.addEventListener("dragend", ()=>{
     setTimeout(()=> moved = true, 50);
   });
 
-  img.addEventListener("click", ()=>{
-    if(moved) return;
+  img.addEventListener("dblclick", ()=>{
 
-    socket.emit("rotateTwist", { id: card.id });
+    socket.emit("rotateTwist", {
+      id: card.id,
+      double: true // 🔥 importante
+    });
+
   });
+  
 
 // 🔥 BOTÃO DIREITO = ZOOM
 img.addEventListener("contextmenu", (e)=>{
@@ -1556,6 +1564,16 @@ function startSecondHalf(){
         overlay.style.display = "flex";
 
     });
+
+    card.addEventListener("contextmenu", (e)=>{
+  e.preventDefault();
+
+  const overlay = document.getElementById("twistZoomOverlay");
+  const zoomImg = document.getElementById("twistZoomImg");
+
+  zoomImg.src = card.src;
+  overlay.style.display = "flex";
+});
 
   });
   // ===============================

@@ -459,7 +459,7 @@ socket.on("drawTwist", ()=>{
 
 });
 
-socket.on("rotateTwist", ({id})=>{
+socket.on("rotateTwist", ({id, double})=>{
 
   const room = rooms[socket.roomCode];
   if(!room) return;
@@ -467,7 +467,10 @@ socket.on("rotateTwist", ({id})=>{
   const twist = room.twists.find(t=>t.id == id);
   if(!twist) return;
 
-  twist.rotation = (twist.rotation + 180) % 360;
+  // 🔥 define rotação
+  const amount = double ? 180 : 90;
+
+  twist.rotation = (twist.rotation + amount) % 360;
 
   io.to(socket.roomCode).emit("twistRotated", twist);
 
