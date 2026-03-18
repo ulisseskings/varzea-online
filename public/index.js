@@ -792,22 +792,6 @@ board.addEventListener("drop",(e)=>{
 
       const corrected = getCorrectPoint(e.clientX, e.clientY);
 
-      // 🔥 COLE ISSO AQUI (LINHA NOVA)
-       if(draggingTwist){
-
-        const x = corrected.x;
-        const y = corrected.y;
-
-        socket.emit("moveTwist", {
-          id: draggingTwist,
-          x,
-          y
-        });
-
-        draggingTwist = null;
-
-        return;
-      }
 
   let data;
 
@@ -1348,6 +1332,20 @@ img.addEventListener("dragend", ()=>{
 
   const corrected = getCorrectPoint(lastMouse.x, lastMouse.y);
 
+  // 🔥 verifica se soltou no deck
+  const targetDeck = getTargetDeck(lastMouse.x, lastMouse.y);
+
+  if(targetDeck && targetDeck.dataset.deck === "T"){
+
+    socket.emit("returnTwistToDeck", {
+      id: draggingTwist
+    });
+
+    draggingTwist = null;
+    return;
+  }
+
+  // 🔥 movimento normal
   socket.emit("moveTwist", {
     id: draggingTwist,
     x: corrected.x,
@@ -1357,6 +1355,32 @@ img.addEventListener("dragend", ()=>{
   draggingTwist = null;
 });
 
+  let moved = false;
+
+  img.addEventListener("dragstart", ()=>{
+    moved = false;
+  });
+
+  img.addEventListener("dragend", ()=>{
+    setTimeout(()=> moved = true, 50);
+  });
+
+  img.addEventListener("click", ()=>{
+    if(moved) return;
+
+    socket.emit("rotateTwist", { id: card.id });
+  });
+
+// 🔥 BOTÃO DIREITO = ZOOM
+img.addEventListener("contextmenu", (e)=>{
+  e.preventDefault();
+
+  const overlay = document.getElementById("twistZoomOverlay");
+  const zoomImg = document.getElementById("twistZoomImg");
+
+  zoomImg.src = img.dataset.front;
+  overlay.style.display = "flex";
+});
   board.appendChild(img);
 }
 
@@ -1783,7 +1807,7 @@ socket.on("twistMoved", (card)=>{
   el.style.top  = card.y + "px";
 
   el.style.transform =
-    `rotate(${card.rotation || 0}deg)`;
+    `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
 
 });
 
@@ -1986,6 +2010,10 @@ if (fullscreenBtn) {
 
 }
 document.addEventListener("contextmenu", e => {
+
+  // 🔥 só bloqueia fora das twist
+  if(e.target.closest(".twist-card")) return;
+
   e.preventDefault();
 });
 
