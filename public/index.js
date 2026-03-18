@@ -931,8 +931,20 @@ if(draggedFreeCard){
   }
 
     // soltou em slot
-    const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-    const targetSlot = elementBelow.closest(".slot-pile");
+    const boardRect = board.getBoundingClientRect();
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+
+    let targetSlot = el?.closest(".slot-pile");
+
+    // 🔥 fallback corrigido usando posição relativa ao board
+    if(!targetSlot){
+      const px = boardRect.left + corrected.x * (boardRect.width / 1152);
+      const py = boardRect.top  + corrected.y * (boardRect.height / 658);
+
+      const el2 = document.elementFromPoint(px, py);
+      targetSlot = el2?.closest(".slot-pile");
+    }
 
   if(targetSlot){
 
@@ -1273,6 +1285,7 @@ function spawnTwistCard(card){
   img.src = card.front;
 
   img.className = "twist-card";
+  img.style.position = "absolute";
   img.style.zIndex = 9000;   // 👈 ADICIONE AQUI
  
 
@@ -1747,6 +1760,10 @@ socket.on("twistMoved", (card)=>{
 
   el.style.left = card.x + "px";
   el.style.top  = card.y + "px";
+
+  el.style.transform =
+    `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
+
 });
 
 socket.on("twistRotated", (card)=>{
