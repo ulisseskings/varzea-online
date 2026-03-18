@@ -1280,14 +1280,46 @@ document.querySelectorAll(".piece").forEach(piece=>{
 
 function spawnTwistCard(card){
 
-  img.addEventListener("dragstart",(e)=>{
-  console.log("DRAG TWIST", card.id); // 🔥 debug
+  if(document.querySelector(`.twist-card[data-id="${card.id}"]`)){
+    return;
+  }
 
-  e.dataTransfer.setData("text/plain", JSON.stringify({
-    type: "twist",
-    id: card.id
-  }));
-});
+  const img = document.createElement("img"); // 🔥 PRIMEIRO CRIA
+
+  img.src = card.front;
+  img.className = "twist-card";
+
+  img.style.position = "absolute";
+  img.style.zIndex = 9000;
+  img.style.pointerEvents = "auto";
+
+  img.style.width = "74px";
+  img.style.height = "103px";
+
+  img.dataset.id = card.id;
+  img.dataset.front = card.front;
+  img.dataset.rotation = card.rotation || 0;
+
+  img.style.left = card.x + "px";
+  img.style.top  = card.y + "px";
+
+  img.style.transform =
+    `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
+
+  img.draggable = true;
+
+  // 🔥 AGORA SIM adiciona eventos
+  img.addEventListener("dragstart",(e)=>{
+    console.log("DRAG TWIST", card.id);
+
+    e.dataTransfer.setData("text/plain", JSON.stringify({
+      type: "twist",
+      id: card.id
+    }));
+  });
+
+  board.appendChild(img);
+}
   
 
   if(document.querySelector(`.twist-card[data-id="${card.id}"]`)){

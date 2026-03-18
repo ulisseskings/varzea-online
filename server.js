@@ -877,8 +877,18 @@ socket.on("drawCard", (deckType) => {
 
   });
 
-  socket.on("moveTwist", (data)=>{
-  console.log("MOVE TWIST SERVER:", data);
+socket.on("moveTwist", (data)=>{
+
+  const room = rooms[socket.roomCode];
+  if(!room) return;
+
+  const twist = room.twists.find(t => t.id == data.id);
+  if(!twist) return;
+
+  twist.x = data.x;
+  twist.y = data.y;
+
+  io.to(socket.roomCode).emit("twistMoved", twist);
 });
 
   socket.on("disconnect", () => {
