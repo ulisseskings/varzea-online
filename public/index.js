@@ -1256,7 +1256,10 @@ document.querySelectorAll(".piece").forEach(piece=>{
       token.style.zIndex = 12000 + i;
 
       token.addEventListener("dragstart", (e)=>{
-        e.dataTransfer.setData("movePiece", anchor.id);
+        e.dataTransfer.setData("text/plain", JSON.stringify({
+          type: "token",
+          anchor: anchor.id
+        }));
       });
 
       board.appendChild(token);
