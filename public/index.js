@@ -1279,6 +1279,15 @@ document.querySelectorAll(".piece").forEach(piece=>{
   const TWIST_BACK = "https://i.imgur.com/D40CPCK.png";
 
 function spawnTwistCard(card){
+
+  img.addEventListener("dragstart",(e)=>{
+  console.log("DRAG TWIST", card.id); // 🔥 debug
+
+  e.dataTransfer.setData("text/plain", JSON.stringify({
+    type: "twist",
+    id: card.id
+  }));
+});
   
 
   if(document.querySelector(`.twist-card[data-id="${card.id}"]`)){
@@ -1771,7 +1780,7 @@ socket.on("twistMoved", (card)=>{
   el.style.top  = card.y + "px";
 
   el.style.transform =
-    `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
+    `rotate(${card.rotation || 0}deg)`;
 
 });
 

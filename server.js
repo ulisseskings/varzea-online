@@ -877,6 +877,10 @@ socket.on("drawCard", (deckType) => {
 
   });
 
+  socket.on("moveTwist", (data)=>{
+  console.log("MOVE TWIST SERVER:", data);
+});
+
   socket.on("disconnect", () => {
 
     const room = rooms[socket.roomCode];
