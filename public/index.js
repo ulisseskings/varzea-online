@@ -15,6 +15,13 @@ let lastPlayedCardEl = null;
 let lastServerSlots = null;
 let draggingTwist = null;
 
+let lastMouse = { x:0, y:0 };
+
+document.addEventListener("dragover", (e)=>{
+  lastMouse.x = e.clientX;
+  lastMouse.y = e.clientY;
+});
+
 
 let lastPlayedColor = null;
 
@@ -1335,9 +1342,20 @@ function spawnTwistCard(card){
     e.dataTransfer.setData("text/plain", "twist"); // só pra ativar drag
   });
     
-  img.addEventListener("dragend", ()=>{
-  draggingTwist = null;
+img.addEventListener("dragend", ()=>{
+
+  if(!draggingTwist) return;
+
+  const corrected = getCorrectPoint(lastMouse.x, lastMouse.y);
+
+  socket.emit("moveTwist", {
+    id: draggingTwist,
+    x: corrected.x,
+    y: corrected.y
   });
+
+  draggingTwist = null;
+});
 
   board.appendChild(img);
 }
@@ -1483,7 +1501,13 @@ function startSecondHalf(){
     e.preventDefault();
   });
 
+  board.addEventListener("dragenter", (e)=>{
+  e.preventDefault();
+});
+
   document.addEventListener("drop", (e) => {
+
+    console.log("DROP DISPAROU");
 
     const boardEl = document.getElementById("board");
 
