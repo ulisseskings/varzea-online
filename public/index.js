@@ -2129,7 +2129,7 @@ highlight:".piece"
 
 {
 title:"Zoom em cartas",
-text:"Clique duas vezes em uma carta Twist ou carta do campo para ampliar e ver melhor.",
+text:"Clique com o botão direito do mouse sobre uma carta Twist para ampliá-la e vê-la melhor.",
 highlight:".twist-card"
 },
 
