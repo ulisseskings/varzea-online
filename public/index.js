@@ -13,6 +13,7 @@ let lastPlayedCardId = null;
 let lastPlayedSlot = null;
 let lastPlayedCardEl = null;
 let lastServerSlots = null;
+let draggingTwist = null;
 
 
 let lastPlayedColor = null;
@@ -780,8 +781,26 @@ board.addEventListener("dragover", (e)=>{
 
 board.addEventListener("drop",(e)=>{
 
-  
-  e.preventDefault();
+    e.preventDefault();
+
+      const corrected = getCorrectPoint(e.clientX, e.clientY);
+
+      // 🔥 COLE ISSO AQUI (LINHA NOVA)
+       if(draggingTwist){
+
+        const x = corrected.x;
+        const y = corrected.y;
+
+        socket.emit("moveTwist", {
+          id: draggingTwist,
+          x,
+          y
+        });
+
+        draggingTwist = null;
+
+        return;
+      }
 
   let data;
 
@@ -793,7 +812,6 @@ board.addEventListener("drop",(e)=>{
 
 
   const rect = board.getBoundingClientRect();
-  const corrected = getCorrectPoint(e.clientX, e.clientY);
 
   /* ===================== */
   /* 1. MOVER TOKENS */
@@ -1312,15 +1330,17 @@ function spawnTwistCard(card){
   img.addEventListener("dragstart",(e)=>{
     console.log("DRAG TWIST", card.id);
 
-    e.dataTransfer.setData("text/plain", JSON.stringify({
-      type: "twist",
-      id: card.id
-    }));
+    draggingTwist = card.id;
+
+    e.dataTransfer.setData("text/plain", "twist"); // só pra ativar drag
+  });
+    
+  img.addEventListener("dragend", ()=>{
+  draggingTwist = null;
   });
 
   board.appendChild(img);
 }
-  
 
 
 
