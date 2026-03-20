@@ -14,6 +14,10 @@ let lastPlayedSlot = null;
 let lastPlayedCardEl = null;
 let lastServerSlots = null;
 let draggingTwist = null;
+let selectedCard = null;
+let selectedFrom = null; // "hand" ou "fan"
+let selectedIndex = null;
+let selectedSlot = null;
 
 let lastMouse = { x:0, y:0 };
 
@@ -25,41 +29,6 @@ document.addEventListener("dragover", (e)=>{
 
 let lastPlayedColor = null;
 
-// 🔥 carregar preferências salvas
-window.addEventListener("DOMContentLoaded", () => {
-
-  bgMusic = document.getElementById("bgMusic");
-  // recuperar estado salvo
-  const savedMusic = sessionStorage.getItem("musicEnabled");
-  const savedVolume = sessionStorage.getItem("musicVolume");
-
-  const savedSfx = sessionStorage.getItem("sfxEnabled");
-if(savedSfx !== null){
-  sfxEnabled = savedSfx === "true";
-}
-
-  if(savedMusic !== null){
-    musicEnabled = savedMusic === "true";
-  }
-
-  if(savedVolume !== null){
-    currentVolume = parseFloat(savedVolume);
-  }
-
-  bgMusic.volume = currentVolume;
-
-  // atualizar botão
-  const musicBtn = document.getElementById("musicToggle");
-  if(musicBtn){
-    musicBtn.innerText = musicEnabled ? "🎵 ON" : "🎵 OFF";
-  }
-
-  const slider = document.getElementById("volumeSlider");
-  if(slider){
-    slider.value = currentVolume;
-  }
-
-});
 
 function startMusicOnFirstInteraction(){
 
@@ -84,7 +53,8 @@ function playSFX(src){
 
   const sound = audioCache[src].cloneNode();
   sound.volume = 0.5;
-  sound.play().catch(()=>{});}
+  sound.play().catch(()=>{});
+  }
 
   const SOUNDS = {
   drag: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/dragtoken_th8vbx.mp3",
@@ -147,6 +117,53 @@ window.addEventListener("DOMContentLoaded", () => {
       document.getElementById("sfxToggle").innerText =
         sfxEnabled ? "🔊 ON" : "🔇 OFF";
   });
+  // recuperar estado salvo
+  const savedMusic = sessionStorage.getItem("musicEnabled");
+  const savedVolume = sessionStorage.getItem("musicVolume");
+
+  const savedSfx = sessionStorage.getItem("sfxEnabled");
+  if(savedSfx !== null){
+    sfxEnabled = savedSfx === "true";
+  }
+
+  if(savedMusic !== null){
+    musicEnabled = savedMusic === "true";
+  }
+
+  if(savedVolume !== null){
+    currentVolume = parseFloat(savedVolume);
+  }
+
+  bgMusic.volume = currentVolume;
+
+  // atualizar botão
+  const musicBtn = document.getElementById("musicToggle");
+  if(musicBtn){
+    musicBtn.innerText = musicEnabled ? "🎵 ON" : "🎵 OFF";
+  }
+
+  const slider = document.getElementById("volumeSlider");
+  if(slider){
+    slider.value = currentVolume;
+  }
+  const shuffleButtons = document.querySelectorAll(".shuffle-btn");
+
+  shuffleButtons.forEach(button => {
+
+    button.addEventListener("click", (event) => {
+
+      event.stopPropagation();
+      event.preventDefault();
+
+      const deck = button.dataset.deck;
+
+      if (deck) {
+        socket.emit("shuffleDeck", deck);
+      }
+
+    });
+
+  });
 });
 
 
@@ -182,26 +199,31 @@ let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
 
+const playerRole = sessionStorage.getItem("playerRole");
+  if(playerRole === "red"){
+  document.body.classList.add("red-player");
+}
+
 function scaleBoard(){
 
   const baseWidth  = 1152;
   const baseHeight = 658;
 
   const screenWidth  = window.innerWidth;
-  const screenHeight = window.innerHeight - 60;
+  const screenHeight = window.innerHeight;
 
   const scaleX = screenWidth  / baseWidth;
   const scaleY = screenHeight / baseHeight;
 
-  const scale = Math.max(scaleX, scaleY) * 0.8 * manualZoom;
+  const scale = Math.min(scaleX, scaleY) * manualZoom;
   // 👆 era Math.min, isso deixava pequeno
 
   if (playerRole === "red") {
     board.style.transform =
-      `translateX(-50%) rotate(180deg) scale(${scale})`;
+      `translate(-50%, -50%) scale(${scale}) rotate(180deg)`;
   } else {
     board.style.transform =
-      `translateX(-50%) scale(${scale})`;
+      `translate(-50%, -50%) scale(${scale})`;
   }
 
 }
@@ -224,10 +246,7 @@ board.addEventListener("wheel", (e)=>{
 window.addEventListener("resize", scaleBoard);
 window.addEventListener("load", scaleBoard);
 
-const playerRole = sessionStorage.getItem("playerRole");
-  if(playerRole === "red"){
-  document.body.classList.add("red-player");
-}
+
 const playerName = sessionStorage.getItem("playerName");
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -582,7 +601,7 @@ function renderHand() {
 
 
 
-        // drag
+        /*// drag
         img.draggable = true;
 
         img.addEventListener("dragstart",(e)=>{
@@ -603,6 +622,19 @@ function renderHand() {
           clearHighlight();
           document.getElementById("hand").classList.remove("active-zone");
           document.getElementById("hand_red").classList.remove("active-zone");
+        });*/
+        img.addEventListener("click", ()=>{
+
+          // limpa seleção anterior
+          document.querySelectorAll(".selected-card")
+            .forEach(c => c.classList.remove("selected-card"));
+
+          selectedCard = card;
+          selectedFrom = "hand";
+          selectedIndex = null;
+
+          img.classList.add("selected-card");
+
         });
 
         groupDiv.appendChild(img);
@@ -698,23 +730,19 @@ function renderSlot(type) {
         `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`
     }
 
-    fan.draggable=true;
+    fan.addEventListener("click", ()=>{
 
-    fan.addEventListener("dragstart",(e)=>{
-      e.dataTransfer.setData("text/plain", JSON.stringify({
-        type: "slot",
-        slot: type,
-        index: i
-      }));
-      highlightSlot(type);
-    });
+  document.querySelectorAll(".selected-card")
+    .forEach(c => c.classList.remove("selected-card"));
 
-    fan.addEventListener("dragend",()=>{
-      clearHighlight();
-    });
-    if(playerRole === "red" && !type.includes("_red")){
-  fan.style.transform += " rotate(180deg)";
-}
+  selectedCard = card;
+  selectedFrom = "fan";
+  selectedSlot = type;
+  selectedIndex = i;
+
+  fan.classList.add("selected-card");
+
+});
 
     if(playerRole === "blue" && type.includes("_red")){
       fan.style.transform += " rotate(180deg)";
@@ -723,6 +751,8 @@ function renderSlot(type) {
     board.appendChild(fan);
   });
 }
+
+
 
 /* DUPLO CLIQUE */
 document.querySelectorAll(".slot-pile").forEach(slot=>{
@@ -733,19 +763,89 @@ document.querySelectorAll(".slot-pile").forEach(slot=>{
   });
 });
 
+document.querySelectorAll(".slot-pile").forEach(slot=>{
+
+  slot.addEventListener("click", ()=>{
+
+    if(!selectedCard || selectedFrom !== "hand") return;
+
+    const slotType = slot.dataset.slot;
+    const card = selectedCard;
+
+    // 🔒 validações (copia do seu código)
+    if(card.type !== slotType &&
+      card.type !== "P" &&
+      card.type !== "P_red") return;
+
+    socket.emit("playCardToSlot", {
+      cardId: card.id,
+      slot: slotType
+    });
+
+    selectedCard = null;
+
+    document.querySelectorAll(".selected-card")
+      .forEach(c => c.classList.remove("selected-card"));
+
+  });
+
+});
+
 /* ===================== */
 /* DECK DRAG */
 
 document.querySelectorAll("[data-deck]").forEach(deck=>{
-  deck.addEventListener("dragstart",(e)=>{
-    e.dataTransfer.setData("deckType", deck.dataset.deck);
-    highlightSlot(deck.dataset.deck);
+  deck.addEventListener("click", ()=>{
+
+    const deckType = deck.dataset.deck;
+
+    if(selectedCard && selectedFrom === "hand"){
+
+    socket.emit("returnCardToDeck", {
+      cardId: selectedCard.id,
+      deck: deck.dataset.deck
+    });
+
+    socket.emit("drawCard", deckType);
+    playSFX(SOUNDS.draw);
+
+    selectedCard = null;
+
+    document.querySelectorAll(".selected-card")
+      .forEach(c => c.classList.remove("selected-card"));
+
+    return;
+  }
+
   });
 
-  deck.addEventListener("dragend",()=>{
+  /*deck.addEventListener("dragend",()=>{
     clearHighlight();
-  });
+  });*/
 });
+
+document.getElementById("hand").addEventListener("click", ()=>{
+
+  if(selectedFrom !== "fan") return;
+  
+  if(!slotPiles[selectedSlot] || !slotPiles[selectedSlot][selectedIndex]) return;
+  const card = slotPiles[selectedSlot][selectedIndex];
+
+
+  socket.emit("returnCardToHand", {
+    cardId: card.id,
+    slot: selectedSlot,
+    index: selectedIndex
+  });
+
+  selectedCard = null;
+
+  document.querySelectorAll(".selected-card")
+    .forEach(c => c.classList.remove("selected-card"));
+
+});
+
+
 
 /* ===================== */
 /* DROP */
@@ -787,301 +887,7 @@ board.addEventListener("dragover", (e)=>{
   e.dataTransfer.dropEffect = "move";
 });
 
-board.addEventListener("drop",(e)=>{
 
-    e.preventDefault();
-
-      const corrected = getCorrectPoint(e.clientX, e.clientY);
-
-
-  let data;
-
-  try{
-    data = JSON.parse(e.dataTransfer.getData("text/plain"));
-  }catch{
-    data = null;
-  }
-
-
-  const rect = board.getBoundingClientRect();
-
-  /* ===================== */
-  /* 1. MOVER TOKENS */
-
-      if(data?.type === "token"){
-
-      let x = corrected.x;
-      let y = corrected.y;
-
-      socket.emit("moveToken", {
-        anchor: data.anchor,
-        x,
-        y
-      });
-
-      return;
-    }
-
- /* if(moveAnchor){
-
-    const anchor = document.getElementById(moveAnchor);
-
-    let x = corrected.x;
-    let y = corrected.y;
-
-
-    // limites tabuleiro
-    const boardWidth = 1152;
-    const boardHeight = 658;
-
-    x = Math.max(-400, Math.min(boardWidth + 400, x));
-    y = Math.max(-400, Math.min(boardHeight + 400, y));
-
-
-  socket.emit("moveToken", {
-    anchor: moveAnchor,
-    x: x,
-    y: y
-  });
-
-    return;
-  }
-
-  
-
-
-
-
-  
-
-  if(data?.type === "twist"){
-
-    const x = corrected.x;
-    const y = corrected.y;
-
-    socket.emit("moveTwist", {
-      id: data.id,
-      x,
-      y
-    });
-
-    return;
-  }
-
-  /*  if(moveTwistId){
-
-    const rect = board.getBoundingClientRect();
-
-    const x = corrected.x;
-    const y = corrected.y;
-
-    socket.emit("moveTwist", {
-      id: moveTwistId,
-      x,
-      y
-    });
-
-    return;
-  }
-
-  /* ===================== */
-  /* 2. MOVER CARTAS TWIST LIVRES */
-  /*const moveFree = e.dataTransfer.getData("moveFreeCard");
-
-  if(moveFree && draggedFreeCard){
-
-    let x = corrected.x;
-    let y = corrected.y;
-
-    x = Math.max(0, Math.min(board.clientWidth, x));
-    y = Math.max(80, Math.min(board.clientHeight - 80, y));
-
-    draggedFreeCard.style.left = `${x}px`;
-    draggedFreeCard.style.top  = `${y}px`;
-
-    draggedFreeCard = null;
-    return;
-  }
-
-/* ===================== */
-/* DEVOLVER TWIST NO DECK */
-
-if(draggedFreeCard){
-
-  const targetDeck = getTargetDeck(e.clientX, e.clientY);
-
-  if(targetDeck && targetDeck.dataset.deck === "T"){
-
-    socket.emit("returnTwistToDeck", {
-      id: draggedFreeCard.dataset.id
-    });
-
-    draggedFreeCard.remove();
-    draggedFreeCard = null;
-
-    return;
-  }
-
-}
-
-  /* ===================== */
-  /* 4. COMPRAR DO DECK */
-
-  const deckType = e.dataTransfer.getData("deckType");
-
-  if(deckType){
-    console.log("Tentando comprar:", deckType);
-
-    // 🔥 Define qual mão vai receber
-    const targetHand = deckType.includes("_red") ? hand_red : hand;
-
-  // 🚫 REGRA: limite de 13 apenas para cartas AMDG
-  function countAMDG(handArr){
-    return handArr.filter(c =>
-      c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
-      c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
-    ).length;
-  }
-
-  if(countAMDG(targetHand) >= 13){
-
-    // só bloqueia se a carta comprada também for AMDG
-    if(["A","M","D","G","A_red","M_red","D_red","G_red"].includes(deckType)){
-      alert("Você já possui 13 cartas na mão!");
-      return;
-    }
-
-  }
-
-    if(deckType === "T"){
-    socket.emit("drawTwist");
-  } else {
-    socket.emit("drawCard", deckType);
-  }
-
-  }
-
-  /* ===================== */
-  /* 5. SOLTAR CARTA DA MÃO */
-
-if(data?.type === "hand"){
-
-  const card = data.card;
-
-  // 🔥 tenta slot primeiro
-  let targetSlot = null;
-
-  let el = document.elementFromPoint(e.clientX, e.clientY);
-  targetSlot = el?.closest(".slot-pile");
-
-  if(!targetSlot){
-
-    const boardRect = board.getBoundingClientRect();
-
-    const px = boardRect.left + (corrected.x / 1152) * boardRect.width;
-    const py = boardRect.top  + (corrected.y / 658) * boardRect.height;
-
-    const el2 = document.elementFromPoint(px, py);
-    targetSlot = el2?.closest(".slot-pile");
-  }
-
-  if(targetSlot){
-
-    const slotType = targetSlot.dataset.slot;
-
-    const isAMDG =
-      ["A","M","D","G","A_red","M_red","D_red","G_red"].includes(card.type);
-
-    if(isAMDG && !firstHalfEnded &&
-      mustRefillHand(card.type.includes("_red") ? "red" : "blue")){
-      alert("Reponha sua mão até que fique com 13 cartas antes de jogar em campo.");
-      return;
-    }
-
-    if(card.type === "P" && !(slotType==="P1" || slotType==="P2")) return;
-    if(card.type === "P_red" && !(slotType==="P1_red" || slotType==="P2_red")) return;
-
-    if(card.type!=="P" && card.type!=="P_red"){
-      if(card.type !== slotType) return;
-    }
-
-    if(card.type.includes("_red") && !slotType.includes("_red")) return;
-    if(!card.type.includes("_red") && slotType.includes("_red")) return;
-
-    if(card.type.includes("_red")){
-      hand_red = hand_red.filter(c => c.id !== card.id);
-    } else {
-      hand = hand.filter(c => c.id !== card.id);
-    }
-
-    lastPlayedCardId = card.id;
-
-    socket.emit("playCardToSlot", {
-      cardId: card.id,
-      slot: slotType
-    });
-
-    renderHand();
-    return;
-  }
-
-  // 🔥 se NÃO caiu no slot → volta pro deck
-  socket.emit("returnCardToDeck", {
-    cardId: card.id,
-    deck: card.type
-  });
-
-  renderHand();
-  return;
-}
-
- /* ===================== */
-/* 6. SOLTAR CARTA DO SLOT */
-
-if(data?.type === "slot"){
-
-  const card = slotPiles[data.slot].splice(data.index,1)[0];
-
-  const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-  const targetSlot = elementBelow?.closest(".slot-pile");
-
-  if(targetSlot){
-
-    const slotType = targetSlot.dataset.slot;
-
-    if(card.type==="P" && !(slotType==="P1" || slotType==="P2")) return;
-    if(card.type==="P_red" && !(slotType==="P1_red" || slotType==="P2_red")) return;
-
-    if(card.type!=="P" && card.type!=="P_red"){
-      if(card.type !== slotType) return;
-    }
-
-    if(card.type.includes("_red") && !slotType.includes("_red")) return;
-    if(!card.type.includes("_red") && slotType.includes("_red")) return;
-
-    slotPiles[slotType].push(card);
-
-    renderSlot(slotType);
-    renderSlot(data.slot);
-    return;
-  }
-
-  // volta pra mão
-  if(card.type.includes("_red")){
-    hand_red.push(card);
-  } else {
-    hand.push(card);
-  }
-
-  renderHand();
-  renderSlot(data.slot);
-  return;
-}
-});
-
-function checkDeckEnd(){
-  return false; // por enquanto nunca bloqueia
-}
 /* ===================== */
 /* DROP GLOBAL (fora do tabuleiro) */
 
@@ -1529,9 +1335,9 @@ function startSecondHalf(){
   /* ===================== */
   /* BLOQUEAR NOVA ABA AO ARRASTAR PRA FORA */
 
-  document.addEventListener("dragover", (e) => {
+ /*  document.addEventListener("dragover", (e) => {
     e.preventDefault();
-  });
+  }); */
 
   board.addEventListener("dragenter", (e)=>{
   e.preventDefault();
@@ -2036,29 +1842,6 @@ document.addEventListener("contextmenu", e => {
 });
 
 
-document.addEventListener("DOMContentLoaded", () => {
-
-  const shuffleButtons = document.querySelectorAll(".shuffle-btn");
-
-  shuffleButtons.forEach(button => {
-
-    button.addEventListener("click", (event) => {
-
-      event.stopPropagation();
-      event.preventDefault();
-
-      const deck = button.dataset.deck;
-
-      if (deck) {
-        socket.emit("shuffleDeck", deck);
-      }
-
-    });
-
-  });
-
-});
-
 const helpSteps = [
 
 {
@@ -2224,6 +2007,16 @@ document.querySelectorAll(".help-highlight")
 updateHelpButtons();
 }
 
+function clearSelection(){
+  selectedCard = null;
+  selectedFrom = null;
+  selectedIndex = null;
+  selectedSlot = null;
+
+  document.querySelectorAll(".selected-card")
+    .forEach(c => c.classList.remove("selected-card"));
+}
+
 function updateHelpButtons(){
 
   helpPrevBtn.style.display =
@@ -2251,6 +2044,16 @@ counter.innerText = decks[deck].length;
 
   });
 }
+
+function checkZoom(){
+  const zoom = window.devicePixelRatio;
+
+  if(zoom !== 1){
+    alert("⚠️ Use zoom 100% (Ctrl + 0) para melhor experiência.");
+  }
+}
+
+window.addEventListener("load", checkZoom);
 
 function checkOrientation(){
 
@@ -2302,6 +2105,8 @@ board.addEventListener("click", (e)=>{
   // remove destaque das cartas
   document.querySelectorAll(".selected-card")
     .forEach(card => card.classList.remove("selected-card"));
+
+    selectedCard = null;
 
 });
 

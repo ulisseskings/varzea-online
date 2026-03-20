@@ -28,8 +28,8 @@
       height: 658px;
       position: absolute;
       left: 50%;
-      top: -20px;
-      transform: translateX(-50%);
+      top: 50%;
+      transform-origin: center center;
     }
 
     .anchor {
@@ -1078,7 +1078,9 @@ user-select:none;
   100%{ transform: translate(-0%,-0%) rotate(-2deg); }
 }
 
-
+html {
+  zoom: 1;
+}
   </style>
 </head>
 
