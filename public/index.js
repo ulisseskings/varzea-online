@@ -18,10 +18,28 @@ let selectedCard = null;
 let selectedFrom = null; // "hand" ou "fan"
 let selectedIndex = null;
 let selectedSlot = null;
+let selectedCardId = null;
+let formationEditMode = false;
+let formationTemp = null;
+
+let formation = {
+  blue: { A:3, M:4, D:3, G:3 },
+  red:  { A:3, M:4, D:3, G:3 }
+};
+
+let formationLocked = {
+  blue: false,
+  red: false
+};
+
+let formationTokens = {
+  blue: 3,
+  red: 3
+};
 
 let lastMouse = { x:0, y:0 };
 
-document.addEventListener("dragover", (e)=>{
+document.addEventListener("mousemove", (e)=>{
   lastMouse.x = e.clientX;
   lastMouse.y = e.clientY;
 });
@@ -181,6 +199,8 @@ socket.on("syncPlayers", (players)=>{
   document.getElementById("playerRedName").innerText =
     players.red || "...";
 });
+
+socket.emit("requestHand"); 
 
 socket.on("syncSpectators", (list)=>{
   const el = document.getElementById("spectatorList");
@@ -343,13 +363,13 @@ if(roomCode){
 
   console.log("Jogador:", playerName, "Role:", playerRole);
 
-  if (playerRole === "blue") {
-    document.querySelector("#hand_red .hand-inner").style.display = "none";
-  }
+if (playerRole === "blue") {
+  document.getElementById("hand_red").style.display = "none";
+}
 
-  if (playerRole === "red") {
-    document.querySelector("#hand .hand-inner").style.display = "none";
-  }
+if (playerRole === "red") {
+  document.getElementById("hand").style.display = "none";
+}
 
 if (playerRole === "spectator") {
   document.getElementById("hand").style.display = "none";
@@ -396,6 +416,17 @@ let slotFanOpen = {
 /* SLOT HIGHLIGHT */
 
 function highlightSlot(type){
+
+  const f = formation[playerRole];
+  const counts = (playerRole === "blue") ? hand : hand_red;
+
+  const base = type.replace("_red","");
+
+  const current = counts.filter(c => c.type === type).length;
+
+  if(base !== "P" && current >= f[base]){
+    return; // ❌ não destaca se não pode comprar
+  }
 
   clearHighlight();
 
@@ -488,9 +519,11 @@ function updateHandCounters(){
   const totalBlue =
     blue.A + blue.M + blue.D + blue.G;
 
-  document.getElementById("counter_blue").innerHTML =
-    `A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}<br>`+
-    `Total: ${totalBlue}`;
+    const fBlue = formation.blue;
+
+    document.getElementById("counter_blue").innerHTML =
+      `A:${blue.A}/${fBlue.A} M:${blue.M}/${fBlue.M} D:${blue.D}/${fBlue.D} G:${blue.G}/${fBlue.G}<br>`+
+      `Total: ${totalBlue}/13`;
 
   // Vermelho
   const red = countTypes(hand_red);
@@ -498,10 +531,12 @@ function updateHandCounters(){
   const totalRed =
     red.A_red + red.M_red + red.D_red + red.G_red;
 
-  document.getElementById("counter_red").innerHTML =
-    `A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}<br>`+
-    `Total: ${totalRed}`;
-}
+    const fRed = formation.red;
+
+    document.getElementById("counter_red").innerHTML =
+      `A:${red.A_red}/${fRed.A} M:${red.M_red}/${fRed.M} D:${red.D_red}/${fRed.D} G:${red.G_red}/${fRed.G}<br>`+
+      `Total: ${totalRed}/13`;
+    }
 /* ===================== */
 /* BLOQUEIO DE JOGADA ATÉ TER 13 CARTAS */
 
@@ -535,8 +570,6 @@ let firstHalfEnded = false;
 
 
 function renderHand() {
-
-
 
   const handDiv = document.querySelector("#hand .hand-inner");
   const handDivRed = document.querySelector("#hand_red .hand-inner");
@@ -590,6 +623,9 @@ function renderHand() {
       groups[type].forEach((card,i)=>{
 
         const img = document.createElement("img");
+        if(card.id === selectedCardId){
+          img.classList.add("selected-card");
+        }
         img.src = card.front;
         img.className="hand-card";
 
@@ -599,81 +635,235 @@ function renderHand() {
           img.style.zIndex = i + 1;
         }
 
+        img.addEventListener("click", (e)=>{
 
+        e.stopPropagation();
 
-        /*// drag
-        img.draggable = true;
+        document.querySelectorAll(".selected-card")
+          .forEach(c => c.classList.remove("selected-card"));
 
-        img.addEventListener("dragstart",(e)=>{
-          e.dataTransfer.setData("text/plain", JSON.stringify({
-            type: "hand",
-            card: card
-          }));
-          highlightSlot(card.type);
+        selectedCard = card;
+        selectedCardId = card.id;
+        selectedFrom = "hand";
 
-          if(card.type.includes("_red")){
-            document.getElementById("hand_red").classList.add("active-zone");
-          } else {
-            document.getElementById("hand").classList.add("active-zone");
+        img.classList.add("selected-card"); // 🔥 ADICIONE
+
+        highlightSlot(card.type);
+
+        openRadial(e.clientX, e.clientY, [
+
+          {
+            label: "Jogar",
+            action: ()=>{
+
+              if(mustRefillHand(playerRole)){
+                alert("Você precisa ter 13 cartas na mão para jogar");
+                return;
+              }
+
+              socket.emit("playCardToSlot", {
+                cardId: card.id,
+                slot: card.type
+              });
+              selectedCardId = null;
+            }
+          },
+
+          {
+            label: "Voltar para o deck",
+            action: ()=>{
+              socket.emit("returnCardToDeck", {
+                cardId: card.id,
+                deck: card.type
+              });
+              selectedCardId = null;
+            }
+          },
+
+          {
+            label: "Cancelar",
+            action: ()=>{}
           }
-        });
 
-        img.addEventListener("dragend",()=>{
-          clearHighlight();
-          document.getElementById("hand").classList.remove("active-zone");
-          document.getElementById("hand_red").classList.remove("active-zone");
-        });*/
-        img.addEventListener("click", ()=>{
-
-          // limpa seleção anterior
-          document.querySelectorAll(".selected-card")
-            .forEach(c => c.classList.remove("selected-card"));
-
-          selectedCard = card;
-          selectedFrom = "hand";
-          selectedIndex = null;
-
-          img.classList.add("selected-card");
-
-        });
-
-        groupDiv.appendChild(img);
-        
+        ]);
 
       });
 
+      groupDiv.appendChild(img);
+
       targetDiv.appendChild(groupDiv);
+    });
     });
   }
 
-// Azul renderiza apenas azul
-if (playerRole === "blue") {
-  renderGroup(hand, handDiv);
+    // Azul renderiza apenas azul
+    if (playerRole === "blue") {
+      renderGroup(hand, handDiv);
+    }
+
+    // Vermelho renderiza apenas vermelho
+    if (playerRole === "red") {
+      renderGroup(hand_red, handDivRed);
+    }
+
+    // Espectador não renderiza nenhuma mão
+
+
+      // ✅ atualiza contador sempre
+    updateHandCounters();
+    updateFormationUI();
+    bindFormationClicks();
+    bindFormationTableClick();
+    }
+
+function startFormationEdit(){
+
+  formationEditMode = true;
+
+  formationTemp = {
+    ...formation[playerRole]
+  };
+
+  document.getElementById("formationActions").style.display = "block";
+
+  updateFormationUI();
+
+}
+function confirmFormation(){
+
+  // 🔥 valida soma
+  const total = formationTemp.A + formationTemp.M + formationTemp.D;
+
+  if(total !== 10){
+    alert("Sua formação precisa somar 10 cartas entre A, M e D");
+    return;
+  }
+
+  // 🔥 aplica no jogador correto
+  formation[playerRole] = {
+    ...formationTemp,
+    G: 3
+  };
+
+  formationEditMode = false;
+
+  document.getElementById("formationActions").style.display = "none";
+
+  updateFormationUI();
+  updateHandCounters();
+
 }
 
-// Vermelho renderiza apenas vermelho
-if (playerRole === "red") {
-  renderGroup(hand_red, handDivRed);
+function updateFormationUI(){
+
+  const tableBlue = document.getElementById("formationTable");
+  const tableRed  = document.getElementById("formationTable_red");
+
+  function updateOneTable(table, f, isEditing){
+
+    if(!table) return;
+
+    if(isEditing){
+      table.classList.add("editing");
+    }else{
+      table.classList.remove("editing");
+    }
+
+    ["A","M","D"].forEach(type=>{
+
+      table.querySelectorAll(`.formation-cell[data-type="${type}"]`)
+        .forEach(c => c.classList.remove("active"));
+
+      const selected = table.querySelector(
+        `.formation-cell[data-type="${type}"][data-value="${f[type]}"]`
+      );
+
+      if(selected){
+        selected.classList.add("active");
+      }
+
+    });
+
+  }
+
+  // 🔵 azul
+  updateOneTable(
+    tableBlue,
+    formation.blue,
+    playerRole === "blue" && formationEditMode
+  );
+
+  // 🔴 vermelho
+  updateOneTable(
+    tableRed,
+    formation.red,
+    playerRole === "red" && formationEditMode
+  );
+
 }
 
-// Espectador não renderiza nenhuma mão
+// =============================
+// 🔥 CLICK NA TABELA (CÉLULAS)
+// =============================
 
+function bindFormationClicks(){
 
-  // ✅ atualiza contador sempre
-updateHandCounters();
+  const table = playerRole === "blue"
+    ? document.getElementById("formationTable")
+    : document.getElementById("formationTable_red");
+
+  if(!table) return;
+
+  table.querySelectorAll(".formation-cell").forEach(cell=>{
+
+    cell.onclick = (e)=>{
+
+      e.stopPropagation();
+
+      if(!formationEditMode) return;
+
+      const type = cell.dataset.type;
+      const value = parseInt(cell.dataset.value);
+
+      formationTemp[type] = value;
+
+      updateFormationUI();
+    };
+
+  });
+
+}
+
+function bindFormationTableClick(){
+
+  const tableBlue = document.getElementById("formationTable");
+  const tableRed  = document.getElementById("formationTable_red");
+
+  if(tableBlue){
+    tableBlue.onclick = ()=>{
+      if(playerRole === "blue" && !formationEditMode){
+        startFormationEdit();
+      }
+    };
+  }
+
+  if(tableRed){
+    tableRed.onclick = ()=>{
+      if(playerRole === "red" && !formationEditMode){
+        startFormationEdit();
+      }
+    };
+  }
+
 }
 
 
-
-  
 /* ===================== */
 /* SLOT */
 
 function renderSlot(type) {
-  if(slotFanOpen[type]){
-    document.querySelectorAll(`.fan-card[data-slot="${type}"]`)
-      .forEach(c=>c.remove());
-  }
+  document.querySelectorAll(`.fan-card[data-slot="${type}"]`)
+    .forEach(c=>c.remove());
 
   const pile = slotPiles[type];
   const slotEl = document.querySelector(`.slot-pile[data-slot="${type}"]`);
@@ -707,6 +897,11 @@ function renderSlot(type) {
 
   pile.forEach((card,i)=>{
     const fan=document.createElement("img");
+
+    if(card.id === selectedCardId){
+      fan.classList.add("selected-card");
+    }
+
     fan.src=card.front;
     fan.className="fan-card";
     fan.dataset.slot=type;
@@ -730,17 +925,56 @@ function renderSlot(type) {
         `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`
     }
 
-    fan.addEventListener("click", ()=>{
+ fan.addEventListener("click", (e)=>{
 
-  document.querySelectorAll(".selected-card")
-    .forEach(c => c.classList.remove("selected-card"));
-
+  e.stopPropagation();
+  selectElement(fan);
   selectedCard = card;
+  selectedCardId = card.id;
   selectedFrom = "fan";
   selectedSlot = type;
   selectedIndex = i;
 
-  fan.classList.add("selected-card");
+
+
+  // 🔥 ADICIONE O MENU AQUI
+  openRadial(e.clientX, e.clientY, [
+
+    {
+      label: "Voltar para a mão",
+      action: ()=>{
+
+      socket.emit("returnCardToHand", {
+        cardId: card.id,
+        slot: type,
+        index: selectedIndex
+      });
+
+      // 🔥 ATUALIZA LOCAL
+      if(playerRole === "blue"){
+        hand.push(card);
+      }else{
+        hand_red.push(card);
+      }
+
+      const index = slotPiles[type].findIndex(c => c.id === card.id);
+      if(index !== -1){
+        slotPiles[type].splice(index, 1);
+      }
+
+      renderHand();
+      renderSlot(type);
+      renderHand();
+
+      }
+    },
+
+    {
+      label: "Cancelar",
+      action: ()=>{}
+    }
+
+  ]);
 
 });
 
@@ -752,40 +986,157 @@ function renderSlot(type) {
   });
 }
 
+function openSlotView(type){
 
+  const overlay = document.createElement("div");
+  overlay.className = "slot-overlay";
 
-/* DUPLO CLIQUE */
-document.querySelectorAll(".slot-pile").forEach(slot=>{
-  slot.addEventListener("dblclick",()=>{
-    const type = slot.dataset.slot;
-    slotFanOpen[type] = !slotFanOpen[type];
-    renderSlot(type);
+  const container = document.createElement("div");
+  container.className = "slot-container";
+
+  slotPiles[type].forEach((card, i)=>{
+
+    const img = document.createElement("img");
+    img.src = card.front;
+    img.className = "slot-big-card";
+
+    if(card.id === selectedCardId){
+      img.classList.add("selected-card");
+    }
+
+    img.onclick = (e)=>{
+
+      e.stopPropagation();
+
+      document.querySelectorAll(".selected-card")
+        .forEach(el => el.classList.remove("selected-card"));
+
+      img.classList.add("selected-card");
+
+      selectedCard = card;
+      selectedCardId = card.id;
+      selectedFrom = "slot-view";
+      selectedSlot = type;
+      selectedIndex = i;
+
+      openRadial(e.clientX, e.clientY, [
+        {
+          label:"Voltar para a mão",
+          action: ()=>{
+
+            socket.emit("returnCardToHand", {
+              cardId: card.id,
+              slot: type,
+              index: i
+            });
+
+            // 🔥 ATUALIZA LOCAL IGUAL AO FAN
+            if(playerRole === "blue"){
+              hand.push(card);
+            }else{
+              hand_red.push(card);
+            }
+
+            const idx = slotPiles[type].findIndex(c => c.id === card.id);
+            if(idx !== -1){
+              slotPiles[type].splice(idx, 1);
+            }
+
+            renderHand();
+            renderSlot(type);
+
+            overlay.remove();
+          } 
+        }
+      ]);
+
+    };
+
+    container.appendChild(img);
   });
+
+  const back = document.createElement("button");
+  back.innerText = "Voltar";
+  back.onclick = ()=> overlay.remove();
+
+  overlay.appendChild(container);
+  overlay.appendChild(back);
+
+  document.body.appendChild(overlay);
+}
+
+
+let toggleLock = false;
+
+document.querySelectorAll(".slot-pile").forEach(slot=>{
+
+  slot.addEventListener("click", (e)=>{
+
+  e.stopPropagation();
+
+  document.querySelectorAll(".selected-card")
+  .forEach(el => el.classList.remove("selected-card"));
+
+  slot.classList.add("selected-card");
+
+  const type = slot.dataset.slot;
+
+  highlightSlot(type);
+
+  openRadial(e.clientX, e.clientY, [
+
+    {
+      label: "Abrir",
+      action: ()=>{
+        openSlotView(type);
+      }
+    }
+
+  ]);
+
+});
+
 });
 
 document.querySelectorAll(".slot-pile").forEach(slot=>{
 
-  slot.addEventListener("click", ()=>{
+  slot.addEventListener("click", (e)=>{
 
-    if(!selectedCard || selectedFrom !== "hand") return;
+    console.log("CLICK SLOT", selectedCard, slot.dataset.slot);
+
+    e.stopPropagation();
+
+    if(!selectedCard || !selectedCard.type) return;
 
     const slotType = slot.dataset.slot;
     const card = selectedCard;
 
-    // 🔒 validações (copia do seu código)
-    if(card.type !== slotType &&
-      card.type !== "P" &&
-      card.type !== "P_red") return;
+    // 🔥 valida cor + tipo
+
+    const isCardRed = card.type.includes("_red");
+    const isSlotRed = slotType.includes("_red");
+
+    // cores diferentes → bloqueia
+    if(isCardRed !== isSlotRed) return;
+
+    // pega tipo base (A, M, D, G, P)
+    const cardBase = card.type.replace("_red", "");
+    const slotBase = slotType.replace("_red", "");
+
+    // tipo diferente → bloqueia (exceto P)
+    if(cardBase !== slotBase && cardBase !== "P") return;
+
+    if(mustRefillHand(playerRole)){
+      alert("Você precisa ter 13 cartas na mão para jogar");
+      return;
+    }
 
     socket.emit("playCardToSlot", {
       cardId: card.id,
       slot: slotType
     });
 
-    selectedCard = null;
-
-    document.querySelectorAll(".selected-card")
-      .forEach(c => c.classList.remove("selected-card"));
+    clearSelection();
 
   });
 
@@ -795,53 +1146,72 @@ document.querySelectorAll(".slot-pile").forEach(slot=>{
 /* DECK DRAG */
 
 document.querySelectorAll("[data-deck]").forEach(deck=>{
-  deck.addEventListener("click", ()=>{
-
-    const deckType = deck.dataset.deck;
-
-    if(selectedCard && selectedFrom === "hand"){
-
-    socket.emit("returnCardToDeck", {
-      cardId: selectedCard.id,
-      deck: deck.dataset.deck
-    });
-
-    socket.emit("drawCard", deckType);
-    playSFX(SOUNDS.draw);
-
-    selectedCard = null;
-
-    document.querySelectorAll(".selected-card")
-      .forEach(c => c.classList.remove("selected-card"));
-
-    return;
-  }
-
-  });
-
-  /*deck.addEventListener("dragend",()=>{
-    clearHighlight();
-  });*/
-});
-
-document.getElementById("hand").addEventListener("click", ()=>{
-
-  if(selectedFrom !== "fan") return;
-  
-  if(!slotPiles[selectedSlot] || !slotPiles[selectedSlot][selectedIndex]) return;
-  const card = slotPiles[selectedSlot][selectedIndex];
 
 
-  socket.emit("returnCardToHand", {
-    cardId: card.id,
-    slot: selectedSlot,
-    index: selectedIndex
-  });
+  deck.addEventListener("click", (e)=>{
 
-  selectedCard = null;
+  e.stopPropagation();
 
   document.querySelectorAll(".selected-card")
-    .forEach(c => c.classList.remove("selected-card"));
+  .forEach(el => el.classList.remove("selected-card"));
+
+  deck.classList.add("selected-card");
+
+  const deckType = deck.dataset.deck;
+
+  highlightSlot(deckType);
+
+  openRadial(e.clientX, e.clientY, [
+
+    {
+      label: "Comprar",
+      action: ()=>{
+
+        const f = formation[playerRole];
+
+        const counts = (playerRole === "blue")
+          ? hand
+          : hand_red;
+
+        const type = deckType.replace("_red","");
+
+        const current = counts.filter(c =>
+          c.type === deckType
+        ).length;
+
+        if(type !== "P" && current >= f[type]){
+          alert("Limite da formação atingido para " + type);
+          return;
+        }
+
+        socket.emit("drawCard", deckType);
+        playSFX(SOUNDS.draw);
+      }
+    }
+
+  ]);
+});
+});
+
+["hand","hand_red"].forEach(id=>{
+
+  document.getElementById(id).addEventListener("click", ()=>{
+
+    if(selectedFrom !== "fan") return;
+
+    if(!slotPiles[selectedSlot] || !slotPiles[selectedSlot][selectedIndex]) return;
+
+    const card = slotPiles[selectedSlot][selectedIndex];
+
+    socket.emit("returnCardToHand", {
+      cardId: card.id,
+      slot: selectedSlot,
+      index: selectedIndex
+    });
+
+    clearSelection();
+
+  });
 
 });
 
@@ -882,41 +1252,8 @@ function getCorrectPoint(clientX, clientY){
 }
 
 
-board.addEventListener("dragover", (e)=>{
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-});
 
 
-/* ===================== */
-/* DROP GLOBAL (fora do tabuleiro) */
-
-/*document.addEventListener("drop", (e) => {
-
-  const corrected = getCorrectPoint(e.clientX, e.clientY);
-
-  const moveAnchor = e.dataTransfer.getData("movePiece");
-  if(!moveAnchor) return;
-
-  const anchor = document.getElementById(moveAnchor);
-  if(!anchor) return;
-
-  // posição na janela
-  let x = corrected.x;
-  let y = corrected.y;
-
-  // limites da janela inteira
-  x = Math.max(0, Math.min(window.innerWidth, x));
-  y = Math.max(0, Math.min(window.innerHeight, y));
-
-  // converte para posição relativa ao board
-  const rect = board.getBoundingClientRect();
-
-  anchor.style.left = `${x - rect.left}px`;
-  anchor.style.top  = `${y - rect.top}px`;
-
-  applyAnchors();
-  });/*
 
 /* ===================== */
 /* APPLY ANCHORS (VOLTOU!) */
@@ -924,9 +1261,9 @@ board.addEventListener("dragover", (e)=>{
   function applyAnchors() {
     document.querySelectorAll("[data-anchor]").forEach(el=>{
       const anchor=document.getElementById(el.dataset.anchor);
-      if(anchor){
-        el.style.left=anchor.style.left;
-        el.style.top=anchor.style.top;
+      if(!el.dataset.moved){
+        el.style.left = anchor.style.left;
+        el.style.top  = anchor.style.top;
       }
     });
     document.querySelectorAll(".slot-pile").forEach(slot=>{
@@ -939,6 +1276,8 @@ board.addEventListener("dragover", (e)=>{
   }
 
   applyAnchors();
+
+  let moved = false;
   /* ===================== */
   /* MOVER TOKENS LIVREMENTE */
 
@@ -962,14 +1301,19 @@ document.querySelectorAll(".piece").forEach(piece => {
     return;
   }
 
-  piece.addEventListener("dragstart", (e)=>{
-    e.dataTransfer.setData("text/plain", JSON.stringify({
+piece.addEventListener("dragstart", (e)=>{
+
+  if(!piece.dataset.anchor) return;
+
+  piece.dataset.moved = "true"; // 🔥 ADICIONE AQUI
+
+  e.dataTransfer.setData("text/plain", JSON.stringify({
     type: "token",
     anchor: piece.dataset.anchor
-    }));
-  });
-
+  }));
 });
+});
+
 document.querySelectorAll(".piece").forEach(piece=>{
 
   piece.addEventListener("touchstart", function(e){
@@ -994,7 +1338,6 @@ document.querySelectorAll(".piece").forEach(piece=>{
     if(anchor){
       anchor.style.left = x + "px";
       anchor.style.top  = y + "px";
-      applyAnchors();
     }
 
   });
@@ -1088,7 +1431,7 @@ document.querySelectorAll(".piece").forEach(piece=>{
   spawnTwistStack();
 
 
-  renderHand();
+
 
   /* ✅ marca decks vazios logo no início */
   // updateEmptyDeckVisuals();
@@ -1125,15 +1468,14 @@ function spawnTwistCard(card){
   img.draggable = true;
 
   // 🔥 AGORA SIM adiciona eventos
-  img.addEventListener("dragstart",(e)=>{
-    console.log("DRAG TWIST", card.id);
+img.addEventListener("dragstart",(e)=>{
+  draggingTwist = card.id;
+  moved = false;
 
-    draggingTwist = card.id;
+  highlightSlot("T");
 
-    highlightSlot("T");
-
-    e.dataTransfer.setData("text/plain", "twist"); // só pra ativar drag
-  });
+  e.dataTransfer.setData("text/plain", "twist");
+});
     
 img.addEventListener("dragend", ()=>{
 
@@ -1163,17 +1505,13 @@ img.addEventListener("dragend", ()=>{
   });
 
   draggingTwist = null;
+  
+  setTimeout(()=> moved = true, 50);
 });
 
-  let moved = false;
 
-  img.addEventListener("dragstart", ()=>{
-    moved = false;
-  });
 
-  img.addEventListener("dragend", ()=>{
-    setTimeout(()=> moved = true, 50);
-  });
+
 
   img.addEventListener("dblclick", ()=>{
 
@@ -1335,23 +1673,40 @@ function startSecondHalf(){
   /* ===================== */
   /* BLOQUEAR NOVA ABA AO ARRASTAR PRA FORA */
 
- /*  document.addEventListener("dragover", (e) => {
-    e.preventDefault();
-  }); */
+ 
 
   board.addEventListener("dragenter", (e)=>{
+  e.preventDefault();
+});
+board.addEventListener("dragover", (e)=>{
+  e.preventDefault();
+});
+
+document.addEventListener("dragover", (e)=>{
   e.preventDefault();
 });
 
   document.addEventListener("drop", (e) => {
 
-    console.log("DROP DISPAROU");
-
-    const boardEl = document.getElementById("board");
-
-    if(boardEl.contains(e.target)) return;
-
     e.preventDefault();
+
+    let data = {};
+
+    try{
+      data = JSON.parse(e.dataTransfer.getData("text/plain"));
+    }catch(e){
+      return;
+    }
+
+    if(data.type !== "token") return;
+
+    const corrected = getCorrectPoint(e.clientX, e.clientY);
+
+    socket.emit("moveToken", {
+      anchor: data.anchor,
+      x: corrected.x,
+      y: corrected.y
+    });
 
   });
 
@@ -1387,22 +1742,27 @@ function startSecondHalf(){
 
   window.addEventListener("keydown", function(e){
 
-  // F5
-    if(e.key === "F5"){
-      e.preventDefault();
-      openModal("reload");
-    }
+  if(e.key === "F5"){
+    e.preventDefault();
+    openModal("reload");
+  }
 
-    // Ctrl+R (Windows/Linux) ou Cmd+R (Mac)
-    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r"){
-      e.preventDefault();
-      openModal("reload");
-    }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r"){
+    e.preventDefault();
+    openModal("reload");
+  }
 
-  });
+});
+
+  
+  window.addEventListener("beforeunload", function (e) {
+
+  e.preventDefault();
+
+  e.returnValue = "O refresh na página quebra o jogo. Tem certeza que quer fazer isso?";
+
   let matchStarted = true;
-
-
+});
 
 // ===============================
 // 🔥 IDENTIDADE DO JOGADOR
@@ -1433,11 +1793,11 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
   });
 });
 
-  socket.on("yourHand", (serverHand) => {
+socket.on("yourHand", (serverHand) => {
 
-    playSFX(SOUNDS.draw);
+  console.log("MÃO RECEBIDA", serverHand);
 
-  console.log("Recebi mão do servidor:", serverHand);
+  playSFX(SOUNDS.draw);
 
   if (playerRole === "blue") {
     hand = serverHand;
@@ -1448,6 +1808,7 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
   }
 
   renderHand();
+
 });
 
 socket.on("handCounts", (counts)=>{
@@ -1492,9 +1853,7 @@ socket.on("updateBoardSlots", (data)=>{
     Object.keys(slotPiles).forEach(type=>renderSlot(type));
   }else{
     Object.keys(slotPiles).forEach(type=>{
-      if(JSON.stringify(slotPiles[type]) !== JSON.stringify(lastServerSlots[type])){
-        renderSlot(type);
-      }
+      renderSlot(type);
     });
   }
 
@@ -1522,7 +1881,7 @@ socket.on("deckShuffled", (type)=>{
   playSFX(SOUNDS.shuffle);
   
 
-   const wrapper = document.querySelector(`[data-deck="${type}"]`)?.closest(".deck-wrapper");
+   const wrapper = document.querySelector(`[data-deck="${type}"], [data-deck="${type}_red"]`)
 if(wrapper){
   wrapper.classList.add("shuffling");
   setTimeout(()=>wrapper.classList.remove("shuffling"),300);
@@ -1556,9 +1915,13 @@ socket.on("tokenMoved", (data)=>{
   anchor.style.left = data.x + "px";
   anchor.style.top  = data.y + "px";
 
-  applyAnchors();
 
   const piece = document.querySelector(`[data-anchor="${data.anchor}"]`);
+
+  if(piece){
+    piece.dataset.moved = "true"; // 🔥 ESSENCIAL
+  }
+
   if(!piece) return;
 
   if(piece.classList.contains("ball")){
@@ -2007,14 +2370,101 @@ document.querySelectorAll(".help-highlight")
 updateHelpButtons();
 }
 
+function selectElement(el){
+  
+  // limpa tudo antes
+  document.querySelectorAll(".selected-card, .selected-zone")
+    .forEach(e => e.classList.remove("selected-card","selected-zone"));
+
+  // aplica no novo
+  el.classList.add("selected-card");
+
+}
+
 function clearSelection(){
   selectedCard = null;
   selectedFrom = null;
   selectedIndex = null;
   selectedSlot = null;
+  selectedCardId = null;
 
-  document.querySelectorAll(".selected-card")
-    .forEach(c => c.classList.remove("selected-card"));
+  document.querySelectorAll(".selected-card, .selected-zone")
+    .forEach(c => c.classList.remove("selected-card", "selected-zone"));
+
+    clearHighlight();
+}
+
+let radialMenu = null;
+
+function closeRadial(){
+  if(radialMenu){
+    radialMenu.remove();
+    radialMenu = null;
+  }
+  clearHighlight();
+}
+
+function openRadial(x, y, options){
+  
+
+  closeRadial();
+
+  radialMenu = document.createElement("div");
+  radialMenu.className = "radial-menu";
+  radialMenu.style.display = "flex";
+  radialMenu.style.flexDirection = "column";
+  radialMenu.style.gap = "6px";
+
+const menuWidth = 140;
+const menuHeight = options.length * 40;
+
+let posX = x + 10;
+let posY = y + 10;
+
+// 🔥 limite direita
+if(posX + menuWidth > window.innerWidth){
+  posX = x - menuWidth - 10;
+}
+
+// 🔥 limite baixo
+if(posY + menuHeight > window.innerHeight){
+  posY = y - menuHeight - 10;
+}
+
+// 🔥 limite esquerda
+if(posX < 0) posX = 10;
+
+// 🔥 limite topo
+if(posY < 0) posY = 10;
+
+radialMenu.style.left = posX + "px";
+radialMenu.style.top  = posY + "px";
+
+  options.forEach((opt, i)=>{
+
+  const btn = document.createElement("div");
+  btn.className = "radial-btn";
+  btn.innerText = opt.label;
+
+  btn.style.transform = "translateY(10px)";
+  btn.style.opacity = "0";
+
+  setTimeout(()=>{
+    btn.style.transform = "translateY(0)";
+    btn.style.opacity = "1";
+  },10);
+
+  btn.onclick = ()=>{
+    opt.action();
+    closeRadial();
+  };
+
+  radialMenu.appendChild(btn);
+
+});
+
+document.body.appendChild(radialMenu);
+
 }
 
 function updateHelpButtons(){
@@ -2028,6 +2478,7 @@ function updateHelpButtons(){
       : "Próximo ➡";
 
 }
+
 
 function updateDeckCounters(){
 
@@ -2090,7 +2541,6 @@ document.getElementById("guiaBtn")
 
 board.addEventListener("click", (e)=>{
 
-  // se clicou em algo interativo, não remove seleção
   if(
     e.target.closest(".hand-card") ||
     e.target.closest(".slot-pile") ||
@@ -2102,20 +2552,265 @@ board.addEventListener("click", (e)=>{
     return;
   }
 
-  // remove destaque das cartas
+  clearSelection();
+  closeRadial();
+  
   document.querySelectorAll(".selected-card")
-    .forEach(card => card.classList.remove("selected-card"));
-
-    selectedCard = null;
-
-});
-
-document.addEventListener("dragstart", ()=>{
-  document.querySelectorAll(".selected-card")
-    .forEach(card => card.classList.remove("selected-card"));
+  .forEach(el => el.classList.remove("selected-card"));
 });
 
 document.getElementById("discordBtn")
-  ?.addEventListener("click", ()=>{
-    openModal("discord");
+?.addEventListener("click", ()=>{
+openModal("discord");
 });
+
+function openFormationModal(){
+
+  const overlay = document.createElement("div");
+  overlay.className = "slot-overlay";
+
+  const box = document.createElement("div");
+  box.style.background = "#222";
+  box.style.padding = "20px";
+  box.style.color = "#fff";
+
+  const roles = ["A","M","D"];
+
+  let temp = {...formation[playerRole]};
+
+  roles.forEach(r=>{
+    const input = document.createElement("input");
+    input.type = "number";
+    input.value = temp[r];
+    input.min = 1;
+    input.max = 5;
+
+    input.oninput = ()=>{
+      temp[r] = parseInt(input.value);
+    };
+
+    box.appendChild(document.createTextNode(r+": "));
+    box.appendChild(input);
+    box.appendChild(document.createElement("br"));
+  });
+
+  const confirm = document.createElement("button");
+  confirm.innerText = "Confirmar";
+
+    confirm.onclick = ()=>{
+
+    const old = formation[playerRole];
+
+    const diff =
+      Math.abs(old.A - temp.A) +
+      Math.abs(old.M - temp.M) +
+      Math.abs(old.D - temp.D);
+
+    const isFree =
+      !formationLocked[playerRole] || !firstHalfEnded;
+
+    if(isFree){
+      formationLocked[playerRole] = true;
+    }else{
+
+      if(formationTokens[playerRole] < diff){
+        alert("Você não tem fichas suficientes para mudar sua formação");
+        return;
+      }
+
+      const confirmChange = confirm(
+        `Você está alterando sua formação.\n\n`+
+        `Foram alteradas ${diff} posições.\n`+
+        `Isso custará ${diff} fichas.`
+      );
+
+      if(!confirmChange) return;
+
+      formationTokens[playerRole] -= diff;
+    }
+
+    formation[playerRole] = {
+      ...temp,
+      G: 3
+    };
+
+    overlay.remove();
+    updateHandCounters();
+  };
+
+  box.appendChild(confirm);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+document.querySelectorAll(".formation-table .cell").forEach(cell=>{
+
+  cell.addEventListener("click",(e)=>{
+
+    e.stopPropagation();
+
+    const table = document.getElementById("formationTable");
+
+  const type = cell.dataset.type;
+  const value = parseInt(cell.dataset.value);
+
+  table.querySelectorAll(`.cell[data-type="${type}"]`)
+    .forEach(c => c.classList.remove("active"));
+
+  cell.classList.add("active");
+
+  if(!table.tempFormation){
+    table.tempFormation = {...formation[playerRole]};
+  }
+
+  table.tempFormation[type] = value;
+
+  });
+
+});
+
+document.querySelectorAll(".formation-table").forEach(table=>{
+
+  table.addEventListener("dblclick",(e)=>{
+
+    document.querySelectorAll(".formation-table")
+    
+    const temp = table.tempFormation || formation[playerRole];
+    const old  = formation[playerRole];
+
+    const diff =
+      Math.abs(old.A - temp.A) +
+      Math.abs(old.M - temp.M) +
+      Math.abs(old.D - temp.D);
+
+    const isFree =
+      !formationLocked[playerRole] || !firstHalfEnded;
+
+    if(!isFree){
+
+      if(formationTokens[playerRole] < diff){
+        alert("Você não tem fichas suficientes");
+        return;
+      }
+
+      if(!confirm(`Alterar ${diff} posições?`)) return;
+
+      formationTokens[playerRole] -= diff;
+    }
+
+    formation[playerRole] = {
+      ...temp,
+      G: 3
+    };
+
+    updateHandCounters();
+
+  });
+
+});
+
+const table = document.getElementById("formationTable");
+
+if(table){
+  table.addEventListener("click",(e)=>{
+
+    e.stopPropagation();
+
+    if(formationEditMode) return;
+
+    openRadial(e.clientX, e.clientY, [
+      {
+        label:"Alterar formação",
+        action: startFormationEdit
+      }
+    ]);
+
+  });
+}
+
+document.getElementById("formationOk").onclick = ()=>{
+
+  const total =
+    formationTemp.A +
+    formationTemp.M +
+    formationTemp.D;
+
+  if(total !== 10){
+    alert("Sua formação precisa somar 10 cartas entre A, M e D");
+    return;
+  }
+
+  const old = formation[playerRole];
+  const temp = formationTemp;
+
+  const diff =
+    Math.abs(old.A - temp.A) +
+    Math.abs(old.M - temp.M) +
+    Math.abs(old.D - temp.D);
+
+  const isFree =
+    !formationLocked[playerRole] || !firstHalfEnded;
+
+  if(!isFree){
+
+    if(formationTokens[playerRole] < diff){
+      alert("Você não tem fichas suficientes");
+      return;
+    }
+
+    if(!confirm(`Alterar ${diff} posições?`)) return;
+
+    formationTokens[playerRole] -= diff;
+  }
+
+  formation[playerRole] = {
+    ...temp,
+    G: 3
+  };
+
+  formationEditMode = false;
+
+  document.getElementById("formationActions").style.display = "none";
+
+  updateHandCounters();
+  updateFormationUI();
+
+  socket.emit("formationChanged", {
+    player: playerRole
+  });
+
+};
+
+
+
+  formationEditMode = false;
+
+  document.getElementById("formationActions").style.display = "none";
+
+  updateHandCounters();
+  updateFormationUI();
+
+  socket.emit("formationChanged", {
+    player: playerRole
+  });
+
+
+
+document.getElementById("formationCancel").onclick = ()=>{
+
+  formationEditMode = false;
+  formationTemp = null;
+
+  document.getElementById("formationActions").style.display = "none";
+
+  updateFormationUI();
+};
+
+socket.on("syncFormation", (data)=>{
+
+  formation = data;
+
+  updateFormationUI();
+
+});
+

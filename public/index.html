@@ -649,7 +649,7 @@ body.red-player .deck-count{
 /* 🔵 CONTADOR AZUL */
 #counter_blue{
   bottom: 130px;
-  left: 145px;
+  left: 125px;
 
   background: rgba(0, 120, 255, 0.55);
   border: 1px solid rgba(0, 170, 255, 0.85);
@@ -1005,8 +1005,10 @@ z-index:9999;
 }
 
 .selected-card{
-transform: translateY(-25px) scale(1.05);
+transform: translateY(-15px) scale(1.02);
 filter: drop-shadow(0 0 10px gold);
+z-index: 999999 !important; /* 🔥 ESSENCIAL */
+position: relative; /* 🔥 garante z-index funcionar */
 }
 
 #rotateOverlay{
@@ -1081,6 +1083,300 @@ user-select:none;
 html {
   zoom: 1;
 }
+
+.radial-menu{
+  position: fixed;
+  z-index: 999999;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  transform: none;
+}
+
+.radial-btn{
+  min-width: 20px;
+  padding: 8px 12px;
+
+  border-radius: 15px;
+
+  background: #f1c40f;
+
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-size: 8px;
+
+  cursor: pointer;
+
+  text-align: center;
+
+  transition: 0.15s ease;
+
+}
+
+.radial-btn:hover{
+  background: #ffd84d;
+  transform: translateY(-2px);
+}
+
+.slot-overlay{
+  position: fixed;
+  inset:0;
+  background: rgba(0,0,0,0.7); /* 🔥 fundo escuro */
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  z-index:999999;
+}
+
+.slot-container{
+  display:flex;
+  gap:10px;
+  flex-wrap: wrap;
+  max-width: 80%;
+}
+
+.slot-big-card{
+  width:120px;
+  cursor:pointer;
+  
+}
+
+/* SLOT (onde pode jogar) */
+.slot-pile.highlight{
+  outline: 3px solid #00ff00;
+  box-shadow: 0 0 12px #00ff00;
+  z-index: 5;
+    animation: pulse 0.8s infinite alternate;
+}
+
+@keyframes pulse{
+  from{
+    box-shadow: 0 0 5px #00ff00;
+  }
+  to{
+    box-shadow: 0 0 20px #00ff00;
+  }
+}
+
+
+/* DECK + HAND (zonas) */
+.highlight-zone{
+  outline: 3px solid #00ccff;
+  box-shadow: 0 0 10px #00ccff;
+  border-radius: 6px;
+}
+
+/* CARTA SELECIONADA */
+.hand-card.selected-card,
+.fan-card.selected-card{
+
+  box-shadow: 0 0 12px yellow;
+  transform: scale(1.05);
+}
+
+.formation-box{
+  position: absolute;
+  width: 120px;
+  height: 60px;
+
+  background: rgba(0,0,0,0.6);
+  color: white;
+
+  border: 2px solid yellow;
+  border-radius: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  z-index: 9000;
+}
+
+/* 🔵 POSICIONAMENTO */
+#formation_blue{
+  left: 900px;  /* AJUSTA FINO AQUI */
+  top: 500px;
+}
+
+/* 🔴 POSICIONAMENTO */
+#formation_red{
+  left: 100px; /* AJUSTA FINO */
+  top: 100px;
+}
+
+.formation-table{
+  position: absolute;
+  width: 145px;
+  height: 70px;
+
+  top: 421px;
+  left: 457px;
+
+  background: rgba(0,0,0,0.6);
+  border: 2px solid yellow;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+
+  z-index: 8000;
+}
+
+.formation-table .row{
+  display: flex;
+  align-items: center;
+}
+
+.formation-table .label{
+  width: 120px;
+  text-align: center;
+  font-weight: bold;
+  color: white;
+}
+
+.formation-table .cell{
+  flex: 1;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* 🔥 selecionado */
+.formation-table .cell.active{
+  background: yellow;
+  color: black;
+  font-weight: bold;
+}
+
+.formation-table{
+  position: absolute;
+
+  width: 148px;
+  height: 70px;
+
+  left: 418px;
+  top: 462px;
+
+  background: #8a4f3d00; /* marrom */
+  border: 1px solid #7fc8c400;
+
+  display: flex;
+  flex-direction: column;
+
+  font-family: Arial;
+  z-index: 9999;
+}
+
+/* TÍTULO */
+.formation-header{
+  height: 15px;
+  background: #8a4f3d00;
+  color: rgba(255, 255, 255, 0);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: bold;
+  font-size: 4px;
+
+  border-bottom: 1px solid #7fc8c400;
+}
+
+/* LINHAS */
+.formation-row{
+  flex: 1;
+  display: flex;
+}
+
+/* LABEL (ATAQUE, MEIO, DEFESA) */
+.formation-label{
+  width: 48px;
+  background: #8a4f3d00;
+  color: rgba(255, 255, 255, 0);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 4px;font-weight: bold;
+
+  border-right: 1px solid #7fc8c400;
+}
+
+/* CÉLULAS */
+.formation-cell{
+  position: relative;
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: rgba(255, 255, 255, 0);
+  font-weight: bold;
+  font-size: 4px;
+
+  border-right: 1px solid #7fc8c400;
+  border-bottom: 1px solid #7fc8c400;
+
+  cursor: pointer;
+}
+
+/* REMOVE BORDA FINAL */
+.formation-cell:last-child{
+  border-right: none;
+}
+
+/* SELEÇÃO */
+.formation-cell.active{
+  background: #7fc8c400;
+  color: rgba(0, 0, 0, 0);
+}
+
+/* 🔥 CÍRCULO */
+.formation-cell.active::after{
+  content: "";
+
+  position: absolute;
+
+  width: 14px;
+  height: 14px;
+
+  background: yellow;
+  border-radius: 50%;
+
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  z-index: 0;
+}
+
+
+/* 🔥 vermelho em edição */
+.formation-table.editing .formation-cell.active::after{
+  background: red;
+}
+
+#formationTable_red{
+  position: absolute;
+
+  /* 🔥 ajuste fino aqui */
+  left: 620px;
+  top: 125px;
+
+  transform: rotate(180deg);
+  z-index: 9999;
+  color: rgba(255, 255, 255, 0);
+}
+
   </style>
 </head>
 
@@ -1208,6 +1504,81 @@ html {
 <img id="boardBg" src="https://i.imgur.com/GUyhwlh.png">
 
 
+
+<div id="formationTable" class="formation-table">
+
+  <div class="formation-header">
+    FORMAÇÃO TÁTICA (10 JOGADORES)
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">ATAQUE</div>
+    <div class="formation-cell" data-type="A" data-value="1">1</div>
+    <div class="formation-cell" data-type="A" data-value="2">2</div>
+    <div class="formation-cell" data-type="A" data-value="3">3</div>
+    <div class="formation-cell" data-type="A" data-value="4">4</div>
+    <div class="formation-cell" data-type="A" data-value="5">5</div>
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">MEIO-CAMPO</div>
+    <div class="formation-cell" data-type="M" data-value="1">1</div>
+    <div class="formation-cell" data-type="M" data-value="2">2</div>
+    <div class="formation-cell" data-type="M" data-value="3">3</div>
+    <div class="formation-cell" data-type="M" data-value="4">4</div>
+    <div class="formation-cell" data-type="M" data-value="5">5</div>
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">DEFESA</div>
+    <div class="formation-cell" data-type="D" data-value="1">1</div>
+    <div class="formation-cell" data-type="D" data-value="2">2</div>
+    <div class="formation-cell" data-type="D" data-value="3">3</div>
+    <div class="formation-cell" data-type="D" data-value="4">4</div>
+    <div class="formation-cell" data-type="D" data-value="5">5</div>
+  </div>
+
+</div>
+
+<div id="formationTable_red" class="formation-table red">
+
+  <div class="formation-header">
+    FORMAÇÃO TÁTICA (10 JOGADORES)
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">ATAQUE</div>
+    <div class="formation-cell" data-type="A" data-value="1">1</div>
+    <div class="formation-cell" data-type="A" data-value="2">2</div>
+    <div class="formation-cell" data-type="A" data-value="3">3</div>
+    <div class="formation-cell" data-type="A" data-value="4">4</div>
+    <div class="formation-cell" data-type="A" data-value="5">5</div>
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">MEIO-CAMPO</div>
+    <div class="formation-cell" data-type="M" data-value="1">1</div>
+    <div class="formation-cell" data-type="M" data-value="2">2</div>
+    <div class="formation-cell" data-type="M" data-value="3">3</div>
+    <div class="formation-cell" data-type="M" data-value="4">4</div>
+    <div class="formation-cell" data-type="M" data-value="5">5</div>
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">DEFESA</div>
+    <div class="formation-cell" data-type="D" data-value="1">1</div>
+    <div class="formation-cell" data-type="D" data-value="2">2</div>
+    <div class="formation-cell" data-type="D" data-value="3">3</div>
+    <div class="formation-cell" data-type="D" data-value="4">4</div>
+    <div class="formation-cell" data-type="D" data-value="5">5</div>
+  </div>
+
+</div>
+
+<div id="formationActions" style="position:absolute; left:920px; top:421px; display:none; z-index:200;">
+  <button id="formationOk">OK</button>
+  <button id="formationCancel">Cancelar</button>
+</div>
 
   <!-- ===================== -->
   <!-- SLOT ANCHORS -->
@@ -1357,23 +1728,24 @@ html {
 <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengola">
 <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengolv" draggable="true">
 
-<!-- Forma Azul -->
+<!-- Forma Azul --><!--
 <div class="anchor" id="forma1a" style="left:418px; top:488px;"></div>
 <div class="anchor" id="forma2a" style="left:418px; top:507px;"></div>
 <div class="anchor" id="forma3a" style="left:418px; top:524px;"></div>
 
 <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1a" draggable="true">
 <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2a" draggable="true">
-<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a" draggable="true">
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a" draggable="true">-->
 
-<!-- Forma Vermelho -->
+<!-- Forma Vermelho --><!--
 <div class="anchor" id="forma1v" style="left:749px; top:167px;"></div>
 <div class="anchor" id="forma2v" style="left:749px; top:150px;"></div>
 <div class="anchor" id="forma3v" style="left:749px; top:132px;"></div>
 
 <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1v" draggable="true">
 <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2v" draggable="true">
-<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v" draggable="true">
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v" draggable="true">-->
+
 
 <!-- Substituições Azul -->
 <div class="anchor" id="suba1" style="left:432px; top:555px;"></div>
@@ -1381,6 +1753,7 @@ html {
 <div class="anchor" id="suba3" style="left:493px; top:555px;"></div>
 <div class="anchor" id="suba4" style="left:523px; top:555px;"></div>
 <div class="anchor" id="suba5" style="left:554px; top:555px;"></div>
+
 
 <img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba1">
 <img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba2">
@@ -1400,6 +1773,7 @@ html {
 <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv3">
 <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv4">
 <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv5">
+
 
 <!-- Bonus Azul -->
 <div class="anchor" id="bonus2a" style="left:960px; top:510px;"></div>

@@ -493,6 +493,18 @@ socket.on("rotateTwist", ({id, double})=>{
 
   });
 
+  socket.emit("requestHand");
+
+socket.on("requestHand", ()=>{
+  const player = getPlayer(socket.id);
+
+  if(!player) return;
+
+  const hand = getHandFromRoom(player.room, player.role);
+
+  socket.emit("yourHand", hand);
+});
+
   socket.on("playCardToSlot", ({cardId, slot}) => {
 
     const room = rooms[socket.roomCode];
