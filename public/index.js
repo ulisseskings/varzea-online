@@ -22,6 +22,7 @@ let selectedCardId = null;
 let formationEditMode = false;
 let formationTemp = null;
 
+
 let formation = {
   blue: { A:3, M:4, D:3, G:3 },
   red:  { A:3, M:4, D:3, G:3 }
@@ -70,7 +71,7 @@ function playSFX(src){
   }
 
   const sound = audioCache[src].cloneNode();
-  sound.volume = 0.5;
+  sound.volume = 0.5; 
   sound.play().catch(()=>{});
   }
 
@@ -218,6 +219,7 @@ socket.on("syncSpectators", (list)=>{
 let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
+
 
 const playerRole = sessionStorage.getItem("playerRole");
   if(playerRole === "red"){
@@ -1259,94 +1261,32 @@ function getCorrectPoint(clientX, clientY){
 /* APPLY ANCHORS (VOLTOU!) */
 
   function applyAnchors() {
-    document.querySelectorAll("[data-anchor]").forEach(el=>{
-      const anchor=document.getElementById(el.dataset.anchor);
-      if(!el.dataset.moved){
-        el.style.left = anchor.style.left;
-        el.style.top  = anchor.style.top;
-      }
-    });
-    document.querySelectorAll(".slot-pile").forEach(slot=>{
-      const anchor = document.getElementById(slot.dataset.anchor);
-      if(anchor){
-        slot.style.left = anchor.style.left;
-        slot.style.top  = anchor.style.top;
-      }
-    });
-  }
+  document.querySelectorAll("[data-anchor]").forEach(el=>{
+    const anchor = document.getElementById(el.dataset.anchor);
+    if(anchor){
+      el.style.left = anchor.style.left;
+      el.style.top  = anchor.style.top;
+    }
+  });
+
+  document.querySelectorAll(".slot-pile").forEach(slot=>{
+    const anchor = document.getElementById(slot.dataset.anchor);
+    if(anchor){
+      slot.style.left = anchor.style.left;
+      slot.style.top  = anchor.style.top;
+    }
+  });
+}
 
   applyAnchors();
+  bindPieceDrag();
 
   let moved = false;
   /* ===================== */
   /* MOVER TOKENS LIVREMENTE */
 
 
-document.querySelectorAll(".piece").forEach(piece => {
 
-  const isRedPiece = piece.classList.contains("red");
-  const isBall = piece.classList.contains("ball");
-
-  // espectador não pode mover peças
-  if(playerRole === "spectator"){
-    piece.draggable = false;
-    return;
-  }
-
-  if(playerRole === "blue" && isRedPiece) return;
-  if(playerRole === "red" && !isRedPiece && !isBall) return;
-
-  if(piece.classList.contains("token27")){
-    piece.draggable = false;
-    return;
-  }
-
-piece.addEventListener("dragstart", (e)=>{
-
-  if(!piece.dataset.anchor) return;
-
-  piece.dataset.moved = "true"; // 🔥 ADICIONE AQUI
-
-  e.dataTransfer.setData("text/plain", JSON.stringify({
-    type: "token",
-    anchor: piece.dataset.anchor
-  }));
-});
-});
-
-document.querySelectorAll(".piece").forEach(piece=>{
-
-  piece.addEventListener("touchstart", function(e){
-
-    const touch = e.touches[0];
-    this.dataset.touching = "true";
-    this.style.zIndex = 99999;
-
-  });
-
-  piece.addEventListener("touchmove", function(e){
-
-    if(this.dataset.touching !== "true") return;
-
-    const touch = e.touches[0];
-    const rect = board.getBoundingClientRect();
-
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-
-    const anchor = document.getElementById(this.dataset.anchor);
-    if(anchor){
-      anchor.style.left = x + "px";
-      anchor.style.top  = y + "px";
-    }
-
-  });
-
-  piece.addEventListener("touchend", function(){
-    this.dataset.touching = "false";
-  });
-
-});
 
   const SUB_BACK = "https://i.imgur.com/d6JyQJQ.png";
 
@@ -1409,8 +1349,8 @@ document.querySelectorAll(".piece").forEach(piece=>{
       token.className = "piece token14 twist-token";
       token.src = "https://i.imgur.com/AQJilFs.png";
 
-      token.dataset.anchor = anchor.id;
       token.draggable = true;
+      token.dataset.anchor = anchor.id;
 
       token.style.zIndex = 12000 + i;
 
@@ -1425,10 +1365,15 @@ document.querySelectorAll(".piece").forEach(piece=>{
     }
 
     applyAnchors();
+    bindPieceDrag();
   }
 
   /* ✅ CRIA A PILHA ASSIM QUE O JOGO CARREGA */
   spawnTwistStack();
+
+  setTimeout(()=>{
+    bindPieceDrag();
+  }, 100);
 
 
 
@@ -1690,13 +1635,19 @@ document.addEventListener("dragover", (e)=>{
 
     e.preventDefault();
 
+    const raw = e.dataTransfer.getData("text/plain");
+    console.log("DROP DATA RAW:", raw);
+
     let data = {};
 
     try{
-      data = JSON.parse(e.dataTransfer.getData("text/plain"));
+      data = JSON.parse(raw);
     }catch(e){
+      console.log("ERRO PARSE");
       return;
     }
+
+    console.log("DROP DATA:", data);
 
     if(data.type !== "token") return;
 
@@ -1929,7 +1880,7 @@ socket.on("tokenMoved", (data)=>{
   } else {
     playSFX(SOUNDS.drag);   // outros tokens
   }
-
+bindPieceDrag();
 });
 
 socket.on("roomError", (msg)=>{
@@ -2814,3 +2765,30 @@ socket.on("syncFormation", (data)=>{
 
 });
 
+function bindPieceDrag(){
+
+  document.querySelectorAll(".piece").forEach(piece => {
+
+    piece.draggable = true;
+
+    piece.addEventListener("dragstart", (e)=>{
+
+      if(!piece.dataset.anchor){
+        console.warn("SEM ANCHOR", piece);
+        return;
+      }
+
+      const data = JSON.stringify({
+        type: "token",
+        anchor: piece.dataset.anchor
+      });
+
+      e.dataTransfer.setData("text/plain", data);
+      e.dataTransfer.effectAllowed = "move";
+
+      console.log("DRAG START:", data);
+    });
+
+  });
+
+}
