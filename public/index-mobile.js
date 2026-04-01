@@ -9,6 +9,38 @@ let currentVolume = 0.2;
 let selectedSlotCard = null;
 let lastPlayedCardId = null;
 let lastPlayedSlot = null;
+let lastPlayedCardEl = null;
+let lastServerSlots = null;
+let draggingTwist = null;
+let selectedFrom = null;
+let selectedCard = null;
+let selectedIndex = null;
+let selectedSlot = null;
+let selectedCardId = null;
+let formationEditMode = false;
+let formationTemp = null;
+let lastGoalTime = 0;
+let lastDragTwistMouse = { x: 0, y: 0 };
+
+let formation = {
+  blue: { A:3, M:4, D:3, G:3 },
+  red:  { A:3, M:4, D:3, G:3 }
+};
+
+let formationLocked = {
+  blue: false,
+  red: false
+};
+
+let formationTokens = {
+  blue: 3,
+  red: 3
+};
+
+let serverHandCounts = {
+  blue: null,
+  red: null
+};
 
 function setLastPlayedCard(el){
 
@@ -118,11 +150,13 @@ function playSFX(src){
 
   if(!sfxEnabled) return;
 
-  const sound = new Audio(src);
+  if(!audioCache[src]){
+    audioCache[src] = new Audio(src);
+  }
+
+  const sound = audioCache[src].cloneNode();
   sound.volume = 0.5;
-  sound.play();
-
-
+  sound.play().catch(()=>{});
 }
   const SOUNDS = {
   drag: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/dragtoken_th8vbx.mp3",
@@ -150,6 +184,25 @@ document.getElementById("musicToggle")
     }
 
 });
+
+function playGoalEffect(){
+
+  const now = Date.now();
+
+  if(now - lastGoalTime < 1000) return;
+  lastGoalTime = now;
+
+  playSFX("https://res.cloudinary.com/dzjwlafsx/video/upload/v1775058629/gol_wc76tf.mp3");
+
+  const overlay = document.getElementById("goalOverlay");
+  if(!overlay) return;
+
+  overlay.style.display = "flex";
+
+  setTimeout(()=>{
+    overlay.style.display = "none";
+  }, 2000);
+}
 
 document.getElementById("sfxToggle")
 ?.addEventListener("click", ()=>{
@@ -216,6 +269,10 @@ socket.on("syncTokens", (tokens)=>{
   }, 50);
 
 });
+
+socket.on("actionLog", ({ text, color })=>{
+  addLogEntry(text, color);
+}); 
 
 let decks = {}; // cliente não controla decks, apenas evita erro
 
@@ -538,7 +595,6 @@ let draggedFreeCard = null;
 let hand = [];
 let hand_red = [];
 
-let selectedCard = null;
 /* ===================== */
 /* EMBARALHAR TODOS OS DECKS NO INÍCIO */
 
@@ -567,40 +623,42 @@ let slotFanOpen = {
 
 function highlightSlot(type){
 
-  clearHighlight();
+  const f = formation[playerRole];
+  const counts = (playerRole === "blue") ? hand : hand_red;
 
-  /* ===================== */
-  /* SLOT PILHA */
+  const base = type.replace("_red","");
+  const current = counts.filter(c => c.type === type).length;
+
+  if(base !== "P" && base !== "T" && f && current >= f[base]){
+    return;
+  }
+
+  clearHighlight();
 
   document.querySelector(`.slot-pile[data-slot="${type}"]`)
     ?.classList.add("highlight");
 
-  /* ===================== */
-  /* PENALTIS */
-
-  if(type==="P"){
+  if(type === "P"){
     ["P1","P2"].forEach(p=>{
       document.querySelector(`.slot-pile[data-slot="${p}"]`)
         ?.classList.add("highlight");
     });
   }
 
-  if(type==="P_red"){
+  if(type === "P_red"){
     ["P1_red","P2_red"].forEach(p=>{
       document.querySelector(`.slot-pile[data-slot="${p}"]`)
         ?.classList.add("highlight");
     });
   }
 
-  /* ===================== */
-  /* DECK CORRESPONDENTE */
-
   document.querySelector(`[data-deck="${type}"]`)
     ?.closest(".deck-wrapper")
     ?.classList.add("highlight-zone");
 
-  /* ===================== */
-  /* ÁREA DA MÃO (DEVOLVER) */
+  if(type === "T"){
+    return;
+  }
 
   if(type.includes("_red")){
     document.getElementById("hand_red")
@@ -610,7 +668,6 @@ function highlightSlot(type){
       ?.classList.add("highlight-zone");
   }
 }
-
 
 function clearHighlight() {
 
@@ -627,6 +684,267 @@ function clearHighlight() {
 
   document.getElementById("hand_red")
     ?.classList.remove("highlight-zone");
+}
+
+function updateHandCounters(){
+
+  function countTypes(handArray){
+    return {
+      A: handArray.filter(c=>c.type==="A").length,
+      M: handArray.filter(c=>c.type==="M").length,
+      D: handArray.filter(c=>c.type==="D").length,
+      G: handArray.filter(c=>c.type==="G").length,
+      P: handArray.filter(c=>c.type==="P").length,
+
+      A_red: handArray.filter(c=>c.type==="A_red").length,
+      M_red: handArray.filter(c=>c.type==="M_red").length,
+      D_red: handArray.filter(c=>c.type==="D_red").length,
+      G_red: handArray.filter(c=>c.type==="G_red").length,
+      P_red: handArray.filter(c=>c.type==="P_red").length
+    };
+  }
+
+  function getFormationAdjustments(f){
+    const adj = {
+      A: 0,
+      M: 0,
+      D: 0,
+      G: 0
+    };
+
+    if(f.A === 4){
+      adj.M = -1;
+      adj.D = -1;
+    }
+
+    if(f.A === 5){
+      adj.M = -2;
+      adj.D = -1;
+    }
+
+    if(f.M === 3){
+      adj.A = -1;
+      adj.D = -1;
+    }
+
+    if(f.D === 3){
+      adj.D = 1;
+      adj.G = 1;
+    }
+
+    if(f.D === 4){
+      adj.A = 1;
+      adj.D = 1;
+    }
+
+    if(f.D === 5){
+      adj.A = 1;
+      adj.M = 1;
+    }
+
+    return adj;
+  }
+
+  function formatAdj(value){
+    if(value > 0) return `+${value}`;
+    return `${value}`;
+  }
+
+  function renderBlueCounter(data){
+    if(!data) return;
+
+    const fBlue = formation.blue;
+    const adjBlue = getFormationAdjustments(fBlue);
+
+    const totalBlue = data.A + data.M + data.D + data.G;
+
+    const el = document.getElementById("counter_blue");
+    if(!el) return;
+
+    el.innerHTML =
+      `A:${data.A}/${fBlue.A} M:${data.M}/${fBlue.M} D:${data.D}/${fBlue.D} G:${data.G}/${fBlue.G}<br>` +
+      `Total: ${totalBlue}/13<br>` +
+      `A: ${formatAdj(adjBlue.A)}<br>` +
+      `M: ${formatAdj(adjBlue.M)}<br>` +
+      `D: ${formatAdj(adjBlue.D)}<br>` +
+      `G: ${formatAdj(adjBlue.G)}`;
+  }
+
+  function renderRedCounter(data){
+    if(!data) return;
+
+    const fRed = formation.red;
+    const adjRed = getFormationAdjustments(fRed);
+
+    const totalRed = data.A_red + data.M_red + data.D_red + data.G_red;
+
+    const el = document.getElementById("counter_red");
+    if(!el) return;
+
+    el.innerHTML =
+      `A:${data.A_red}/${fRed.A} M:${data.M_red}/${fRed.M} D:${data.D_red}/${fRed.D} G:${data.G_red}/${fRed.G}<br>` +
+      `Total: ${totalRed}/13<br>` +
+      `A: ${formatAdj(adjRed.A)}<br>` +
+      `M: ${formatAdj(adjRed.M)}<br>` +
+      `D: ${formatAdj(adjRed.D)}<br>` +
+      `G: ${formatAdj(adjRed.G)}`;
+  }
+
+  const localBlue = countTypes(hand);
+  const localRed = countTypes(hand_red);
+
+  if(playerRole === "blue"){
+    renderBlueCounter(localBlue);
+    renderRedCounter(serverHandCounts.red || localRed);
+  }
+
+  if(playerRole === "red"){
+    renderRedCounter(localRed);
+    renderBlueCounter(serverHandCounts.blue || localBlue);
+  }
+
+  if(playerRole === "spectator"){
+    renderBlueCounter(serverHandCounts.blue || localBlue);
+    renderRedCounter(serverHandCounts.red || localRed);
+  }
+}
+
+function updateFormationUI(){
+
+  const tableBlue = document.getElementById("formationTable");
+  const tableRed  = document.getElementById("formationTable_red");
+
+  function updateOneTable(table, data, isEditing){
+    if(!table || !data) return;
+
+    if(isEditing){
+      table.classList.add("editing");
+    }else{
+      table.classList.remove("editing");
+    }
+
+    ["A","M","D"].forEach(type=>{
+      table.querySelectorAll(`.formation-cell[data-type="${type}"]`)
+        .forEach(c => c.classList.remove("active"));
+
+      const selected = table.querySelector(
+        `.formation-cell[data-type="${type}"][data-value="${data[type]}"]`
+      );
+
+      if(selected){
+        selected.classList.add("active");
+      }
+    });
+  }
+
+  const blueData =
+    (playerRole === "blue" && formationEditMode && formationTemp)
+      ? formationTemp
+      : formation.blue;
+
+  const redData =
+    (playerRole === "red" && formationEditMode && formationTemp)
+      ? formationTemp
+      : formation.red;
+
+  updateOneTable(
+    tableBlue,
+    blueData,
+    playerRole === "blue" && formationEditMode
+  );
+
+  updateOneTable(
+    tableRed,
+    redData,
+    playerRole === "red" && formationEditMode
+  );
+}
+
+
+function startFormationEditMobile(){
+
+  if(playerRole !== "blue" && playerRole !== "red") return;
+
+  formationEditMode = true;
+  formationTemp = {
+    ...formation[playerRole]
+  };
+
+  document.getElementById("formationActions").style.display = "flex";
+  updateFormationUI();
+}
+
+function cancelFormationMobile(){
+  formationEditMode = false;
+  formationTemp = null;
+  document.getElementById("formationActions").style.display = "none";
+  updateFormationUI();
+}
+
+function confirmFormationMobile(){
+
+  if(!formationEditMode || !formationTemp) return;
+
+  socket.emit("updateFormation", {
+    formation: {
+      ...formationTemp,
+      G: 3
+    }
+  });
+
+  formationEditMode = false;
+  formationTemp = null;
+  document.getElementById("formationActions").style.display = "none";
+}
+
+document.getElementById("formationCancelBtn")
+  ?.addEventListener("click", cancelFormationMobile);
+
+document.getElementById("formationConfirmBtn")
+  ?.addEventListener("click", confirmFormationMobile);
+
+function bindFormationTouch(){
+
+  const tables = [
+    document.getElementById("formationTable"),
+    document.getElementById("formationTable_red")
+  ].filter(Boolean);
+
+  tables.forEach(table=>{
+
+    table.addEventListener("touchstart", (e)=>{
+      const cell = e.target.closest(".formation-cell");
+      if(!cell) return;
+
+      const isBlueTable = table.id === "formationTable";
+      const isRedTable  = table.id === "formationTable_red";
+
+      if(playerRole === "blue" && !isBlueTable) return;
+      if(playerRole === "red" && !isRedTable) return;
+      if(playerRole === "spectator") return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if(!formationEditMode){
+        startFormationEditMobile();
+      }
+
+      if(!formationTemp) return;
+
+      const type = cell.dataset.type;
+      const value = parseInt(cell.dataset.value);
+
+      if(!type || Number.isNaN(value)) return;
+
+      formationTemp[type] = value;
+      updateFormationUI();
+      updateHandCounters();
+
+    }, { passive:false });
+
+  });
+
 }
 
 
@@ -672,39 +990,22 @@ function mustRefillHand(player){
 let firstHalfEnded = false;
 
 socket.on("handCounts", (counts)=>{
+  if(!counts) return;
 
-  console.log("HAND COUNTS RECEBIDO:", counts);
-
-  const blue = counts.blue;
-  const red = counts.red;
-
-  const totalBlue = blue.A + blue.M + blue.D + blue.G;
-  const totalRed  = red.A_red + red.M_red + red.D_red + red.G_red;
-
-  const blueCounter = document.getElementById("counter_blue");
-  const redCounter  = document.getElementById("counter_red");
-
-  if(blueCounter){
-    blueCounter.innerHTML =
-    `<span style="font-size:16px;font-weight:bold">
-    A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}
-    </span><br>
-    <span style="font-size:16px">
-    Total: ${totalBlue}/13
-    </span>`;
-  }
-
-  if(redCounter){
-    redCounter.innerHTML =
-    `<span style="font-size:16px;font-weight:bold">
-    A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}
-    </span><br>
-    <span style="font-size:16px">
-    Total: ${totalRed}/13
-    </span>`;
-  }
-
+  serverHandCounts = counts;
+  updateHandCounters();
 });
+
+
+socket.on("syncFormation", (data)=>{
+  if(!data) return;
+
+  formation = data;
+
+  updateFormationUI();
+  updateHandCounters();
+});
+
 
 function renderHand() {
 
@@ -761,6 +1062,12 @@ function renderHand() {
         img.src = card.front;
         img.className="hand-card";
 
+        if(card.id === selectedCardId){
+          img.classList.add("selected-card");if(card.id === selectedCardId){
+  img.classList.add("selected-card");
+}
+        }
+
         // ⭐ leque visível
         img.style.marginLeft = i === 0 ? "0px" : "-25px";
 
@@ -778,6 +1085,9 @@ function renderHand() {
       e.preventDefault();
 
       selectedCard = card;
+
+      selectedCardId = card.id;
+      selectedFrom = "hand";
 
       touchCard = true;
 
@@ -905,7 +1215,8 @@ if (playerRole === "red") {
 
 // Espectador não renderiza nenhuma mão
 
-
+  updateHandCounters();
+  updateFormationUI();
 
 }
 
@@ -969,20 +1280,32 @@ fan.addEventListener("touchstart", function(e){
 
   if(selectedSlotCard === card.id){
 
-    socket.emit("returnCardFromSlot", {
-      cardId: card.id,
-      slot: type
-    });
+  socket.emit("returnCardToHand", {
+    cardId: card.id,
+    slot: type,
+    index: i
+  });
 
-    selectedSlotCard = null;
+  selectedSlotCard = null;
+  selectedCard = null;
+  selectedCardId = null;
+  selectedFrom = null;
+  selectedSlot = null;
+  selectedIndex = null;
 
-    document.querySelectorAll(".fan-card")
-      .forEach(c => c.classList.remove("selected-card"));
+  document.querySelectorAll(".fan-card")
+    .forEach(c => c.classList.remove("selected-card"));
 
-    return;
-  }
+  clearHighlight();
+  return;
+}
 
   selectedSlotCard = card.id;
+  selectedCard = card;
+  selectedCardId = card.id;
+  selectedFrom = "fan";
+  selectedSlot = type;
+  selectedIndex = i;
 
   highlightSlot(card.type);
 
@@ -1317,6 +1640,10 @@ document.querySelectorAll(".anchor").forEach(anchor=>{
 
   renderHand();
 
+  updateFormationUI();
+  updateHandCounters();
+  bindFormationTouch();
+
   /* ✅ marca decks vazios logo no início */
   // updateEmptyDeckVisuals();
   const TWIST_BACK = "https://i.imgur.com/D40CPCK.png";
@@ -1328,9 +1655,12 @@ function spawnTwistCard(card){
   }
 
   const img = document.createElement("img");
-
   img.src = card.front;
-  img.className = "twist-card";
+  img.className="hand-card";
+
+  if(card.id === selectedCardId){
+    img.classList.add("selected-card");
+  }
 
   img.style.width = "74px";
   img.style.height = "103px";
@@ -1681,7 +2011,7 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
 
   socket.on("yourHand", (serverHand) => {
 
-    playSFX(SOUNDS.draw);
+  playSFX(SOUNDS.draw);
 
   console.log("Recebi mão do servidor:", serverHand);
 
@@ -1694,7 +2024,10 @@ document.querySelectorAll("#topbar button").forEach(btn=>{
   }
 
   renderHand();
+  updateHandCounters();
+  updateFormationUI();
 });
+
 socket.on("updateBoardSlots", (data)=>{
 
   if(data.lastSlot){
@@ -1702,43 +2035,71 @@ socket.on("updateBoardSlots", (data)=>{
   }
 
   if(data.slots){
-    slotPiles = data.slots
-    lastPlayedSlot = data.lastSlot
+    slotPiles = data.slots;
+    lastPlayedSlot = data.lastSlot;
   }else{
-    slotPiles = data
+    slotPiles = data;
   }
 
   Object.keys(slotPiles).forEach(type=>{
-    renderSlot(type)
-  })
+    renderSlot(type);
+  });
 
-  // 🔥 aplicar animação
+  lastServerSlots = JSON.parse(JSON.stringify(slotPiles));
+
   document.querySelectorAll(".slot-pile")
-    .forEach(el=>el.classList.remove("last-card"))
+    .forEach(el=>el.classList.remove("last-card"));
 
   if(lastPlayedSlot){
-
-    const slotEl =
-      document.querySelector(`.slot-pile[data-slot="${lastPlayedSlot}"]`)
-
+    const slotEl = document.querySelector(`.slot-pile[data-slot="${lastPlayedSlot}"]`);
     if(slotEl){
-      slotEl.classList.add("last-card")
+      slotEl.classList.add("last-card");
     }
-
   }
-
-})
+});
 
 socket.on("deckShuffled", (type)=>{
-
   playSFX(SOUNDS.shuffle);
-  
 
-   const wrapper = document.querySelector(`[data-deck="${type}"]`)?.closest(".deck-wrapper");
-if(wrapper){
-  wrapper.classList.add("shuffling");
-  setTimeout(()=>wrapper.classList.remove("shuffling"),300);
-}
+  const wrapper = document.querySelector(`[data-deck="${type}"], [data-deck="${type}_red"]`);
+  if(wrapper){
+    wrapper.classList.add("shuffling");
+    setTimeout(()=>wrapper.classList.remove("shuffling"), 300);
+  }
+});
+
+socket.on("twistRemoved", (id)=>{
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if(el) el.remove();
+});
+
+socket.on("secondHalfStarted", ()=>{
+  firstHalfEnded = true;
+
+  hand = [];
+  hand_red = [];
+  renderHand();
+
+  tempoStatusEl.innerText = "2º Tempo";
+
+  document.getElementById("boardBg").src =
+    "https://i.imgur.com/auIBYLo.png";
+
+  Object.keys(slotPositionsSecondHalf).forEach(slotId => {
+    const anchor = document.getElementById("slot" + slotId);
+    if(!anchor) return;
+
+    anchor.style.left = slotPositionsSecondHalf[slotId].left;
+    anchor.style.top  = slotPositionsSecondHalf[slotId].top;
+
+    const pile = document.querySelector(`.slot-pile[data-anchor="${slotId}"]`);
+    if(pile){
+      pile.style.left = slotPositionsSecondHalf[slotId].left;
+      pile.style.top  = slotPositionsSecondHalf[slotId].top;
+    }
+  });
+
+  updateEmptyDeckVisuals();
 });
 
 
@@ -1829,11 +2190,6 @@ socket.on("twistReturned", ({ front }) => {
 
 });
 
-socket.on("twistRemoved", (id)=>{
-  const el = document.querySelector(`[data-id="${id}"]`);
-  if(el) el.remove();
-});
-
 socket.on("twistMoved", (card)=>{
 
   const el = document.querySelector(`[data-id="${card.id}"]`);
@@ -1883,47 +2239,6 @@ socket.on("playerJoinedMessage", ({name, role})=>{
   showJoinMessage(texto);
 });
 
-
-socket.on("secondHalfStarted", ()=>{
-
-  firstHalfEnded = true;
-
-  // 🔥 limpa mãos locais (cartas voltam pro deck no servidor)
-  hand = [];
-  hand_red = [];
-
-renderHand();
-
-  tempoStatusEl.innerText = "2º Tempo";
-
-  // 🏟️ trocar campo
-  document.getElementById("boardBg").src =
-  "https://i.imgur.com/auIBYLo.png";
-
-
-  // 🔁 mover slots
-  Object.keys(slotPositionsSecondHalf).forEach(slotId => {
-
-    const anchor = document.getElementById("slot" + slotId);
-    if(!anchor) return;
-
-    anchor.style.left = slotPositionsSecondHalf[slotId].left;
-    anchor.style.top  = slotPositionsSecondHalf[slotId].top;
-
-    // 🔥 atualizar também slot-pile visual
-    const pile = document.querySelector(`.slot-pile[data-slot="${slotId}"]`);
-    if(pile){
-      pile.style.left = slotPositionsSecondHalf[slotId].left;
-      pile.style.top  = slotPositionsSecondHalf[slotId].top;
-    }
-
-  });
-
-  
-    updateEmptyDeckVisuals();
-
-    shuffleAllDecks();
-});
 
   socket.on("syncDeckSizes", (serverDecks)=>{
 
@@ -2141,13 +2456,17 @@ function clearSelections(){
 
   selectedCard = null;
   selectedSlotCard = null;
+  selectedFrom = null;
+  selectedIndex = null;
+  selectedSlot = null;
+  selectedCardId = null;
 
   document.querySelectorAll(".selected-card")
     .forEach(el => el.classList.remove("selected-card"));
 
   clearHighlight();
-
 }
+
 let helpStep = 0;
 
 const steps=[
@@ -2338,3 +2657,35 @@ document.getElementById("discordBtn")
   ?.addEventListener("click", ()=>{
     openModal("discord");
 });
+
+function addLogEntry(text, color){
+
+  const list = document.getElementById("actionLogList");
+  if(!list) return;
+
+  const entry = document.createElement("div");
+  entry.className = "action-log-entry";
+  entry.innerText = text || "";
+
+  if(color === "blue"){
+    entry.style.borderLeftColor = "#2aa8ff";
+  }else if(color === "red"){
+    entry.style.borderLeftColor = "#ff4d4d";
+  }else{
+    entry.style.borderLeftColor = "#777";
+  }
+
+  list.prepend(entry);
+}
+
+document.getElementById("actionLogToggle")
+  ?.addEventListener("click", ()=>{
+    document.getElementById("actionLogPanel")
+      ?.classList.toggle("closed");
+  });
+
+document.getElementById("actionLogClose")
+  ?.addEventListener("click", ()=>{
+    document.getElementById("actionLogPanel")
+      ?.classList.add("closed");
+  });

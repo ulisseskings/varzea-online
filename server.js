@@ -257,6 +257,15 @@ function countHandTypes(hand){
 
 }
 
+function emitActionLog(roomCode, text, color){
+  if(!roomCode || !text) return;
+
+  io.to(roomCode).emit("actionLog", {
+    text,
+    color
+  });
+}
+
 function createShuffledDecks(){
 
   const newDecks = {};
@@ -326,6 +335,42 @@ socket.on("startSecondHalf", ()=>{
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
 
   io.to(socket.roomCode).emit("secondHalfStarted");
+
+  emitActionLog(socket.roomCode, `${socket.playerName} iniciou o 2º tempo`, socket.role);
+});
+
+
+socket.on("updateFormation", ({ formation }) => {
+
+  const room = rooms[socket.roomCode];
+  if (!room) return;
+
+  const role = socket.role;
+  if (!role || !formation) return;
+
+  room.formation = room.formation || {
+    blue: { A: 3, M: 4, D: 3, G: 3 },
+    red: { A: 3, M: 4, D: 3, G: 3 }
+  };
+
+  room.formation[role] = {
+    ...formation
+  };
+
+  emitActionLog(
+  socket.roomCode,
+  `${socket.playerName} alterou a formação para A${formation.A} M${formation.M} D${formation.D} G${formation.G}`, socket.role);
+
+  io.to(socket.roomCode).emit("syncFormation", {
+    blue: { ...room.formation.blue },
+    red: { ...room.formation.red }
+  });
+
+  io.to(socket.roomCode).emit("handCounts", {
+    blue: countHandTypes(room.hands.blue),
+    red: countHandTypes(room.hands.red)
+  });
+
 });
 
 socket.on("returnTwistToDeck", ({id})=>{
@@ -384,6 +429,8 @@ socket.on("returnTwistToDeck", ({id})=>{
   const card = playerHand.splice(index, 1)[0];
 
   room.decks[deck].push(card);
+
+  emitActionLog(socket.roomCode, `${socket.playerName} devolveu ${card.type} para o deck ${deck}`, socket.role);
 
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
 
@@ -447,8 +494,8 @@ socket.on("drawTwist", ()=>{
   const twistObj = {
     id: randomUUID(),
     front: card.front,
-    x: 580,
-    y: 330,
+    x: 200,
+    y: 210,
     rotation: 0
   };
 
@@ -477,32 +524,49 @@ socket.on("rotateTwist", ({id, double})=>{
 });
 
   // 🔥 MOVIMENTO DE TOKEN
-  socket.on("moveToken", (data) => {
+socket.on("moveToken", (data) => {
 
-    const room = rooms[socket.roomCode];
-    if(!room) return;
+  const room = rooms[socket.roomCode];
+  if(!room) return;
 
-    if(!room.tokens) room.tokens = {};
+  if(!room.tokens) room.tokens = {};
 
-    room.tokens[data.anchor] = {
-      x:data.x,
-      y:data.y
-    };
+  room.tokens[data.anchor] = {
+    x:data.x,
+    y:data.y
+  };
 
-    io.to(socket.roomCode).emit("tokenMoved", data);
+  emitActionLog(socket.roomCode, `${socket.playerName} moveu o token ${data.anchor}`, socket.role);
 
-  });
+  io.to(socket.roomCode).emit("tokenMoved", data);
 
-  socket.emit("requestHand");
+  if(data.anchor === "tokengola"){
+    io.to(socket.roomCode).emit("goalScored", {
+      team: "blue"
+    });
+  }
+
+  if(data.anchor === "tokengolv"){
+    io.to(socket.roomCode).emit("goalScored", {
+      team: "red"
+    });
+  }
+
+});
 
 socket.on("requestHand", ()=>{
-  const player = getPlayer(socket.id);
+  const room = rooms[socket.roomCode];
+  if(!room) return;
 
-  if(!player) return;
+  if(socket.role === "blue"){
+    socket.emit("yourHand", room.hands.blue || []);
+    return;
+  }
 
-  const hand = getHandFromRoom(player.room, player.role);
-
-  socket.emit("yourHand", hand);
+  if(socket.role === "red"){
+    socket.emit("yourHand", room.hands.red || []);
+    return;
+  }
 });
 
   socket.on("playCardToSlot", ({cardId, slot}) => {
@@ -527,7 +591,14 @@ socket.on("requestHand", ()=>{
 
     const card = playerHand.splice(cardIndex, 1)[0];
 
+    if(!room.boardSlots[slot]){
+      console.log("Slot inválido recebido:", slot);
+      return;
+    }
+
     room.boardSlots[slot].push(card);
+    
+    emitActionLog(socket.roomCode, `${socket.playerName} jogou ${card.type} no slot ${slot}`, socket.role);
 
     room.lastSlotPlayed = slot;
 
@@ -545,7 +616,7 @@ socket.on("requestHand", ()=>{
 
   });
 
-socket.on("returnCardFromSlot", ({cardId, slot})=>{
+socket.on("returnCardToHand", ({ cardId, slot }) => {
 
   const room = rooms[socket.roomCode];
   if(!room) return;
@@ -678,6 +749,18 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
     role
   });
 
+  if(role === "blue"){
+  emitActionLog(roomCode, `${name} entrou no Time Azul`, "blue");
+}
+
+if(role === "red"){
+  emitActionLog(roomCode, `${name} entrou no Time Vermelho`, "red");
+}
+
+if(role === "spectator"){
+  emitActionLog(roomCode, `${name} entrou como Espectador`, "white");
+}
+
   io.to(roomCode).emit("syncPlayers", room.players);
   io.to(roomCode).emit("syncSpectators", room.spectators);
 
@@ -686,6 +769,11 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
   socket.emit("syncTwists", room.twists || []);
   socket.emit("syncTokens", room.tokens || {});
   socket.emit("syncDeckSizes", room.decks);
+
+  socket.emit("syncFormation", room.formation || {
+  blue: { A:3, M:4, D:3, G:3 },
+  red:  { A:3, M:4, D:3, G:3 }
+});
 
   io.to(roomCode).emit("handCounts", {
     blue: countHandTypes(room.hands.blue),
@@ -743,6 +831,12 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
   socket.emit("syncSubTokens", room.subTokens || {});
   socket.emit("syncTwists", room.twists || []);
   socket.emit("syncDeckSizes", room.decks);
+
+  socket.emit("syncFormation", room.formation || {
+  blue: { A:3, M:4, D:3, G:3 },
+  red:  { A:3, M:4, D:3, G:3 }
+});
+
   io.to(roomCode).emit("handCounts", {
     blue: countHandTypes(room.hands.blue),
     red: countHandTypes(room.hands.red)
@@ -847,7 +941,7 @@ socket.on("drawCard", (deckType) => {
   if(!deck || deck.length === 0) return;
 
   const index = Math.floor(Math.random() * deck.length);
-  const rawCard = deck.splice(index,1)[0];
+  const rawCard = deck.splice(index, 1)[0];
 
   const card = {
     ...rawCard,
@@ -857,24 +951,29 @@ socket.on("drawCard", (deckType) => {
   if(socket.role === "blue"){
     room.hands.blue.push(card);
     socket.emit("yourHand", room.hands.blue);
-    io.to(socket.roomCode).emit("handCounts", {
-  blue: countHandTypes(room.hands.blue),
-  red: countHandTypes(room.hands.red)
-});
   }
 
   if(socket.role === "red"){
     room.hands.red.push(card);
     socket.emit("yourHand", room.hands.red);
-    io.to(socket.roomCode).emit("handCounts", {
-  blue: countHandTypes(room.hands.blue),
-  red: countHandTypes(room.hands.red)
-});
   }
+
+  io.to(socket.roomCode).emit("handCounts", {
+    blue: countHandTypes(room.hands.blue),
+    red: countHandTypes(room.hands.red)
+  });
+
+  emitActionLog(
+    socket.roomCode,
+    `${socket.playerName} comprou uma carta do deck ${deckType}`,
+    socket.role
+  );
 
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
 
 });
+
+
 
 
   socket.on("shuffleDeck", (deckType) => {

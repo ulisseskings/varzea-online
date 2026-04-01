@@ -1,4 +1,4 @@
-const deviceMode = sessionStorage.getItem("deviceMode");
+const deviceMode = localStorage.getItem("deviceMode");
 
 if (!deviceMode) {
   window.location.href = "/device.html";
@@ -21,7 +21,8 @@ let selectedSlot = null;
 let selectedCardId = null;
 let formationEditMode = false;
 let formationTemp = null;
-
+let lastGoalTime = 0;
+let lastDragTwistMouse = { x: 0, y: 0 };
 
 let formation = {
   blue: { A:3, M:4, D:3, G:3 },
@@ -71,7 +72,7 @@ function playSFX(src){
   }
 
   const sound = audioCache[src].cloneNode();
-  sound.volume = 0.5; 
+  sound.volume = 0.5;
   sound.play().catch(()=>{});
   }
 
@@ -102,6 +103,25 @@ document.getElementById("musicToggle")
 
 });
 
+
+function playGoalEffect(){
+
+  const now = Date.now();
+
+  if(now - lastGoalTime < 1000) return;
+  lastGoalTime = now;
+
+  playSFX("https://res.cloudinary.com/dzjwlafsx/video/upload/v1775058629/gol_wc76tf.mp3");
+
+  const overlay = document.getElementById("goalOverlay");
+  if(!overlay) return;
+
+  overlay.style.display = "flex";
+
+  setTimeout(()=>{
+    overlay.style.display = "none";
+  }, 2000);
+}
 
 
 const socket = io({
@@ -201,8 +221,6 @@ socket.on("syncPlayers", (players)=>{
     players.red || "...";
 });
 
-socket.emit("requestHand"); 
-
 socket.on("syncSpectators", (list)=>{
   const el = document.getElementById("spectatorList");
 
@@ -219,7 +237,6 @@ socket.on("syncSpectators", (list)=>{
 let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
-
 
 const playerRole = sessionStorage.getItem("playerRole");
   if(playerRole === "red"){
@@ -283,6 +300,8 @@ if(!playerName || !playerRole){
   alert("Sessão expirada. Volte ao lobby.");
   window.location.href = "/";
 }
+
+addLogEntry(`Você entrou como ${playerName} (${playerRole})`);
 
 // 🚀 ENTRA NA SALA
 socket.emit("reconnectRoom", {
@@ -366,16 +385,21 @@ if(roomCode){
   console.log("Jogador:", playerName, "Role:", playerRole);
 
 if (playerRole === "blue") {
-  document.getElementById("hand_red").style.display = "none";
+  const enemyHandInner = document.querySelector("#hand_red .hand-inner");
+  if (enemyHandInner) enemyHandInner.style.display = "none";
 }
 
 if (playerRole === "red") {
-  document.getElementById("hand").style.display = "none";
+  const enemyHandInner = document.querySelector("#hand .hand-inner");
+  if (enemyHandInner) enemyHandInner.style.display = "none";
 }
 
 if (playerRole === "spectator") {
-  document.getElementById("hand").style.display = "none";
-  document.getElementById("hand_red").style.display = "none";
+  const blueHandInner = document.querySelector("#hand .hand-inner");
+  const redHandInner = document.querySelector("#hand_red .hand-inner");
+
+  if (blueHandInner) blueHandInner.style.display = "none";
+  if (redHandInner) redHandInner.style.display = "none";
 }
 
 
@@ -387,6 +411,10 @@ let draggedFreeCard = null;
 let hand = [];
 let hand_red = [];
 
+let serverHandCounts = {
+  blue: null,
+  red: null
+};
 
 /* ===================== */
 /* EMBARALHAR TODOS OS DECKS NO INÍCIO */
@@ -423,47 +451,38 @@ function highlightSlot(type){
   const counts = (playerRole === "blue") ? hand : hand_red;
 
   const base = type.replace("_red","");
-
   const current = counts.filter(c => c.type === type).length;
 
-  if(base !== "P" && current >= f[base]){
-    return; // ❌ não destaca se não pode comprar
+  if(base !== "P" && base !== "T" && current >= f[base]){
+    return;
   }
 
   clearHighlight();
 
-  /* ===================== */
-  /* SLOT PILHA */
-
   document.querySelector(`.slot-pile[data-slot="${type}"]`)
     ?.classList.add("highlight");
 
-  /* ===================== */
-  /* PENALTIS */
-
-  if(type==="P"){
+  if(type === "P"){
     ["P1","P2"].forEach(p=>{
       document.querySelector(`.slot-pile[data-slot="${p}"]`)
         ?.classList.add("highlight");
     });
   }
 
-  if(type==="P_red"){
+  if(type === "P_red"){
     ["P1_red","P2_red"].forEach(p=>{
       document.querySelector(`.slot-pile[data-slot="${p}"]`)
         ?.classList.add("highlight");
     });
   }
 
-  /* ===================== */
-  /* DECK CORRESPONDENTE */
-
   document.querySelector(`[data-deck="${type}"]`)
     ?.closest(".deck-wrapper")
     ?.classList.add("highlight-zone");
 
-  /* ===================== */
-  /* ÁREA DA MÃO (DEVOLVER) */
+  if(type === "T"){
+    return;
+  }
 
   if(type.includes("_red")){
     document.getElementById("hand_red")
@@ -515,30 +534,104 @@ function updateHandCounters(){
     };
   }
 
-  // Azul
-  const blue = countTypes(hand);
+  function getFormationAdjustments(f){
+    const adj = {
+      A: 0,
+      M: 0,
+      D: 0,
+      G: 0
+    };
 
-  const totalBlue =
-    blue.A + blue.M + blue.D + blue.G;
+    if(f.A === 4){
+      adj.M = -1;
+      adj.D = -1;
+    }
+
+    if(f.A === 5){
+      adj.M = -2;
+      adj.D = -1;
+    }
+
+    if(f.M === 3){
+      adj.A = -1;
+      adj.D = -1;
+    }
+
+    if(f.D === 3){
+      adj.D = 1;
+      adj.G = 1;
+    }
+
+    if(f.D === 4){
+      adj.A = 1;
+      adj.D = 1;
+    }
+
+    if(f.D === 5){
+      adj.A = 1;
+      adj.M = 1;
+    }
+
+    return adj;
+  }
+
+  function formatAdj(value){
+    if(value > 0) return `+${value}`;
+    return `${value}`;
+  }
+
+  function renderBlueCounter(data){
+    if(!data) return;
 
     const fBlue = formation.blue;
+    const adjBlue = getFormationAdjustments(fBlue);
+
+    const totalBlue = data.A + data.M + data.D + data.G;
 
     document.getElementById("counter_blue").innerHTML =
-      `A:${blue.A}/${fBlue.A} M:${blue.M}/${fBlue.M} D:${blue.D}/${fBlue.D} G:${blue.G}/${fBlue.G}<br>`+
-      `Total: ${totalBlue}/13`;
+      `A:${data.A}/${fBlue.A} M:${data.M}/${fBlue.M} D:${data.D}/${fBlue.D} G:${data.G}/${fBlue.G}<br>` +
+      `Total: ${totalBlue}/13<br>` +
+      `A: ${formatAdj(adjBlue.A)}<br>` +
+      `M: ${formatAdj(adjBlue.M)}<br>` +
+      `D: ${formatAdj(adjBlue.D)}<br>` +
+      `G: ${formatAdj(adjBlue.G)}`;
+  }
 
-  // Vermelho
-  const red = countTypes(hand_red);
-
-  const totalRed =
-    red.A_red + red.M_red + red.D_red + red.G_red;
+  function renderRedCounter(data){
+    if(!data) return;
 
     const fRed = formation.red;
+    const adjRed = getFormationAdjustments(fRed);
+
+    const totalRed = data.A_red + data.M_red + data.D_red + data.G_red;
 
     document.getElementById("counter_red").innerHTML =
-      `A:${red.A_red}/${fRed.A} M:${red.M_red}/${fRed.M} D:${red.D_red}/${fRed.D} G:${red.G_red}/${fRed.G}<br>`+
-      `Total: ${totalRed}/13`;
-    }
+      `A:${data.A_red}/${fRed.A} M:${data.M_red}/${fRed.M} D:${data.D_red}/${fRed.D} G:${data.G_red}/${fRed.G}<br>` +
+      `Total: ${totalRed}/13<br>` +
+      `A: ${formatAdj(adjRed.A)}<br>` +
+      `M: ${formatAdj(adjRed.M)}<br>` +
+      `D: ${formatAdj(adjRed.D)}<br>` +
+      `G: ${formatAdj(adjRed.G)}`;
+  }
+
+  const localBlue = countTypes(hand);
+  const localRed = countTypes(hand_red);
+
+  if(playerRole === "blue"){
+    renderBlueCounter(localBlue);
+    renderRedCounter(serverHandCounts.red || localRed);
+  }
+
+  if(playerRole === "red"){
+    renderRedCounter(localRed);
+    renderBlueCounter(serverHandCounts.blue || localBlue);
+  }
+
+  if(playerRole === "spectator"){
+    renderBlueCounter(serverHandCounts.blue || localBlue);
+    renderRedCounter(serverHandCounts.red || localRed);
+  }
+}
 /* ===================== */
 /* BLOQUEIO DE JOGADA ATÉ TER 13 CARTAS */
 
@@ -654,40 +747,73 @@ function renderHand() {
 
         openRadial(e.clientX, e.clientY, [
 
-          {
-            label: "Jogar",
-            action: ()=>{
+        {
+          label: "Jogar",
+          action: ()=>{
 
-              if(mustRefillHand(playerRole)){
-                alert("Você precisa ter 13 cartas na mão para jogar");
-                return;
-              }
+            const cardBase = card.type.replace("_red", "");
 
-              socket.emit("playCardToSlot", {
-                cardId: card.id,
-                slot: card.type
-              });
-              selectedCardId = null;
+            if(cardBase === "P"){
+
+            clearHighlight();
+
+            if(card.type === "P"){
+              document.querySelector(`.slot-pile[data-slot="P1"]`)
+                ?.classList.add("highlight");
+              document.querySelector(`.slot-pile[data-slot="P2"]`)
+                ?.classList.add("highlight");
+
+              document.querySelector(`[data-deck="P"]`)
+                ?.closest(".deck-wrapper")
+                ?.classList.add("highlight-zone");
+            } else {
+              document.querySelector(`.slot-pile[data-slot="P1_red"]`)
+                ?.classList.add("highlight");
+              document.querySelector(`.slot-pile[data-slot="P2_red"]`)
+                ?.classList.add("highlight");
+
+              document.querySelector(`[data-deck="P_red"]`)
+                ?.closest(".deck-wrapper")
+                ?.classList.add("highlight-zone");
             }
-          },
 
-          {
-            label: "Voltar para o deck",
-            action: ()=>{
-              socket.emit("returnCardToDeck", {
-                cardId: card.id,
-                deck: card.type
-              });
-              selectedCardId = null;
-            }
-          },
+            selectedCard = card;
+            selectedCardId = card.id;
+            selectedFrom = "hand";
 
-          {
-            label: "Cancelar",
-            action: ()=>{}
+            return;
           }
 
-        ]);
+            if(mustRefillHand(playerRole)){
+              alert("Você precisa ter 13 cartas na mão para jogar");
+              return;
+            }
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: card.type
+            });
+            selectedCardId = null;
+          }
+        },
+
+        {
+          label: "Voltar para o deck",
+          action: ()=>{
+            socket.emit("returnCardToDeck", {
+              cardId: card.id,
+              deck: card.type
+            });
+            selectedCardId = null;
+          }
+        },
+
+        {
+          label: "Cancelar",
+          action: ()=>{}
+        }
+
+      ]);
 
       });
 
@@ -714,8 +840,6 @@ function renderHand() {
       // ✅ atualiza contador sempre
     updateHandCounters();
     updateFormationUI();
-    bindFormationClicks();
-    bindFormationTableClick();
     }
 
 function startFormationEdit(){
@@ -726,34 +850,20 @@ function startFormationEdit(){
     ...formation[playerRole]
   };
 
-  document.getElementById("formationActions").style.display = "block";
+  const actions = document.getElementById("formationActions");
+  actions.style.display = "flex";
 
-  updateFormationUI();
-
-}
-function confirmFormation(){
-
-  // 🔥 valida soma
-  const total = formationTemp.A + formationTemp.M + formationTemp.D;
-
-  if(total !== 10){
-    alert("Sua formação precisa somar 10 cartas entre A, M e D");
-    return;
+  if(playerRole === "blue"){
+    actions.style.left = "490px";
+    actions.style.top = "445px";
+    actions.style.transform = "translate(-50%, -100%)";
+  } else {
+    actions.style.left = "670px";
+    actions.style.top = "215px";
+    actions.style.transform = "translate(-50%, 0) rotate(180deg)";
   }
 
-  // 🔥 aplica no jogador correto
-  formation[playerRole] = {
-    ...formationTemp,
-    G: 3
-  };
-
-  formationEditMode = false;
-
-  document.getElementById("formationActions").style.display = "none";
-
   updateFormationUI();
-  updateHandCounters();
-
 }
 
 function updateFormationUI(){
@@ -761,9 +871,9 @@ function updateFormationUI(){
   const tableBlue = document.getElementById("formationTable");
   const tableRed  = document.getElementById("formationTable_red");
 
-  function updateOneTable(table, f, isEditing){
+  function updateOneTable(table, data, isEditing){
 
-    if(!table) return;
+    if(!table || !data) return;
 
     if(isEditing){
       table.classList.add("editing");
@@ -777,7 +887,7 @@ function updateFormationUI(){
         .forEach(c => c.classList.remove("active"));
 
       const selected = table.querySelector(
-        `.formation-cell[data-type="${type}"][data-value="${f[type]}"]`
+        `.formation-cell[data-type="${type}"][data-value="${data[type]}"]`
       );
 
       if(selected){
@@ -788,17 +898,25 @@ function updateFormationUI(){
 
   }
 
-  // 🔵 azul
+  const blueData =
+    (playerRole === "blue" && formationEditMode)
+      ? formationTemp
+      : formation.blue;
+
+  const redData =
+    (playerRole === "red" && formationEditMode)
+      ? formationTemp
+      : formation.red;
+
   updateOneTable(
     tableBlue,
-    formation.blue,
+    blueData,
     playerRole === "blue" && formationEditMode
   );
 
-  // 🔴 vermelho
   updateOneTable(
     tableRed,
-    formation.red,
+    redData,
     playerRole === "red" && formationEditMode
   );
 
@@ -810,55 +928,75 @@ function updateFormationUI(){
 
 function bindFormationClicks(){
 
-  const table = playerRole === "blue"
-    ? document.getElementById("formationTable")
-    : document.getElementById("formationTable_red");
+  document.addEventListener("click", (e)=>{
 
-  if(!table) return;
+    const cell = e.target.closest(".formation-cell");
+    if(!cell) return;
 
-  table.querySelectorAll(".formation-cell").forEach(cell=>{
+    const table = cell.closest("#formationTable, #formationTable_red");
+    if(!table) return;
 
-    cell.onclick = (e)=>{
+    if(playerRole === "blue" && table.id !== "formationTable") return;
+    if(playerRole === "red" && table.id !== "formationTable_red") return;
 
-      e.stopPropagation();
+    if(!formationEditMode) return;
+    if(!formationTemp) return;
 
-      if(!formationEditMode) return;
+    e.stopPropagation();
 
-      const type = cell.dataset.type;
-      const value = parseInt(cell.dataset.value);
+    const type = cell.dataset.type;
+    const value = parseInt(cell.dataset.value);
 
-      formationTemp[type] = value;
+    if(!type || Number.isNaN(value)) return;
 
-      updateFormationUI();
-    };
+    formationTemp[type] = value;
 
-  });
+    updateFormationUI();
+
+  }, true);
 
 }
 
 function bindFormationTableClick(){
 
-  const tableBlue = document.getElementById("formationTable");
-  const tableRed  = document.getElementById("formationTable_red");
+  document.addEventListener("click", (e)=>{
 
-  if(tableBlue){
-    tableBlue.onclick = ()=>{
-      if(playerRole === "blue" && !formationEditMode){
-        startFormationEdit();
-      }
-    };
-  }
+    const clickedBlue = e.target.closest("#formationTable");
+    const clickedRed  = e.target.closest("#formationTable_red");
 
-  if(tableRed){
-    tableRed.onclick = ()=>{
-      if(playerRole === "red" && !formationEditMode){
-        startFormationEdit();
-      }
-    };
-  }
+    if(!clickedBlue && !clickedRed) return;
+    if(formationEditMode) return;
+
+    if(clickedBlue && playerRole === "blue"){
+      e.stopPropagation();
+
+      openRadial(e.clientX, e.clientY, [
+        {
+          label:"Alterar formação",
+          action: startFormationEdit
+        }
+      ]);
+      return;
+    }
+
+    if(clickedRed && playerRole === "red"){
+      e.stopPropagation();
+
+      openRadial(e.clientX, e.clientY, [
+        {
+          label:"Alterar formação",
+          action: startFormationEdit
+        }
+      ]);
+      return;
+    }
+
+  }, true);
 
 }
 
+bindFormationTableClick();
+bindFormationClicks();
 
 /* ===================== */
 /* SLOT */
@@ -930,6 +1068,15 @@ function renderSlot(type) {
  fan.addEventListener("click", (e)=>{
 
   e.stopPropagation();
+
+  const isRedSlot = type.includes("_red");
+  const isSharedSlot = type === "P1" || type === "P2" || type === "P1_red" || type === "P2_red";
+
+  if(!isSharedSlot){
+    if(playerRole === "blue" && isRedSlot) return;
+    if(playerRole === "red" && !isRedSlot) return;
+  }
+
   selectElement(fan);
   selectedCard = card;
   selectedCardId = card.id;
@@ -937,7 +1084,7 @@ function renderSlot(type) {
   selectedSlot = type;
   selectedIndex = i;
 
-
+  
 
   // 🔥 ADICIONE O MENU AQUI
   openRadial(e.clientX, e.clientY, [
@@ -1009,6 +1156,14 @@ function openSlotView(type){
     img.onclick = (e)=>{
 
       e.stopPropagation();
+
+      const isRedSlot = type.includes("_red");
+      const isSharedSlot = type === "P1" || type === "P2" || type === "P1_red" || type === "P2_red";
+
+      if(!isSharedSlot){
+        if(playerRole === "blue" && isRedSlot) return;
+        if(playerRole === "red" && !isRedSlot) return;
+      }
 
       document.querySelectorAll(".selected-card")
         .forEach(el => el.classList.remove("selected-card"));
@@ -1128,7 +1283,8 @@ document.querySelectorAll(".slot-pile").forEach(slot=>{
     // tipo diferente → bloqueia (exceto P)
     if(cardBase !== slotBase && cardBase !== "P") return;
 
-    if(mustRefillHand(playerRole)){
+    // penalti pode entrar sempre, sem regra das 13 cartas
+    if(cardBase !== "P" && mustRefillHand(playerRole)){
       alert("Você precisa ter 13 cartas na mão para jogar");
       return;
     }
@@ -1161,6 +1317,14 @@ document.querySelectorAll("[data-deck]").forEach(deck=>{
 
   const deckType = deck.dataset.deck;
 
+  const isRedDeck = deckType.includes("_red");
+  const isTwistDeck = deckType === "T";
+
+  if(!isTwistDeck){
+    if(playerRole === "blue" && isRedDeck) return;
+    if(playerRole === "red" && !isRedDeck) return;
+  }
+
   highlightSlot(deckType);
 
   openRadial(e.clientX, e.clientY, [
@@ -1183,6 +1347,12 @@ document.querySelectorAll("[data-deck]").forEach(deck=>{
 
         if(type !== "P" && current >= f[type]){
           alert("Limite da formação atingido para " + type);
+          return;
+        }
+
+        if(deckType === "T"){
+          socket.emit("drawTwist");
+          playSFX(SOUNDS.draw);
           return;
         }
 
@@ -1261,32 +1431,102 @@ function getCorrectPoint(clientX, clientY){
 /* APPLY ANCHORS (VOLTOU!) */
 
   function applyAnchors() {
-  document.querySelectorAll("[data-anchor]").forEach(el=>{
-    const anchor = document.getElementById(el.dataset.anchor);
-    if(anchor){
-      el.style.left = anchor.style.left;
-      el.style.top  = anchor.style.top;
-    }
-  });
-
-  document.querySelectorAll(".slot-pile").forEach(slot=>{
-    const anchor = document.getElementById(slot.dataset.anchor);
-    if(anchor){
-      slot.style.left = anchor.style.left;
-      slot.style.top  = anchor.style.top;
-    }
-  });
-}
+    document.querySelectorAll("[data-anchor]").forEach(el=>{
+      const anchor=document.getElementById(el.dataset.anchor);
+      if(!el.dataset.moved){
+        el.style.left = anchor.style.left;
+        el.style.top  = anchor.style.top;
+      }
+    });
+    document.querySelectorAll(".slot-pile").forEach(slot=>{
+      const anchor = document.getElementById(slot.dataset.anchor);
+      if(anchor){
+        slot.style.left = anchor.style.left;
+        slot.style.top  = anchor.style.top;
+      }
+    });
+  }
 
   applyAnchors();
-  bindPieceDrag();
 
   let moved = false;
   /* ===================== */
   /* MOVER TOKENS LIVREMENTE */
 
 
+document.querySelectorAll(".piece").forEach(piece => {
 
+const isRedPiece = piece.classList.contains("red");
+const isBall = piece.classList.contains("ball");
+const isTwistToken = piece.classList.contains("twist-token");
+
+// espectador não pode mover peças
+if(playerRole === "spectator"){
+  piece.draggable = false;
+  return;
+}
+
+// componentes compartilhados
+if(isBall || isTwistToken){
+  piece.draggable = true;
+} else {
+  if(playerRole === "blue" && isRedPiece){
+    piece.draggable = false;
+    return;
+  }
+
+  if(playerRole === "red" && !isRedPiece){
+    piece.draggable = false;
+    return;
+  }
+}
+
+piece.addEventListener("dragstart", (e)=>{
+
+  if(!piece.dataset.anchor) return;
+
+  piece.dataset.moved = "true"; // 🔥 ADICIONE AQUI
+
+  e.dataTransfer.setData("text/plain", JSON.stringify({
+    type: "token",
+    anchor: piece.dataset.anchor
+  }));
+});
+});
+
+document.querySelectorAll(".piece").forEach(piece=>{
+
+  piece.addEventListener("touchstart", function(e){
+
+    const touch = e.touches[0];
+    this.dataset.touching = "true";
+    this.style.zIndex = 99999;
+
+  });
+
+  piece.addEventListener("touchmove", function(e){
+
+    if(this.dataset.touching !== "true") return;
+
+    const touch = e.touches[0];
+    const rect = board.getBoundingClientRect();
+
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    const anchor = document.getElementById(this.dataset.anchor);
+    if(anchor){
+      anchor.style.left = x + "px";
+      anchor.style.top  = y + "px";
+    }
+
+  });
+
+  piece.addEventListener("touchend", function(){
+    this.dataset.touching = "false";
+  });
+
+});
 
   const SUB_BACK = "https://i.imgur.com/d6JyQJQ.png";
 
@@ -1349,8 +1589,8 @@ function getCorrectPoint(clientX, clientY){
       token.className = "piece token14 twist-token";
       token.src = "https://i.imgur.com/AQJilFs.png";
 
-      token.draggable = true;
       token.dataset.anchor = anchor.id;
+      token.draggable = true;
 
       token.style.zIndex = 12000 + i;
 
@@ -1365,15 +1605,10 @@ function getCorrectPoint(clientX, clientY){
     }
 
     applyAnchors();
-    bindPieceDrag();
   }
 
   /* ✅ CRIA A PILHA ASSIM QUE O JOGO CARREGA */
   spawnTwistStack();
-
-  setTimeout(()=>{
-    bindPieceDrag();
-  }, 100);
 
 
 
@@ -1388,7 +1623,7 @@ function spawnTwistCard(card){
     return;
   }
 
-  const img = document.createElement("img"); // 🔥 PRIMEIRO CRIA
+  const img = document.createElement("img");
 
   img.src = card.front;
   img.className = "twist-card";
@@ -1396,7 +1631,6 @@ function spawnTwistCard(card){
   img.style.position = "absolute";
   img.style.zIndex = 9000;
   img.style.pointerEvents = "auto";
-
   img.style.width = "74px";
   img.style.height = "103px";
 
@@ -1406,43 +1640,39 @@ function spawnTwistCard(card){
 
   img.style.left = card.x + "px";
   img.style.top  = card.y + "px";
-
   img.style.transform =
     `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
 
   img.draggable = true;
 
-  // 🔥 AGORA SIM adiciona eventos
-img.addEventListener("dragstart",(e)=>{
-  draggingTwist = card.id;
-  moved = false;
+  img.addEventListener("dragstart", (e)=>{
+    draggingTwist = card.id;
+    moved = false;
 
-  highlightSlot("T");
+    highlightSlot("T");
 
-  e.dataTransfer.setData("text/plain", "twist");
-});
-    
-img.addEventListener("dragend", ()=>{
+    lastDragTwistMouse.x = e.clientX || 0;
+    lastDragTwistMouse.y = e.clientY || 0;
+
+    e.dataTransfer.setData("text/plain", "twist");
+    });
+
+    img.addEventListener("drag", (e)=>{
+      if(e.clientX === 0 && e.clientY === 0) return;
+
+      lastDragTwistMouse.x = e.clientX;
+      lastDragTwistMouse.y = e.clientY;
+    });
+
+  img.addEventListener("dragend", (e)=>{
 
   if(!draggingTwist) return;
 
-  const corrected = getCorrectPoint(lastMouse.x, lastMouse.y);
+  const endX = e.clientX || lastDragTwistMouse.x;
+  const endY = e.clientY || lastDragTwistMouse.y;
 
-  // 🔥 verifica se soltou no deck
-  const targetDeck = getTargetDeck(lastMouse.x, lastMouse.y);
+  const corrected = getCorrectPoint(endX, endY);
 
-  if(targetDeck && targetDeck.dataset.deck === "T"){
-
-    socket.emit("returnTwistToDeck", {
-      id: draggingTwist
-    });
-
-    draggingTwist = null;
-    clearHighlight();
-    return;
-  }
-
-  // 🔥 movimento normal
   socket.emit("moveTwist", {
     id: draggingTwist,
     x: corrected.x,
@@ -1450,37 +1680,66 @@ img.addEventListener("dragend", ()=>{
   });
 
   draggingTwist = null;
-  
+  clearHighlight();
+
   setTimeout(()=> moved = true, 50);
 });
 
+  img.addEventListener("click", (e)=>{
+    e.stopPropagation();
 
+    if(moved){
+      moved = false;
+      return;
+    }
 
+    document.querySelectorAll(".selected-card")
+      .forEach(c => c.classList.remove("selected-card"));
 
+    img.classList.add("selected-card");
+    selectedCardId = card.id;
+
+    openRadial(e.clientX, e.clientY, [
+      {
+        label: "Ativar carta",
+        action: ()=>{
+          console.log("Twist ativada:", card.id);
+        }
+      },
+      {
+        label: "Voltar para o deck",
+        action: ()=>{
+          socket.emit("returnTwistToDeck", {
+            id: card.id
+          });
+        }
+      },
+      {
+        label: "Cancelar",
+        action: ()=>{}
+      }
+    ]);
+  });
 
   img.addEventListener("dblclick", ()=>{
-
     socket.emit("rotateTwist", {
       id: card.id,
-      double: true // 🔥 importante
+      double: true
     });
-
   });
-  
 
-// 🔥 BOTÃO DIREITO = ZOOM
-img.addEventListener("contextmenu", (e)=>{
-  e.preventDefault();
+  img.addEventListener("contextmenu", (e)=>{
+    e.preventDefault();
 
-  const overlay = document.getElementById("twistZoomOverlay");
-  const zoomImg = document.getElementById("twistZoomImg");
+    const overlay = document.getElementById("twistZoomOverlay");
+    const zoomImg = document.getElementById("twistZoomImg");
 
-  zoomImg.src = img.dataset.front;
-  overlay.style.display = "flex";
-});
+    zoomImg.src = img.dataset.front;
+    overlay.style.display = "flex";
+  });
+
   board.appendChild(img);
 }
-
 
 
   // ✅ clicar fora fecha o zoom
@@ -1635,19 +1894,13 @@ document.addEventListener("dragover", (e)=>{
 
     e.preventDefault();
 
-    const raw = e.dataTransfer.getData("text/plain");
-    console.log("DROP DATA RAW:", raw);
-
     let data = {};
 
     try{
-      data = JSON.parse(raw);
+      data = JSON.parse(e.dataTransfer.getData("text/plain"));
     }catch(e){
-      console.log("ERRO PARSE");
       return;
     }
-
-    console.log("DROP DATA:", data);
 
     if(data.type !== "token") return;
 
@@ -1728,21 +1981,25 @@ if (playerRole === "spectator") {
 }
 
 function updateEmptyDeckVisuals(){
-  document.querySelectorAll("[data-deck]").forEach(deckEl => {
+  document.querySelectorAll(".deck-slot[data-deck]").forEach(deckEl => {
     const type = deckEl.dataset.deck;
 
-    if(!decks[type] || decks[type].length === 0){
-      deckEl.closest(".deck-wrapper").classList.add("deck-empty");
+    const isEmpty =
+      decks[type] === 0 ||
+      !decks[type] ||
+      decks[type].length === 0;
+
+    const wrapper = deckEl.closest(".deck-wrapper");
+
+    if(isEmpty){
+      deckEl.classList.add("deck-empty");
+      wrapper?.classList.add("deck-empty-wrapper");
     } else {
-      deckEl.closest(".deck-wrapper").classList.remove("deck-empty");
+      deckEl.classList.remove("deck-empty");
+      wrapper?.classList.remove("deck-empty-wrapper");
     }
   });
 }
-document.querySelectorAll("#topbar button").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    playSFX(SOUNDS.whistle);
-  });
-});
 
 socket.on("yourHand", (serverHand) => {
 
@@ -1763,28 +2020,19 @@ socket.on("yourHand", (serverHand) => {
 });
 
 socket.on("handCounts", (counts)=>{
+  if(!counts) return;
 
-  const blue = counts.blue;
-  const red  = counts.red;
+  serverHandCounts = counts;
+  updateHandCounters();
+});
 
-  const totalBlue = blue.A + blue.M + blue.D + blue.G;
-  const totalRed  = red.A_red + red.M_red + red.D_red + red.G_red;
+socket.on("syncFormation", (data)=>{
+  if(!data) return;
 
-  const blueCounter = document.getElementById("counter_blue");
-  const redCounter  = document.getElementById("counter_red");
+  formation = data;
 
-  if(blueCounter){
-    blueCounter.innerHTML =
-      `A:${blue.A} M:${blue.M} D:${blue.D} G:${blue.G}<br>
-       Total: ${totalBlue}/13`;
-  }
-
-  if(redCounter){
-    redCounter.innerHTML =
-      `A:${red.A_red} M:${red.M_red} D:${red.D_red} G:${red.G_red}<br>
-       Total: ${totalRed}/13`;
-  }
-
+  updateFormationUI();
+  updateHandCounters();
 });
 
 socket.on("updateBoardSlots", (data)=>{
@@ -1866,21 +2114,25 @@ socket.on("tokenMoved", (data)=>{
   anchor.style.left = data.x + "px";
   anchor.style.top  = data.y + "px";
 
-
   const piece = document.querySelector(`[data-anchor="${data.anchor}"]`);
-
-  if(piece){
-    piece.dataset.moved = "true"; // 🔥 ESSENCIAL
-  }
-
   if(!piece) return;
 
-  if(piece.classList.contains("ball")){
-    playSFX(SOUNDS.kick);   // ⚽ som da bola
+  piece.dataset.moved = "true";
+  piece.style.left = data.x + "px";
+  piece.style.top  = data.y + "px";
+
+  if(piece.classList.contains("red") && !piece.classList.contains("ball")){
+    piece.style.transform = "translate(-50%, -50%) rotate(180deg)";
   } else {
-    playSFX(SOUNDS.drag);   // outros tokens
+    piece.style.transform = "translate(-50%, -50%)";
   }
-bindPieceDrag();
+
+  if(piece.classList.contains("ball")){
+    playSFX(SOUNDS.kick);
+  } else {
+    playSFX(SOUNDS.drag);
+  }
+
 });
 
 socket.on("roomError", (msg)=>{
@@ -2072,6 +2324,61 @@ const slotPositionsSecondHalf = {
   slotG_red: {left: "823px", top: "235px"}
 };
 
+function addLogEntry(text, color = "white"){
+  const list = document.getElementById("actionLogList");
+  if(!list) return;
+
+  const entry = document.createElement("div");
+  entry.className = "action-log-entry";
+  entry.innerText = text ?? "";
+
+  if(color === "blue"){
+    entry.style.color = "#4da6ff";
+  } else if(color === "red"){
+    entry.style.color = "#ff4d4d";
+  } else {
+    entry.style.color = "#ffffff";
+  }
+
+  list.prepend(entry);
+
+  const maxEntries = 80;
+  while(list.children.length > maxEntries){
+    list.removeChild(list.lastChild);
+  }
+}
+
+function openActionLog(){
+  const panel = document.getElementById("actionLogPanel");
+  if(panel){
+    panel.classList.remove("closed");
+  }
+}
+
+function closeActionLogPanel(){
+  const panel = document.getElementById("actionLogPanel");
+  if(panel){
+    panel.classList.add("closed");
+  }
+}
+
+document.getElementById("actionLogToggle")
+  ?.addEventListener("click", () => {
+
+    const panel = document.getElementById("actionLogPanel");
+    if(!panel) return;
+
+    if(panel.classList.contains("closed")){
+      openActionLog();
+    } else {
+      closeActionLogPanel();
+    }
+
+  });
+
+document.getElementById("actionLogClose")
+  ?.addEventListener("click", closeActionLogPanel);
+
 document.getElementById("contactBtn")
   .addEventListener("click", ()=>{
 
@@ -2092,6 +2399,24 @@ document.getElementById("contactBtn")
     confirmBtn.onclick = closeModal;
 
 });
+
+socket.on("actionLog", (data)=>{
+  if(!data) return;
+
+  if(typeof data === "string"){
+    addLogEntry(data, "white");
+    return;
+  }
+
+  addLogEntry(data.text ?? "", data.color ?? "white");
+});
+
+
+
+socket.on("goalScored", (data)=>{
+  playGoalEffect();
+});
+
 
 socket.on("matchRestarted", ()=>{
 
@@ -2405,8 +2730,17 @@ radialMenu.style.top  = posY + "px";
     btn.style.opacity = "1";
   },10);
 
-  btn.onclick = ()=>{
+    btn.onclick = ()=>{
     opt.action();
+
+    if(opt.keepOpen){
+      if(radialMenu){
+        radialMenu.remove();
+        radialMenu = null;
+      }
+      return;
+    }
+
     closeRadial();
   };
 
@@ -2498,7 +2832,13 @@ board.addEventListener("click", (e)=>{
     e.target.closest(".deck-wrapper") ||
     e.target.closest(".piece") ||
     e.target.closest(".twist-card") ||
-    e.target.closest(".fan-card")
+    e.target.closest(".fan-card") ||
+    e.target.closest("#formationTable") ||
+    e.target.closest("#formationTable_red") ||
+    e.target.closest(".formation-cell") ||
+    e.target.closest("#formationActions") ||
+    e.target.closest(".radial-menu") ||
+    e.target.closest(".radial-btn")
   ){
     return;
   }
@@ -2507,7 +2847,7 @@ board.addEventListener("click", (e)=>{
   closeRadial();
   
   document.querySelectorAll(".selected-card")
-  .forEach(el => el.classList.remove("selected-card"));
+    .forEach(el => el.classList.remove("selected-card"));
 });
 
 document.getElementById("discordBtn")
@@ -2594,91 +2934,6 @@ function openFormationModal(){
   document.body.appendChild(overlay);
 }
 
-document.querySelectorAll(".formation-table .cell").forEach(cell=>{
-
-  cell.addEventListener("click",(e)=>{
-
-    e.stopPropagation();
-
-    const table = document.getElementById("formationTable");
-
-  const type = cell.dataset.type;
-  const value = parseInt(cell.dataset.value);
-
-  table.querySelectorAll(`.cell[data-type="${type}"]`)
-    .forEach(c => c.classList.remove("active"));
-
-  cell.classList.add("active");
-
-  if(!table.tempFormation){
-    table.tempFormation = {...formation[playerRole]};
-  }
-
-  table.tempFormation[type] = value;
-
-  });
-
-});
-
-document.querySelectorAll(".formation-table").forEach(table=>{
-
-  table.addEventListener("dblclick",(e)=>{
-
-    document.querySelectorAll(".formation-table")
-    
-    const temp = table.tempFormation || formation[playerRole];
-    const old  = formation[playerRole];
-
-    const diff =
-      Math.abs(old.A - temp.A) +
-      Math.abs(old.M - temp.M) +
-      Math.abs(old.D - temp.D);
-
-    const isFree =
-      !formationLocked[playerRole] || !firstHalfEnded;
-
-    if(!isFree){
-
-      if(formationTokens[playerRole] < diff){
-        alert("Você não tem fichas suficientes");
-        return;
-      }
-
-      if(!confirm(`Alterar ${diff} posições?`)) return;
-
-      formationTokens[playerRole] -= diff;
-    }
-
-    formation[playerRole] = {
-      ...temp,
-      G: 3
-    };
-
-    updateHandCounters();
-
-  });
-
-});
-
-const table = document.getElementById("formationTable");
-
-if(table){
-  table.addEventListener("click",(e)=>{
-
-    e.stopPropagation();
-
-    if(formationEditMode) return;
-
-    openRadial(e.clientX, e.clientY, [
-      {
-        label:"Alterar formação",
-        action: startFormationEdit
-      }
-    ]);
-
-  });
-}
-
 document.getElementById("formationOk").onclick = ()=>{
 
   const total =
@@ -2720,32 +2975,18 @@ document.getElementById("formationOk").onclick = ()=>{
   };
 
   formationEditMode = false;
+  formationTemp = null;
 
   document.getElementById("formationActions").style.display = "none";
 
   updateHandCounters();
   updateFormationUI();
 
-  socket.emit("formationChanged", {
-    player: playerRole
+  socket.emit("updateFormation", {
+    formation: formation[playerRole]
   });
 
 };
-
-
-
-  formationEditMode = false;
-
-  document.getElementById("formationActions").style.display = "none";
-
-  updateHandCounters();
-  updateFormationUI();
-
-  socket.emit("formationChanged", {
-    player: playerRole
-  });
-
-
 
 document.getElementById("formationCancel").onclick = ()=>{
 
@@ -2757,38 +2998,4 @@ document.getElementById("formationCancel").onclick = ()=>{
   updateFormationUI();
 };
 
-socket.on("syncFormation", (data)=>{
 
-  formation = data;
-
-  updateFormationUI();
-
-});
-
-function bindPieceDrag(){
-
-  document.querySelectorAll(".piece").forEach(piece => {
-
-    piece.draggable = true;
-
-    piece.addEventListener("dragstart", (e)=>{
-
-      if(!piece.dataset.anchor){
-        console.warn("SEM ANCHOR", piece);
-        return;
-      }
-
-      const data = JSON.stringify({
-        type: "token",
-        anchor: piece.dataset.anchor
-      });
-
-      e.dataTransfer.setData("text/plain", data);
-      e.dataTransfer.effectAllowed = "move";
-
-      console.log("DRAG START:", data);
-    });
-
-  });
-
-}

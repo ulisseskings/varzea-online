@@ -5,15 +5,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (desktopBtn) {
     desktopBtn.addEventListener("click", () => {
-      sessionStorage.setItem("deviceMode", "desktop");
-      localStorage.setItem("deviceMode", "mobile");
+      localStorage.setItem("deviceMode", "desktop");
       window.location.href = "lobby.html";
     });
   }
 
   if (mobileBtn) {
     mobileBtn.addEventListener("click", () => {
-      sessionStorage.setItem("deviceMode", "mobile");
       localStorage.setItem("deviceMode", "mobile");
       window.location.href = "lobby-mobile.html";
     });
