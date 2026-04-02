@@ -997,7 +997,8 @@ function bindFormationTouch(){
 
   tables.forEach(table=>{
 
-    table.addEventListener("click", (e)=>{
+    table.addEventListener("touchend", (e)=>{7
+      const touch = e.changedTouches?.[0];
       const cell = e.target.closest(".formation-cell");
       if(!cell) return;
 
@@ -1013,8 +1014,8 @@ function bindFormationTouch(){
 
       selectElement(cell);
 
-      const x = e.clientX || window.innerWidth / 2;
-      const y = e.clientY || window.innerHeight / 2;
+      const x = touch.clientX || window.innerWidth / 2;
+      const y = touch.clientY || window.innerHeight / 2;
 
       if(!formationEditMode){
         openRadial(x, y, [
@@ -1191,120 +1192,51 @@ function renderHand() {
 
         let touchCard = null;
 
-    img.addEventListener("touchstart", function(e){
+    img.addEventListener("touchend", function(e){
 
-      e.preventDefault();
+  const touch = e.changedTouches?.[0];
+  if(!touch) return;
 
-      selectedCard = card;
+  e.preventDefault();
+  e.stopPropagation();
 
-      selectedCardId = card.id;
-      selectedFrom = "hand";
+  selectElement(img);
 
-      touchCard = true;
+  selectedCard = card;
+  selectedCardId = card.id;
+  selectedFrom = "hand";
 
-      highlightSlot(card.type);
+  highlightSlot(card.type);
 
-    });
-
-        
-        img.addEventListener("touchend", function(e){
-
-          this.style.transition = "0.15s ease";
-          this.style.transform = "scale(1.05)";
-          setTimeout(()=>{
-            this.style.transition = "";
-            this.style.transform = "";
-          },150);
-
-          if(!touchCard) return;
-
-          const touch = e.changedTouches[0];
-          this.style.pointerEvents = "none";
-
-          const elementBelow = document.elementFromPoint(
-            touch.clientX,
-            touch.clientY
-          );
-
-          this.style.pointerEvents = "auto";
-
-          const slot = elementBelow?.closest(".slot-pile");
-
-          const deck = getTargetDeck(
-            touch.clientX,
-            touch.clientY
-          );
-
-          // 🔁 devolver ao deck
-          if(deck && deck.dataset.deck === card.type){
-
-            // devolver para mão
-          const handZone = document.elementFromPoint(
-            touch.clientX,
-            touch.clientY
-          )?.closest("#hand, #hand_red");
-
-          if(handZone){
-
-            socket.emit("returnCardToHand", {
-              cardId: card.id
-            });
-
-          }else if(deck && deck.dataset.deck === card.type){
-
-            socket.emit("returnCardToDeck", {
-              cardId: card.id,
-              deck: card.type
-            });
-
-          }
-
-          }
-
-          if(slot){
-
-            const player = playerRole === "blue" ? "blue" : "red";
-
-            const currentHand = player === "blue" ? hand : hand_red;
-
-            const totalAMDG = currentHand.filter(c =>
-              c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
-              c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
-            ).length;
-
-            // ⭐ cartas de pênalti podem sempre ser jogadas
-            if(card.type !== "P" && card.type !== "P_red"){
-
-              if(totalAMDG < 13 && mustRefillHand(player)){
-                showJoinMessage("⚠️ Complete 13 cartas antes de jogar.");
-                renderHand();
-                return;
-              }
-
-            }
-          
-            
-
+  openRadial(touch.clientX, touch.clientY, [
+    {
+      label: "Jogar",
+      action: ()=>{
+        const slot = document.querySelector(`.slot-pile[data-slot="${card.type}"]`);
+        if(slot){
           socket.emit("playCardToSlot", {
             cardId: card.id,
-            slot: slot.dataset.slot
+            slot: card.type
           });
+        }
+      }
+    },
+    {
+      label: "Voltar ao deck",
+      action: ()=>{
+        socket.emit("returnCardToDeck", {
+          cardId: card.id,
+          deck: card.type
+        });
+      }
+    },
+    {
+      label: "Cancelar",
+      action: ()=>{}
+    }
+  ]);
 
-
-          }
-
-          clearHighlight();
-          clearSelections();
-        
-
-          this.style.position = "";
-          this.style.left = "";
-          this.style.top = "";
-          this.style.zIndex = "";
-          this.style.opacity = "";
-          touchCard = null;
-
-        }, { passive:false });
+}, { passive:false });
         
 
         groupDiv.appendChild(img);
@@ -1385,7 +1317,10 @@ fan.dataset.cardId = card.id;
 
     }
 
-fan.addEventListener("click", (e)=>{
+fan.addEventListener("touchend", (e)=>{
+
+  const touch = e.changedTouches?.[0];
+  if(!touch) return;
 
   e.stopPropagation();
 
@@ -1404,7 +1339,7 @@ fan.addEventListener("click", (e)=>{
   selectedSlot = type;
   selectedIndex = i;
 
-  openRadial(e.clientX, e.clientY, [
+  openRadial(touch.clientX, touch.clientY, [
     {
       label: "Voltar para a mão",
       action: ()=>{
@@ -1480,43 +1415,23 @@ let twistDeckTapTimer = null;
 
 document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
-  wrapper.addEventListener("touchstart", function(e){
+  wrapper.addEventListener("touchend", function(e){
+
+    const touch = e.changedTouches?.[0];
+    if(!touch) return;
 
     e.preventDefault();
+    e.stopPropagation();
 
     const deck = wrapper.querySelector("[data-deck]");
     if(!deck) return;
 
     const deckType = deck.dataset.deck;
 
-    if(deckType === "T"){
-
-    if(twistDeckTapTimer){
-      clearTimeout(twistDeckTapTimer);
-      twistDeckTapTimer = null;
-
-      socket.emit("shuffleDeck", "T");
-      return;
-    }
-
-    twistDeckTapTimer = setTimeout(()=>{
-      twistDeckTapTimer = null;
-      socket.emit("drawTwist");
-    }, 250);
-
-    return;
-  }
-
-    // 👁 espectador não pode comprar
     if(playerRole === "spectator") return;
 
-    // 🔵 jogador azul só pode usar decks azuis
-    // 🔵 jogador azul
-    if(playerRole === "blue"){
-      if(deckType.endsWith("_red")) return;
-    }
+    if(playerRole === "blue" && deckType.endsWith("_red")) return;
 
-    // 🔴 jogador vermelho
     if(playerRole === "red"){
       if(
         deckType === "A" ||
@@ -1525,24 +1440,44 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
         deckType === "G" ||
         deckType === "P"
       ) return;
-}
-
-    const player = playerRole === "blue" ? "blue" : "red";
-
-    // ⭐ cartas de pênalti podem sempre ser compradas
-    if(deckType !== "P" && deckType !== "P_red"){
-
-      if(!mustRefillHand(player)){
-        return;
-      }
-
     }
 
-    socket.emit("drawCard", deckType);
+    selectElement(wrapper);
+
+    openRadial(touch.clientX, touch.clientY, [
+      {
+        label: "Comprar",
+        action: ()=>{
+
+          if(deckType === "T"){
+            socket.emit("drawTwist");
+            return;
+          }
+
+          const player = playerRole === "blue" ? "blue" : "red";
+
+          if(deckType !== "P" && deckType !== "P_red"){
+            if(!mustRefillHand(player)){
+              return;
+            }
+          }
+
+          socket.emit("drawCard", deckType);
+        }
+      },
+      {
+        label: "Embaralhar",
+        action: ()=>{
+          socket.emit("shuffleDeck", deckType);
+        }
+      },
+      {
+        label: "Cancelar",
+        action: ()=>{}
+      }
+    ]);
 
   }, { passive:false });
-  
-
 
 });
 
