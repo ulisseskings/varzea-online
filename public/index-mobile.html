@@ -1384,6 +1384,11 @@ animation:helpPulse 1.2s infinite;
   align-items: center;
   justify-content: center;
 
+  min-width: 22px;
+  min-height: 22px;
+
+  padding: 6px;
+
   color: rgba(255, 255, 255, 0);
   font-weight: bold;
   font-size: 4px;
@@ -1392,6 +1397,7 @@ animation:helpPulse 1.2s infinite;
   border-bottom: 1px solid #7fc8c400;
 
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .formation-cell:last-child{
@@ -1437,7 +1443,7 @@ animation:helpPulse 1.2s infinite;
 #formationActions{
   position: fixed;
   left: 50%;
-  bottom: 110px;
+  bottom: 105px;
   transform: translateX(-50%);
   display: none;
   gap: 8px;
@@ -1449,12 +1455,10 @@ animation:helpPulse 1.2s infinite;
   color: white;
   border: 1px solid #555;
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 11px;
   font-weight: bold;
 }
-
-
 
 .slot-overlay{
   position: fixed;
@@ -1479,6 +1483,53 @@ animation:helpPulse 1.2s infinite;
   cursor:pointer;
 }
 
+.radial-menu{
+  position: fixed;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transform: none;
+}
+
+.radial-btn{
+  min-width: 20px;
+  padding: 8px 12px;
+  border-radius: 15px;
+  background: #f1c40f;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-size: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.15s ease;
+}
+
+.radial-btn:hover{
+  background: #ffd84d;
+  transform: translateY(-2px);
+}
+
+#goalOverlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.35);
+  z-index: 9999999;
+  pointer-events: none;
+}
+
+#goalGif{
+  width: 320px;
+  max-width: 80vw;
+  height: auto;
+}
+
+.twist-selected{
+  filter: drop-shadow(0 0 10px gold);
+}
 
   </style>
 </head>
@@ -1491,6 +1542,10 @@ animation:helpPulse 1.2s infinite;
 
 
 <body>
+
+<div id="goalOverlay">
+  <img id="goalGif" src="https://i.imgur.com/Qh01O4F.gif" alt="Gol">
+</div>
 
 <div id="formationActions">
   <button id="formationCancelBtn">Cancelar</button>
@@ -1823,23 +1878,23 @@ animation:helpPulse 1.2s infinite;
 <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengola">
 <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengolv"  >
 
-<!-- Forma Azul -->
+<!-- Forma Azul --><!--
 <div class="anchor" id="forma1a" style="left:418px; top:488px;"></div>
 <div class="anchor" id="forma2a" style="left:418px; top:507px;"></div>
 <div class="anchor" id="forma3a" style="left:418px; top:524px;"></div>
 
 <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1a"  >
 <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2a"  >
-<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a"  >
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a"  >-->
 
-<!-- Forma Vermelho -->
+<!-- Forma Vermelho --><!--
 <div class="anchor" id="forma1v" style="left:749px; top:167px;"></div>
 <div class="anchor" id="forma2v" style="left:749px; top:150px;"></div>
 <div class="anchor" id="forma3v" style="left:749px; top:132px;"></div>
 
 <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1v"  >
 <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2v"  >
-<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v"  >
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v"  >-->
 
 <!-- Substituições Azul -->
 <div class="anchor" id="suba1" style="left:432px; top:555px;"></div>

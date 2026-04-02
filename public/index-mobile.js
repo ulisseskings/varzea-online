@@ -686,6 +686,91 @@ function clearHighlight() {
     ?.classList.remove("highlight-zone");
 }
 
+function selectElement(el){
+
+  document.querySelectorAll(".selected-card, .selected-zone")
+    .forEach(e => e.classList.remove("selected-card","selected-zone"));
+
+  el.classList.add("selected-card");
+}
+
+function clearSelection(){
+  selectedCard = null;
+  selectedFrom = null;
+  selectedIndex = null;
+  selectedSlot = null;
+  selectedCardId = null;
+  selectedSlotCard = null;
+
+  document.querySelectorAll(".selected-card, .selected-zone")
+    .forEach(c => c.classList.remove("selected-card", "selected-zone"));
+
+  clearHighlight();
+}
+
+let radialMenu = null;
+
+function closeRadial(){
+  if(radialMenu){
+    radialMenu.remove();
+    radialMenu = null;
+  }
+  clearHighlight();
+}
+
+function openRadial(x, y, options){
+
+  closeRadial();
+
+  radialMenu = document.createElement("div");
+  radialMenu.className = "radial-menu";
+  radialMenu.style.display = "flex";
+  radialMenu.style.flexDirection = "column";
+  radialMenu.style.gap = "6px";
+
+  const menuWidth = 140;
+  const menuHeight = options.length * 40;
+
+  let posX = x + 10;
+  let posY = y + 10;
+
+  if(posX + menuWidth > window.innerWidth){
+    posX = x - menuWidth - 10;
+  }
+
+  if(posY + menuHeight > window.innerHeight){
+    posY = y - menuHeight - 10;
+  }
+
+  if(posX < 0) posX = 10;
+  if(posY < 0) posY = 10;
+
+  radialMenu.style.left = posX + "px";
+  radialMenu.style.top  = posY + "px";
+
+  options.forEach((opt)=>{
+    const btn = document.createElement("div");
+    btn.className = "radial-btn";
+    btn.innerText = opt.label;
+
+    btn.onclick = ()=>{
+      opt.action();
+      if(opt.keepOpen){
+        if(radialMenu){
+          radialMenu.remove();
+          radialMenu = null;
+        }
+        return;
+      }
+      closeRadial();
+    };
+
+    radialMenu.appendChild(btn);
+  });
+
+  document.body.appendChild(radialMenu);
+}
+
 function updateHandCounters(){
 
   function countTypes(handArray){
@@ -912,7 +997,7 @@ function bindFormationTouch(){
 
   tables.forEach(table=>{
 
-    table.addEventListener("touchstart", (e)=>{
+    table.addEventListener("click", (e)=>{
       const cell = e.target.closest(".formation-cell");
       if(!cell) return;
 
@@ -926,27 +1011,53 @@ function bindFormationTouch(){
       e.preventDefault();
       e.stopPropagation();
 
-      if(!formationEditMode){
-        startFormationEditMobile();
-      }
+      selectElement(cell);
 
-      if(!formationTemp) return;
+      const x = e.clientX || window.innerWidth / 2;
+      const y = e.clientY || window.innerHeight / 2;
+
+      if(!formationEditMode){
+        openRadial(x, y, [
+          {
+            label: "Editar formação",
+            action: ()=>{
+              startFormationEditMobile();
+            }
+          },
+          {
+            label: "Cancelar",
+            action: ()=>{}
+          }
+        ]);
+        return;
+      }
 
       const type = cell.dataset.type;
       const value = parseInt(cell.dataset.value);
 
       if(!type || Number.isNaN(value)) return;
 
-      formationTemp[type] = value;
-      updateFormationUI();
-      updateHandCounters();
+      openRadial(x, y, [
+        {
+          label: `Escolher ${type}:${value}`,
+          action: ()=>{
+            formationTemp[type] = value;
+            updateFormationUI();
+            updateHandCounters();
+            document.getElementById("formationActions").style.display = "flex";
+          }
+        },
+        {
+          label: "Cancelar",
+          action: ()=>{}
+        }
+      ]);
 
-    }, { passive:false });
+    });
 
   });
 
 }
-
 
 function highlightTwistDeck(){
 
@@ -1274,47 +1385,42 @@ fan.dataset.cardId = card.id;
 
     }
 
-fan.addEventListener("touchstart", function(e){
+fan.addEventListener("click", (e)=>{
 
-  e.preventDefault();
+  e.stopPropagation();
 
-  if(selectedSlotCard === card.id){
+  const isRedSlot = type.includes("_red");
+  const isSharedSlot = type === "P1" || type === "P2" || type === "P1_red" || type === "P2_red";
 
-  socket.emit("returnCardToHand", {
-    cardId: card.id,
-    slot: type,
-    index: i
-  });
+  if(!isSharedSlot){
+    if(playerRole === "blue" && isRedSlot) return;
+    if(playerRole === "red" && !isRedSlot) return;
+  }
 
-  selectedSlotCard = null;
-  selectedCard = null;
-  selectedCardId = null;
-  selectedFrom = null;
-  selectedSlot = null;
-  selectedIndex = null;
-
-  document.querySelectorAll(".fan-card")
-    .forEach(c => c.classList.remove("selected-card"));
-
-  clearHighlight();
-  return;
-}
-
-  selectedSlotCard = card.id;
+  selectElement(fan);
   selectedCard = card;
   selectedCardId = card.id;
   selectedFrom = "fan";
   selectedSlot = type;
   selectedIndex = i;
 
-  highlightSlot(card.type);
-
-  document.querySelectorAll(".fan-card")
-    .forEach(c => c.classList.remove("selected-card"));
-
-  this.classList.add("selected-card");
-
-}, { passive:false });
+  openRadial(e.clientX, e.clientY, [
+    {
+      label: "Voltar para a mão",
+      action: ()=>{
+        socket.emit("returnCardToHand", {
+          cardId: card.id,
+          slot: type,
+          index: selectedIndex
+        });
+      }
+    },
+    {
+      label: "Cancelar",
+      action: ()=>{}
+    }
+  ]);
+});
 
 
     fan.className="fan-card";
@@ -1370,6 +1476,8 @@ slot.addEventListener("touchstart",(e)=>{
 /* ===================== */
 /* DECK DRAG */
 
+let twistDeckTapTimer = null;
+
 document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
   wrapper.addEventListener("touchstart", function(e){
@@ -1383,25 +1491,21 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
     if(deckType === "T"){
 
-      let tapTimer = wrapper.dataset.tapTimer;
+    if(twistDeckTapTimer){
+      clearTimeout(twistDeckTapTimer);
+      twistDeckTapTimer = null;
 
-      if(tapTimer){
-        clearTimeout(tapTimer);
-
-        wrapper.dataset.tapTimer = "";
-
-        socket.emit("shuffleDeck","T");
-
-        return;
-      }
-
-      wrapper.dataset.tapTimer = setTimeout(()=>{
-        wrapper.dataset.tapTimer = "";
-        socket.emit("drawTwist");
-      },250);
-
+      socket.emit("shuffleDeck", "T");
       return;
     }
+
+    twistDeckTapTimer = setTimeout(()=>{
+      twistDeckTapTimer = null;
+      socket.emit("drawTwist");
+    }, 250);
+
+    return;
+  }
 
     // 👁 espectador não pode comprar
     if(playerRole === "spectator") return;
@@ -1473,7 +1577,38 @@ function getCorrectPoint(clientX, clientY){
   return { x, y };
 }
 
+function findClosestDraggablePiece(clientX, clientY, maxDistance = 26){
 
+  const rectBoard = board.getBoundingClientRect();
+  let best = null;
+  let bestDist = Infinity;
+
+  document.querySelectorAll(".piece").forEach(piece=>{
+
+    const isRedPiece = piece.classList.contains("red");
+    const isBall = piece.classList.contains("ball");
+
+    if(playerRole === "spectator") return;
+    if(playerRole === "blue" && isRedPiece) return;
+    if(playerRole === "red" && !isRedPiece && !isBall && !piece.classList.contains("twist-token")) return;
+    if(piece.classList.contains("token27")) return;
+
+    const r = piece.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if(dist < bestDist && dist <= maxDistance){
+      best = piece;
+      bestDist = dist;
+    }
+  });
+
+  return best;
+}
 
 function checkDeckEnd(){
   return false; // por enquanto nunca bloqueia
@@ -1484,74 +1619,75 @@ function checkDeckEnd(){
   /* ===================== */
   /* MOVER TOKENS LIVREMENTE */
 
+
+
 function enablePieceDragging(){
 
-document.querySelectorAll(".piece").forEach(piece => {
+  let activePiece = null;
 
-  const isRedPiece = piece.classList.contains("red");
-  const isBall = piece.classList.contains("ball");
-
-  if(playerRole === "spectator") return;
-  if(playerRole === "blue" && isRedPiece) return;
-  if(playerRole === "red" && !isRedPiece && !isBall && !piece.classList.contains("twist-token")) return;
-  if(piece.classList.contains("token27")) return;
-
-  piece.dataset.touching = "false";
-
-  piece.addEventListener("touchstart", function(e){
-    e.preventDefault();
-    this.dataset.touching = "true";
-  }, { passive:false });
-
-  piece.addEventListener("touchmove", function(e){
-
-    if(this.dataset.touching !== "true") return;
+  board.addEventListener("touchstart", function(e){
 
     const touch = e.touches[0];
+    const piece = e.target.closest(".piece") || findClosestDraggablePiece(touch.clientX, touch.clientY, 28);
 
+    if(!piece) return;
+
+    const isRedPiece = piece.classList.contains("red");
+    const isBall = piece.classList.contains("ball");
+
+    if(playerRole === "spectator") return;
+    if(playerRole === "blue" && isRedPiece) return;
+    if(playerRole === "red" && !isRedPiece && !isBall && !piece.classList.contains("twist-token")) return;
+    if(piece.classList.contains("token27")) return;
+
+    e.preventDefault();
+
+    activePiece = piece;
+    activePiece.dataset.touching = "true";
+
+  }, { passive:false });
+
+  board.addEventListener("touchmove", function(e){
+
+    if(!activePiece || activePiece.dataset.touching !== "true") return;
+
+    const touch = e.touches[0];
     const p = getCorrectPoint(touch.clientX, touch.clientY);
 
-    const x = p.x;
-    const y = p.y;
-
-    const anchor = document.getElementById(this.dataset.anchor);
+    const anchor = document.getElementById(activePiece.dataset.anchor);
     if(anchor){
-
       moveQueue.push({
-        anchor: this.dataset.anchor,
-        x,
-        y
+        anchor: activePiece.dataset.anchor,
+        x: p.x,
+        y: p.y
       });
-
     }
 
     if(!moveScheduled){
-
       moveScheduled = true;
-
       requestAnimationFrame(processMoveQueue);
-
     }
 
   }, { passive:false });
 
-  piece.addEventListener("touchend", function(){
+  board.addEventListener("touchend", function(){
 
-    this.dataset.touching = "false";
+    if(!activePiece) return;
 
-    const anchor = document.getElementById(this.dataset.anchor);
-    if(!anchor) return;
+    activePiece.dataset.touching = "false";
 
-    socket.emit("moveToken", {
-      anchor: this.dataset.anchor,
-      x: parseFloat(anchor.style.left),
-      y: parseFloat(anchor.style.top)
-    });
+    const anchor = document.getElementById(activePiece.dataset.anchor);
+    if(anchor){
+      socket.emit("moveToken", {
+        anchor: activePiece.dataset.anchor,
+        x: parseFloat(anchor.style.left),
+        y: parseFloat(anchor.style.top)
+      });
+    }
+
+    activePiece = null;
 
   });
-
-});
-
 }
 
   const SUB_BACK = "https://i.imgur.com/d6JyQJQ.png";
@@ -1656,11 +1792,7 @@ function spawnTwistCard(card){
 
   const img = document.createElement("img");
   img.src = card.front;
-  img.className="hand-card";
-
-  if(card.id === selectedCardId){
-    img.classList.add("selected-card");
-  }
+  img.className = "twist-card";
 
   img.style.width = "74px";
   img.style.height = "103px";
@@ -1675,12 +1807,12 @@ function spawnTwistCard(card){
   img.style.transform =
     `translate(-50%, -50%) rotate(${card.rotation || 0}deg)`;
 
-let dragging = false;
-let startX = 0;
-let startY = 0;
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
 
-let holdTimer = null;
-let lastTap = 0;
+  let holdTimer = null;
+  let lastTap = 0;
 
 /* TOUCH START */
 
@@ -1693,12 +1825,13 @@ img.addEventListener("touchstart",(e)=>{
 
   dragging = false;
 
-  img.classList.add("selected-card");
+  document.querySelectorAll(".twist-selected")
+    .forEach(el => el.classList.remove("twist-selected"));
+
+  img.classList.add("twist-selected");
   highlightTwistDeck();
 
   const now = Date.now();
-
-  /* DUPLO TOQUE → GIRAR */
 
   if(now - lastTap < 250){
 
@@ -1708,12 +1841,9 @@ img.addEventListener("touchstart",(e)=>{
 
     lastTap = 0;
     return;
-
   }
 
   lastTap = now;
-
-  /* SEGURAR → ZOOM */
 
   holdTimer = setTimeout(()=>{
 
@@ -1782,10 +1912,11 @@ img.addEventListener("touchend",(e)=>{
       id: card.id
     });
 
-    img.remove();
+    document.querySelectorAll(".twist-selected")
+      .forEach(el => el.classList.remove("twist-selected"));
+
     clearHighlight();
     return;
-
   }
 
   if(dragging){
@@ -1797,6 +1928,9 @@ img.addEventListener("touchend",(e)=>{
     });
 
   }
+
+  document.querySelectorAll(".twist-selected")
+  .forEach(el => el.classList.remove("twist-selected"));
 
   clearHighlight();
 
@@ -2140,6 +2274,10 @@ socket.on("tokenMoved", (data)=>{
     playSFX(SOUNDS.drag);   // outros tokens
   }
 
+});
+
+socket.on("goalScored", ({ team })=>{
+  playGoalEffect();
 });
 
 socket.on("roomError", (msg)=>{
