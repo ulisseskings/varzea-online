@@ -1552,6 +1552,25 @@ animation:helpPulse 1.2s infinite;
   filter: drop-shadow(0 0 10px gold);
 }
 
+.slot-pile[data-slot^="P"]{
+	border: 2px solid rgba(255,255,255,0.041);
+	position: relative;
+}
+
+.slot-pile[data-slot^="P"]::after{
+	content: "P";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	font-size: 30px;
+	color: rgba(255,255,255,0.28);
+	pointer-events: none;
+	z-index: 1;
+}
+
   </style>
 </head>
 
