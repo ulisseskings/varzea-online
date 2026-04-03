@@ -1441,23 +1441,30 @@ animation:helpPulse 1.2s infinite;
 }
 
 #formationActions{
-  position: fixed;
-  left: 50%;
-  bottom: 105px;
-  transform: translateX(-50%);
-  display: none;
-  gap: 8px;
-  z-index: 20000;
+	position: fixed;
+	display: none;
+	flex-direction: column;
+	gap: 6px;
+	z-index: 999999;
 }
 
 #formationActions button{
-  background: #111;
-  color: white;
-  border: 1px solid #555;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 11px;
-  font-weight: bold;
+	min-width: 120px;
+	padding: 8px 12px;
+	border-radius: 15px;
+	background: #f1c40f;
+	font-family: Arial, sans-serif;
+	font-weight: bold;
+	font-size: 8px;
+	cursor: pointer;
+	text-align: center;
+	transition: 0.15s ease;
+	border: none;
+	color: black;
+}
+
+#formationActions button:hover{
+	transform: scale(1.03);
 }
 
 .slot-overlay{
@@ -1548,8 +1555,9 @@ animation:helpPulse 1.2s infinite;
 </div>
 
 <div id="formationActions">
-  <button id="formationCancelBtn">Cancelar</button>
   <button id="formationConfirmBtn">Confirmar</button>
+  <button id="formationCancelBtn">Cancelar</button>
+  
 </div>
 
 <div id="actionLogToggle">📜</div>
@@ -1694,7 +1702,7 @@ animation:helpPulse 1.2s infinite;
 
 </div>
 
-<div id="formationTable" class="formation-table">
+<div id="formationTable_red" class="formation-table">
 
   <div class="formation-header">
     FORMAÇÃO TÁTICA (10 JOGADORES)

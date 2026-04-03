@@ -129,8 +129,12 @@ function positionDecks(){
 }
 
 window.addEventListener("load", ()=>{
-  positionDecks();
-  positionSlots();
+	positionDecks();
+	positionSlots();
+	updateBoardTransform();
+	updateFormationUI();
+	updateHandCounters();
+	bindFormationTouch();
 });
 
 function startMusicOnFirstInteraction(){
@@ -946,40 +950,76 @@ function updateFormationUI(){
 }
 
 
-function startFormationEditMobile(){
+function startFormationEditMobile(tableId){
+	if(playerRole !== "blue" && playerRole !== "red") return;
 
-  if(playerRole !== "blue" && playerRole !== "red") return;
+	formationEditMode = true;
+	formationTemp = {
+		...formation[playerRole]
+	};
 
-  formationEditMode = true;
-  formationTemp = {
-    ...formation[playerRole]
-  };
+	positionFormationActions(tableId || getCurrentFormationTableId());
 
-  document.getElementById("formationActions").style.display = "flex";
-  updateFormationUI();
+	const actions = document.getElementById("formationActions");
+	if(actions){
+		actions.style.display = "flex";
+	}
+
+	updateFormationUI();
 }
 
 function cancelFormationMobile(){
-  formationEditMode = false;
-  formationTemp = null;
-  document.getElementById("formationActions").style.display = "none";
-  updateFormationUI();
+	formationEditMode = false;
+	formationTemp = null;
+
+	const actions = document.getElementById("formationActions");
+	if(actions){
+		actions.style.display = "none";
+	}
+
+	updateFormationUI();
+	updateHandCounters();
 }
 
 function confirmFormationMobile(){
 
-  if(!formationEditMode || !formationTemp) return;
+	if(!formationEditMode || !formationTemp) return;
 
-  socket.emit("updateFormation", {
-    formation: {
-      ...formationTemp,
-      G: 3
-    }
-  });
+	const total = 
+		(parseInt(formationTemp.A) || 0) +
+		(parseInt(formationTemp.M) || 0) +
+		(parseInt(formationTemp.D) || 0);
 
-  formationEditMode = false;
-  formationTemp = null;
-  document.getElementById("formationActions").style.display = "none";
+	if(total !== 10){
+		openInfoModal(
+			"Formação inválida",
+			"A soma de A + M + D deve ser exatamente 10."
+		);
+		return;
+	}
+
+	socket.emit("updateFormation", {
+		formation: {
+			...formationTemp,
+			G: 3
+		}
+	});
+
+	formation[playerRole] = {
+		...formationTemp,
+		G: 3
+	};
+
+	formationEditMode = false;
+	formationTemp = null;
+
+	const actions = document.getElementById("formationActions");
+	if(actions){
+		actions.style.display = "none";
+	}
+
+	updateFormationUI();
+	updateHandCounters();
 }
 
 document.getElementById("formationCancelBtn")
@@ -990,75 +1030,121 @@ document.getElementById("formationConfirmBtn")
 
 function bindFormationTouch(){
 
-  const tables = [
-    document.getElementById("formationTable"),
-    document.getElementById("formationTable_red")
-  ].filter(Boolean);
+	const tableBlue = document.getElementById("formationTable");
+	const tableRed  = document.getElementById("formationTable_red");
 
-  tables.forEach(table=>{
+	[tableBlue, tableRed].filter(Boolean).forEach(table=>{
 
-    table.addEventListener("touchend", (e)=>{7
-      const touch = e.changedTouches?.[0];
-      const cell = e.target.closest(".formation-cell");
-      if(!cell) return;
+		table.addEventListener("touchstart", onFormationTouchStart, { passive:false });
+		table.addEventListener("click", onFormationTouchStart);
 
-      const isBlueTable = table.id === "formationTable";
-      const isRedTable  = table.id === "formationTable_red";
-
-      if(playerRole === "blue" && !isBlueTable) return;
-      if(playerRole === "red" && !isRedTable) return;
-      if(playerRole === "spectator") return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      selectElement(cell);
-
-      const x = touch.clientX || window.innerWidth / 2;
-      const y = touch.clientY || window.innerHeight / 2;
-
-      if(!formationEditMode){
-        openRadial(x, y, [
-          {
-            label: "Editar formação",
-            action: ()=>{
-              startFormationEditMobile();
-            }
-          },
-          {
-            label: "Cancelar",
-            action: ()=>{}
-          }
-        ]);
-        return;
-      }
-
-      const type = cell.dataset.type;
-      const value = parseInt(cell.dataset.value);
-
-      if(!type || Number.isNaN(value)) return;
-
-      openRadial(x, y, [
-        {
-          label: `Escolher ${type}:${value}`,
-          action: ()=>{
-            formationTemp[type] = value;
-            updateFormationUI();
-            updateHandCounters();
-            document.getElementById("formationActions").style.display = "flex";
-          }
-        },
-        {
-          label: "Cancelar",
-          action: ()=>{}
-        }
-      ]);
-
-    });
-
-  });
-
+	});
 }
+
+function positionFormationActions(tableId){
+
+	const actions = document.getElementById("formationActions");
+	const table = document.getElementById(tableId);
+
+	if(!actions || !table) return;
+
+	const rect = table.getBoundingClientRect();
+
+	actions.style.position = "fixed";
+	actions.style.display = "flex";
+	actions.style.top = "";
+	actions.style.bottom = "";
+	actions.style.transform = "none";
+
+	// azul: abre à direita da tabela
+	if(tableId === "formationTable"){
+		actions.style.left = (rect.right + 12) + "px";
+		actions.style.top  = (rect.top + rect.height / 2 - 35) + "px";
+	}
+
+	// vermelho: abre à esquerda da tabela
+	if(tableId === "formationTable_red"){
+		actions.style.left = (rect.left - 152) + "px";
+		actions.style.top  = (rect.top + rect.height / 2 - 35) + "px";
+	}
+
+	// evita sair da tela
+	const menuWidth = 140;
+	const menuHeight = 80;
+
+	let left = parseFloat(actions.style.left);
+	let top = parseFloat(actions.style.top);
+
+	if(left < 8) left = 8;
+	if(left + menuWidth > window.innerWidth - 8){
+		left = window.innerWidth - menuWidth - 8;
+	}
+
+	if(top < 8) top = 8;
+	if(top + menuHeight > window.innerHeight - 8){
+		top = window.innerHeight - menuHeight - 8;
+	}
+
+	actions.style.left = left + "px";
+	actions.style.top = top + "px";
+}
+
+function getCurrentFormationTableId(){
+	return playerRole === "red" ? "formationTable_red" : "formationTable";
+}
+
+function onFormationTouchStart(e){
+
+	const table = e.currentTarget;
+	const cell = e.target.closest(".formation-cell");
+	if(!cell) return;
+
+	const isBlueTable = table.id === "formationTable";
+	const isRedTable  = table.id === "formationTable_red";
+
+	if(playerRole === "blue" && !isBlueTable) return;
+	if(playerRole === "red" && !isRedTable) return;
+	if(playerRole === "spectator") return;
+
+	e.preventDefault();
+	e.stopPropagation();
+
+	const touch = e.touches?.[0] || e.changedTouches?.[0];
+	const x = touch ? touch.clientX : (e.clientX || window.innerWidth / 2);
+	const y = touch ? touch.clientY : (e.clientY || window.innerHeight / 2);
+
+	if(!formationEditMode){
+		openRadial(x, y, [
+			{
+				label: "Alterar formação",
+				action: ()=>{
+					startFormationEditMobile(table.id);
+				}
+			},
+			{
+				label: "Cancelar",
+				action: ()=>{}
+			}
+		]);
+		return;
+	}
+
+	const type = cell.dataset.type;
+	const value = parseInt(cell.dataset.value);
+
+	if(!type || Number.isNaN(value) || !formationTemp) return;
+
+	formationTemp[type] = value;
+	updateFormationUI();
+	updateHandCounters();
+
+	positionFormationActions(table.id);
+	const actions = document.getElementById("formationActions");
+	if(actions){
+		actions.style.display = "flex";
+	}
+}
+
 
 function highlightTwistDeck(){
 
@@ -1075,48 +1161,76 @@ function highlightTwistDeck(){
 
 function mustRefillHand(player){
 
-  const currentHand = (player==="blue") ? hand : hand_red;
+	const currentHand = player === "blue" ? hand : hand_red;
 
-  const totalAMDG = currentHand.filter(c =>
-    c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
-    c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
-  ).length;
+	const totalAMDG = currentHand.filter(c =>
+		c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
+		c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
+	).length;
 
-  // 🔥 se qualquer deck AMDG estiver vazio, libera regra
-  const amdgDecks = player === "blue"
-    ? ["A","M","D","G"]
-    : ["A_red","M_red","D_red","G_red"];
+	const amdgDecks = player === "blue"
+		? ["A","M","D","G"]
+		: ["A_red","M_red","D_red","G_red"];
 
-  const anyDeckEmpty = amdgDecks.some(type =>
-    !decks[type] || decks[type].length === 0
-  );
+	const anyDeckEmpty = amdgDecks.some(type =>
+		!decks[type] || decks[type].length === 0
+	);
 
-  if(anyDeckEmpty){
-    return false; // 🔥 libera jogar
-  }
+	if(anyDeckEmpty){
+		return false;
+	}
 
-  return totalAMDG < 13;
+	return totalAMDG < 13;
 }
 
+function getHandArrayByPlayer(player){
+	return player === "blue" ? hand : hand_red;
+}
 
-let firstHalfEnded = false;
+function getFormationByPlayer(player){
+	return player === "blue" ? formation.blue : formation.red;
+}
 
-socket.on("handCounts", (counts)=>{
-  if(!counts) return;
+function countTypeInHand(player, deckType){
+	const currentHand = getHandArrayByPlayer(player);
+	return currentHand.filter(c => c.type === deckType).length;
+}
 
-  serverHandCounts = counts;
-  updateHandCounters();
-});
+function getBaseType(deckType){
+	return deckType.replace("_red", "");
+}
 
+function canDrawFromDeck(player, deckType){
 
-socket.on("syncFormation", (data)=>{
-  if(!data) return;
+	if(deckType === "P" || deckType === "P_red" || deckType === "T"){
+		return true;
+	}
 
-  formation = data;
+	if(mustRefillHand(player) === false){
+		return false;
+	}
 
-  updateFormationUI();
-  updateHandCounters();
-});
+	const baseType = getBaseType(deckType);
+	const f = getFormationByPlayer(player);
+
+	if(!f || !f[baseType]){
+		return true;
+	}
+
+	const currentCount = countTypeInHand(player, deckType);
+	return currentCount < f[baseType];
+}
+
+function canPlayCardFromHand(player, cardType){
+
+	const baseType = getBaseType(cardType);
+
+	if(baseType === "P" || baseType === "T"){
+		return true;
+	}
+
+	return !mustRefillHand(player);
+}
 
 
 function renderHand() {
@@ -1209,18 +1323,41 @@ function renderHand() {
   highlightSlot(card.type);
 
   openRadial(touch.clientX, touch.clientY, [
-    {
-      label: "Jogar",
-      action: ()=>{
-        const slot = document.querySelector(`.slot-pile[data-slot="${card.type}"]`);
-        if(slot){
-          socket.emit("playCardToSlot", {
-            cardId: card.id,
-            slot: card.type
-          });
-        }
+ {
+    label: "Jogar",
+    action: ()=>{
+
+      const player = playerRole === "blue" ? "blue" : "red";
+
+      if(!canPlayCardFromHand(player, card.type)){
+
+	const totalAMDG = (player === "blue" ? hand : hand_red).filter(c =>
+		c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
+		c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
+	).length;
+
+	const faltam = Math.max(0, 13 - totalAMDG);
+
+	openInfoModal(
+		"Jogada bloqueada",
+		`Você ainda não pode jogar esta carta.\n\n` +
+		`Faltam ${faltam} carta(s) AMDG para completar 13 na mão,\n` +
+		`enquanto ainda houver cartas disponíveis em todos os decks AMDG.`
+	);
+
+	return;
+}
+
+      const slot = document.querySelector(`.slot-pile[data-slot="${card.type}"]`);
+      if(slot){
+        socket.emit("playCardToSlot", {
+          cardId: card.id,
+          slot: card.type
+        });
       }
-    },
+    }
+  },
+    
     {
       label: "Voltar ao deck",
       action: ()=>{
@@ -1456,10 +1593,36 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
           const player = playerRole === "blue" ? "blue" : "red";
 
-          if(deckType !== "P" && deckType !== "P_red"){
-            if(!mustRefillHand(player)){
+          if(!canDrawFromDeck(player, deckType)){
+
+            const baseType = getBaseType(deckType);
+            const f = getFormationByPlayer(player);
+            const currentCount = countTypeInHand(player, deckType);
+            const needsRefill = mustRefillHand(player);
+
+            if(needsRefill && f && currentCount >= f[baseType]){
+              openInfoModal(
+                "Limite atingido",
+                `Você não pode comprar mais cartas do tipo ${baseType}.\n\n` +
+                `Sua formação permite até ${f[baseType]} carta(s) desse tipo na mão.`
+              );
               return;
             }
+
+            if(!needsRefill){
+              openInfoModal(
+                "Compra bloqueada",
+                "Você não pode comprar mais cartas AMDG agora.\n\n" +
+                "Seu limite atual já foi atingido ou algum bloqueio de mão está ativo."
+              );
+              return;
+            }
+
+            openInfoModal(
+              "Compra bloqueada",
+              "Essa compra não é permitida neste momento."
+            );
+            return;
           }
 
           socket.emit("drawCard", deckType);
@@ -1990,11 +2153,48 @@ img.addEventListener("touchend",(e)=>{
       };
     }
 }
+function openInfoModal(titleText, bodyText){
 
-  function closeModal(){
-    document.getElementById("modalOverlay").style.display = "none";
-  }
+	const overlay = document.getElementById("modalOverlay");
+	const title = document.getElementById("modalTitle");
+	const text = document.getElementById("modalText");
+	const confirmBtn = document.getElementById("confirmBtn");
+	const cancelBtn = document.getElementById("cancelReload");
 
+	if(!overlay || !title || !text || !confirmBtn) return;
+
+	title.innerText = titleText;
+	text.innerText = bodyText;
+
+	overlay.style.display = "flex";
+
+	confirmBtn.innerText = "OK";
+	confirmBtn.style.display = "";
+	confirmBtn.onclick = closeModal;
+
+	if(cancelBtn){
+		cancelBtn.style.display = "none";
+	}
+}
+
+function closeModal(){
+
+	const overlay = document.getElementById("modalOverlay");
+	const cancelBtn = document.getElementById("cancelReload");
+	const confirmBtn = document.getElementById("confirmBtn");
+
+	if(overlay){
+		overlay.style.display = "none";
+	}
+
+	if(cancelBtn){
+		cancelBtn.style.display = "";
+	}
+
+	if(confirmBtn){
+		confirmBtn.style.display = "";
+	}
+}
   /* ===================== */
   /* 2º TEMPO RESET (SÓ CARTAS) */
 
@@ -2487,10 +2687,17 @@ rotateFullscreenBtn.addEventListener("click", ()=>{
   }
 });
 
+document.getElementById("cancelReload")
+	?.addEventListener("click", closeModal);
+
 window.addEventListener("load", () => {
 
   document.getElementById("restartBtnMobile")
     ?.addEventListener("click", () => openModal("restart"));
+
+  bindFormationTouch();
+	updateFormationUI();
+	updateHandCounters();
 
 });
 
@@ -2762,3 +2969,8 @@ document.getElementById("actionLogClose")
     document.getElementById("actionLogPanel")
       ?.classList.add("closed");
   });
+
+  window.addEventListener("resize", ()=>{
+	if(!formationEditMode) return;
+	positionFormationActions(getCurrentFormationTableId());
+});
