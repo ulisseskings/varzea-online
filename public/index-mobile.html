@@ -1571,6 +1571,43 @@ animation:helpPulse 1.2s infinite;
 	z-index: 1;
 }
 
+.slot-pile[data-slot="P1"],
+.slot-pile[data-slot="P2"],
+.slot-pile[data-slot="P1_red"],
+.slot-pile[data-slot="P2_red"]{
+	border: 2px solid rgba(255,255,255,0.041);
+	position: absolute;
+}
+
+.slot-pile[data-slot="P1"]::after,
+.slot-pile[data-slot="P2"]::after,
+.slot-pile[data-slot="P1_red"]::after,
+.slot-pile[data-slot="P2_red"]::after{
+	content: "P";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	font-size: 30px;
+	color: rgba(255,255,255,0.28);
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* 🔴 penalti vermelho igual ao desktop */
+.slot-pile.red-zone[data-slot="P1_red"],
+.slot-pile.red-zone[data-slot="P2_red"]{
+	transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* mantém o P legível dentro do slot girado */
+.slot-pile.red-zone[data-slot="P1_red"]::after,
+.slot-pile.red-zone[data-slot="P2_red"]::after{
+	transform: translate(-50%, -50%) rotate(180deg);
+}
+
   </style>
 </head>
 
