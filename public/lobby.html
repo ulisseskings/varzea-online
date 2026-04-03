@@ -137,7 +137,7 @@ hr{
 
 #lobbyBanner{
   position:absolute;
-  top:50px;
+  top:80px;
   left:50%;
   transform:translateX(-50%);
   width:400px;
@@ -260,6 +260,30 @@ hr{
 #discordBtnLobby img{
   width:22px;
 }
+
+#discordTopBar{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+
+	background: #0b3d91;
+	color: white;
+
+	text-align: center;
+	padding: 10px;
+
+	font-size: 8px;
+	font-weight: bold;
+	font-family: Arial;
+
+	cursor: pointer;
+	z-index: 999999;
+}
+
+#discordTopBar:hover{
+	background: #1255c0;
+}
 </style>
 </head>
 
@@ -267,6 +291,10 @@ hr{
 <script src="/lobby.js"></script>
 
 <body>
+
+<div id="discordTopBar">
+  Clique aqui e acesse nosso Discord para jogar conversando com amigos e novas pessoas!
+</div>
 
 <button id="discordBtnLobby">
   <img src="https://i.imgur.com/2Czv8Fd.png">
