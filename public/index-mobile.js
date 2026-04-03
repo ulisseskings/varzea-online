@@ -221,17 +221,14 @@ document.getElementById("sfxToggle")
 });
 
 
-const socket = io({
-  transports: ["websocket"],
-  upgrade: false
+const socket = io(window.location.origin, {
+	transports: ["polling", "websocket"],
+	reconnection: true,
+	reconnectionAttempts: Infinity,
+	reconnectionDelay: 1000,
+	reconnectionDelayMax: 5000,
+	timeout: 20000
 });
-
-
-
-
-
-
-
 // 🔥 LISTENERS DEVEM VIR ANTES DO joinRoom
 
 socket.on("syncPlayers", (players)=>{
@@ -329,19 +326,18 @@ function applyAnchors(){
 
 function positionSlots(){
 
-  document.querySelectorAll(".slot-pile").forEach(slot=>{
+	document.querySelectorAll(".slot-pile").forEach(slot=>{
 
-    const anchorId = slot.dataset.anchor;
-    const anchor = document.getElementById(anchorId);
+		const anchorId = slot.dataset.anchor;
+		const anchor = document.getElementById(anchorId);
 
-    if(!anchor) return;
+		if(!anchor) return;
 
-    slot.style.left = anchor.style.left;
-    slot.style.top  = anchor.style.top;
+		slot.style.left = anchor.style.left;
+		slot.style.top  = anchor.style.top;
 
-    slot.style.transform = "translate(-50%, -50%)";
-
-  });
+		// 🔥 SEM MAIS NADA
+	});
 
 }
 
@@ -522,6 +518,34 @@ socket.emit("reconnectRoom", {
   roomCode: roomCode
 });
 
+function rejoinCurrentRoom(){
+	if(!playerName || !playerRole || !roomCode) return;
+
+	socket.emit("reconnectRoom", {
+		name: playerName,
+		role: playerRole,
+		roomCode: roomCode
+	});
+}
+
+socket.on("connect", () => {
+	console.log("✅ socket conectado:", socket.id);
+	rejoinCurrentRoom();
+});
+
+socket.on("reconnect", () => {
+	console.log("🔁 socket reconectado:", socket.id);
+	rejoinCurrentRoom();
+});
+
+socket.on("disconnect", (reason) => {
+	console.log("❌ socket desconectado:", reason);
+	addLogEntry?.("Conexão instável. Tentando reconectar...", "white");
+});
+
+socket.on("connect_error", (err) => {
+	console.log("❌ connect_error:", err.message);
+});
 
 // 4️⃣ Mostra código
   roomCodeBoxEl.innerText = "Sala: " + roomCode;
@@ -1206,10 +1230,6 @@ function canDrawFromDeck(player, deckType){
 		return true;
 	}
 
-	if(mustRefillHand(player) === false){
-		return false;
-	}
-
 	const baseType = getBaseType(deckType);
 	const f = getFormationByPlayer(player);
 
@@ -1414,25 +1434,34 @@ function renderSlot(type) {
   const slotEl = document.querySelector(`.slot-pile[data-slot="${type}"]`);
 
   if(pile.length===0){
-    slotEl.style.backgroundImage="none";
-    return;
-  }
+	slotEl.style.backgroundImage = "none";
+	removeSlotTopCard(slotEl);
+	return;
+}
 
-  if(!slotFanOpen[type]) {
+if(!slotFanOpen[type]){
 
-    slotEl.style.backgroundImage = `url(${pile[pile.length-1].front})`;
+	slotEl.style.backgroundImage = "none";
 
-    document.querySelectorAll(".slot-pile")
-      .forEach(el=>el.classList.remove("last-card"));
+	const topCard = ensureSlotTopCard(slotEl);
+	const lastCard = pile[pile.length - 1];
 
-    if(type === lastPlayedSlot){
-      slotEl.classList.add("last-card");
-    }
+	topCard.src = lastCard.front;
+	topCard.style.transform =
+		`translate(-50%, -50%)${getCardVisualRotation(lastCard)}`;
 
-    return;
-  }
+	document.querySelectorAll(".slot-pile")
+		.forEach(el=>el.classList.remove("last-card"));
 
-  slotEl.style.backgroundImage="none";
+	if(type === lastPlayedSlot){
+		slotEl.classList.add("last-card");
+	}
+
+	return;
+}
+
+removeSlotTopCard(slotEl);
+slotEl.style.backgroundImage = "none";
 
   pile.forEach((card,i)=>{
     const fan = document.createElement("img");
@@ -1503,13 +1532,7 @@ fan.addEventListener("touchend", (e)=>{
     fan.style.transform =
       `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`;
 
-    if(playerRole === "red" && !type.includes("_red")){
-  fan.style.transform += " rotate(180deg)";
-}
-
-    if(playerRole === "blue" && type.includes("_red")){
-      fan.style.transform += " rotate(180deg)";
-    }
+    fan.style.transform += getCardVisualRotation(card);
 
     const firstPiece = board.querySelector(".piece");
 
@@ -1521,28 +1544,142 @@ fan.addEventListener("touchend", (e)=>{
   });
 }
 
-/* DUPLO CLIQUE */
+
+function isRedOwnedCard(card){
+	return !!card?.type && card.type.endsWith("_red");
+}
+
+function getCardVisualRotation(card){
+	return isRedOwnedCard(card) ? " rotate(180deg)" : "";
+}
+
+function ensureSlotTopCard(slotEl){
+	let img = slotEl.querySelector(".slot-top-card");
+
+	if(!img){
+		img = document.createElement("img");
+		img.className = "slot-top-card";
+		img.draggable = false;
+		img.style.pointerEvents = "none";
+		slotEl.appendChild(img);
+	}
+
+	return img;
+}
+
+function removeSlotTopCard(slotEl){
+	slotEl.querySelector(".slot-top-card")?.remove();
+}
+
+function openSlotView(type){
+  
+  if(!canOpenSlotPile(type)) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "slot-overlay";
+
+  const container = document.createElement("div");
+  container.className = "slot-container";
+
+  slotPiles[type].forEach((card, i)=>{
+
+  const img = document.createElement("img");
+  img.src = card.front;
+  img.className = "slot-big-card";
+  img.style.transform = isRedOwnedCard(card) ? "rotate(180deg)" : "none";
+
+    if(card.id === selectedCardId){
+      img.classList.add("selected-card");
+    }
+
+    img.onclick = (e)=>{
+
+      e.stopPropagation();
+
+      const isRedSlot = type.includes("_red");
+      const isSharedSlot = type === "P1" || type === "P2" || type === "P1_red" || type === "P2_red";
+
+      if(!isSharedSlot){
+        if(playerRole === "blue" && isRedSlot) return;
+        if(playerRole === "red" && !isRedSlot) return;
+      }
+
+      document.querySelectorAll(".selected-card")
+        .forEach(el => el.classList.remove("selected-card"));
+
+      img.classList.add("selected-card");
+
+      selectedCard = card;
+      selectedCardId = card.id;
+      selectedFrom = "slot-view";
+      selectedSlot = type;
+      selectedIndex = i;
+
+      openRadial(e.clientX, e.clientY, [
+        {
+          label:"Voltar para a mão",
+          action: ()=>{
+
+            socket.emit("returnCardToHand", {
+              cardId: card.id,
+              slot: type,
+              index: i
+            });
+
+            // 🔥 ATUALIZA LOCAL IGUAL AO FAN
+            if(playerRole === "blue"){
+              hand.push(card);
+            }else{
+              hand_red.push(card);
+            }
+
+            const idx = slotPiles[type].findIndex(c => c.id === card.id);
+            if(idx !== -1){
+              slotPiles[type].splice(idx, 1);
+            }
+
+            renderHand();
+            renderSlot(type);
+
+            overlay.remove();
+          } 
+        }
+      ]);
+
+    };
+
+    container.appendChild(img);
+  });
+}
+
 document.querySelectorAll(".slot-pile").forEach(slot=>{
   let tapTimer = null;
 
-slot.addEventListener("touchstart",(e)=>{
-  e.preventDefault();
+  slot.addEventListener("touchstart",(e)=>{
+    e.preventDefault();
 
-  if(tapTimer){
-    clearTimeout(tapTimer);
-    tapTimer = null;
-
-    const type = slot.dataset.slot;
-    slotFanOpen[type] = !slotFanOpen[type];
-    renderSlot(type);
-
-  } else {
-    tapTimer = setTimeout(()=>{
+    if(tapTimer){
+      clearTimeout(tapTimer);
       tapTimer = null;
-    },250);
-  }
 
-},{ passive:false });
+      const type = slot.dataset.slot;
+
+      if(!canOpenSlotPile(type)){
+        clearHighlight();
+        clearSelection();
+        return;
+      }
+
+      slotFanOpen[type] = !slotFanOpen[type];
+      renderSlot(type);
+
+    } else {
+      tapTimer = setTimeout(()=>{
+        tapTimer = null;
+      },250);
+    }
+
+  },{ passive:false });
 });
 
 /* ===================== */
@@ -2745,6 +2882,22 @@ function clearSelections(){
     .forEach(el => el.classList.remove("selected-card"));
 
   clearHighlight();
+}
+
+function canOpenSlotPile(type){
+  if(playerRole === "spectator") return false;
+
+  const isRedSlot = type.includes("_red");
+
+  if(playerRole === "blue"){
+    return !isRedSlot;
+  }
+
+  if(playerRole === "red"){
+    return isRedSlot;
+  }
+
+  return false;
 }
 
 let helpStep = 0;

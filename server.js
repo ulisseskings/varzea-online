@@ -329,10 +329,18 @@ socket.on("startSecondHalf", ()=>{
   Object.keys(room.decks).forEach(type=>{
     shuffle(room.decks[type]);
   });
-
+  room.lastSlotPlayed = null;
   // atualizar clientes
-  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+  io.to(socket.roomCode).emit("updateBoardSlots", {
+  slots: room.boardSlots,
+  lastSlot: room.lastSlotPlayed
+});
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+
+  io.to(socket.roomCode).emit("handCounts", {
+  blue: countHandTypes(room.hands.blue),
+  red: countHandTypes(room.hands.red)
+});
 
   io.to(socket.roomCode).emit("secondHalfStarted");
 
@@ -455,11 +463,27 @@ socket.on("returnSlotCardToDeck", ({ card, fromSlot }) => {
 
   room.decks[card.type].push(card);
 
+  emitActionLog(
+    socket.roomCode,
+    `${socket.playerName} devolveu ${card.type} do slot ${fromSlot} para o deck`,
+    socket.role
+  );
+
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
 
-  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+  io.to(socket.roomCode).emit("updateBoardSlots", {
+    slots: room.boardSlots,
+    lastSlot: room.lastSlotPlayed || null
+  });
+
+  io.to(socket.roomCode).emit("handCounts", {
+    blue: countHandTypes(room.hands.blue),
+    red: countHandTypes(room.hands.red)
+  });
 
 });
+
+
 socket.on("flipSubToken", ({anchor, faceUp})=>{
 
   const roomCode = socket.roomCode;
@@ -639,7 +663,10 @@ socket.on("returnCardToHand", ({ cardId, slot }) => {
     socket.emit("yourHand", room.hands.red);
   }
 
-  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+  io.to(socket.roomCode).emit("updateBoardSlots", {
+  slots: room.boardSlots,
+  lastSlot: room.lastSlotPlayed
+});
 
   io.to(socket.roomCode).emit("handCounts", {
   blue: countHandTypes(room.hands.blue),
@@ -764,7 +791,10 @@ if(role === "spectator"){
   io.to(roomCode).emit("syncPlayers", room.players);
   io.to(roomCode).emit("syncSpectators", room.spectators);
 
-  socket.emit("updateBoardSlots", room.boardSlots);
+  socket.emit("updateBoardSlots", {
+  slots: room.boardSlots,
+  lastSlot: room.lastSlotPlayed || null
+});
   socket.emit("syncSubTokens", room.subTokens || {});
   socket.emit("syncTwists", room.twists || []);
   socket.emit("syncTokens", room.tokens || {});
@@ -788,7 +818,7 @@ if(role === "spectator"){
   if(role === "red"){
     socket.emit("yourHand", room.hands.red);
   }
-  socket.emit("syncTokens", room.tokens || {});
+
   
 });
 
@@ -827,7 +857,10 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
   red: countHandTypes(room.hands.red)
 });
 
-  socket.emit("updateBoardSlots", room.boardSlots);
+  socket.emit("updateBoardSlots", {
+  slots: room.boardSlots,
+  lastSlot: room.lastSlotPlayed || null
+});
   socket.emit("syncSubTokens", room.subTokens || {});
   socket.emit("syncTwists", room.twists || []);
   socket.emit("syncDeckSizes", room.decks);
@@ -837,10 +870,22 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
   red:  { A:3, M:4, D:3, G:3 }
 });
 
+  socket.emit("syncTokens", room.tokens || {});
+
+  if(role === "blue"){
+	socket.emit("yourHand", room.hands.blue || []);
+}
+
+if(role === "red"){
+	socket.emit("yourHand", room.hands.red || []);
+}
+
   io.to(roomCode).emit("handCounts", {
     blue: countHandTypes(room.hands.blue),
     red: countHandTypes(room.hands.red)
   });
+
+
 });
 
 socket.on("restartMatch", ()=>{
@@ -898,11 +943,18 @@ socket.on("restartMatch", ()=>{
 
   // 🔥 envia estado completo
   io.to(socket.roomCode).emit("matchRestarted");
-
-  io.to(socket.roomCode).emit("updateBoardSlots", room.boardSlots);
+  room.lastSlotPlayed = null;
+  io.to(socket.roomCode).emit("updateBoardSlots", {
+  slots: room.boardSlots,
+  lastSlot: null
+});
   io.to(socket.roomCode).emit("syncTwists", room.twists);
   io.to(socket.roomCode).emit("syncSubTokens", room.subTokens);
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+  io.to(socket.roomCode).emit("handCounts", {
+  blue: countHandTypes(room.hands.blue),
+  red: countHandTypes(room.hands.red)
+});
 });
 
 
@@ -1006,24 +1058,32 @@ socket.on("moveTwist", (data)=>{
 });
 
   socket.on("disconnect", () => {
+	const roomCode = socket.roomCode;
+	const role = socket.role;
+	const playerName = socket.playerName;
 
-    const room = rooms[socket.roomCode];
-    if(!room) return;
+	if(!roomCode || !rooms[roomCode]) return;
 
-    if(socket.role === "blue"){
-      room.players.blue = null;
-    }
+	setTimeout(() => {
+		const room = rooms[roomCode];
+		if(!room) return;
 
-    if(socket.role === "red"){
-      room.players.red = null;
-    }
+		const stillConnected = Array.from(io.sockets.adapter.rooms.get(roomCode) || [])
+			.some(id => {
+				const s = io.sockets.sockets.get(id);
+				return s && s.role === role && s.playerName === playerName;
+			});
 
-    if(socket.role === "spectator"){
-      room.spectators =
-        room.spectators.filter(n => n !== socket.playerName);
-    }
+		if(stillConnected) return;
 
-    io.to(socket.roomCode).emit("syncPlayers", room.players);
-    io.to(socket.roomCode).emit("syncSpectators", room.spectators);
-  });
+		if(role === "blue") room.players.blue = null;
+		if(role === "red") room.players.red = null;
+		if(role === "spectator"){
+			room.spectators = room.spectators.filter(n => n !== playerName);
+		}
+
+		io.to(roomCode).emit("syncPlayers", room.players);
+		io.to(roomCode).emit("syncSpectators", room.spectators);
+	}, 10000);
+});
 });
