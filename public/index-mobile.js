@@ -6,6 +6,7 @@ let bgMusic;
 let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
+let masterVolume = 0.2;
 let selectedSlotCard = null;
 let lastPlayedCardId = null;
 let lastPlayedSlot = null;
@@ -78,6 +79,7 @@ if(savedSfx !== null){
     currentVolume = parseFloat(savedVolume);
   }
 
+  masterVolume = currentVolume;
   bgMusic.volume = currentVolume;
 
   // atualizar botão
@@ -100,13 +102,14 @@ if(savedSfx !== null){
 
     slider.addEventListener("input", ()=>{
 
-      currentVolume = parseFloat(slider.value);
+    currentVolume = parseFloat(slider.value);
+    masterVolume = currentVolume;
 
-      bgMusic.volume = currentVolume;
+    bgMusic.volume = currentVolume;
 
-      sessionStorage.setItem("musicVolume", currentVolume);
+    sessionStorage.setItem("musicVolume", currentVolume);
 
-    });
+  });
 
   }
 
@@ -159,9 +162,10 @@ function playSFX(src){
   }
 
   const sound = audioCache[src].cloneNode();
-  sound.volume = 0.5;
+  sound.volume = masterVolume;
   sound.play().catch(()=>{});
 }
+
   const SOUNDS = {
   drag: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/dragtoken_th8vbx.mp3",
   draw: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/drawcard_ui0b56.mp3",
@@ -188,6 +192,27 @@ document.getElementById("musicToggle")
     }
 
 });
+
+const subSound = new Audio("https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/whistle_zwznax.mp3");
+subSound.preload = "auto";
+
+function showSubEffect(){
+  const overlay = document.getElementById("subOverlay");
+  if(!overlay) return;
+
+  overlay.style.display = "flex";
+
+  if(sfxEnabled){
+    subSound.currentTime = 0;
+    subSound.volume = masterVolume;
+    subSound.play().catch(()=>{});
+  }
+
+  clearTimeout(window.subOverlayTimer);
+  window.subOverlayTimer = setTimeout(()=>{
+    overlay.style.display = "none";
+  }, 2200); // use o MESMO tempo do gol se quiser igual
+}
 
 function playGoalEffect(){
 
@@ -2561,13 +2586,14 @@ socket.on("roomError", (msg)=>{
 
 socket.on("subTokenFlipped", ({anchor, faceUp})=>{
 
-  playSFX(SOUNDS.drag);
-
   const piece = document.querySelector(`[data-anchor="${anchor}"]`);
   if(!piece) return;
 
   piece.dataset.faceUp = faceUp ? "true" : "false";
   piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+
+  playSFX(SOUNDS.flip); // opcional, se existir
+  showSubEffect();
 
 });
 

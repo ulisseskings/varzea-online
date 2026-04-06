@@ -1608,6 +1608,23 @@ animation:helpPulse 1.2s infinite;
 	transform: translate(-50%, -50%) rotate(180deg);
 }
 
+#subOverlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.35);
+  z-index: 9999999;
+  pointer-events: none;
+}
+
+#subOverlay img{
+  width: 450px;
+  max-width: 80vw;
+}
+
+
   </style>
 </head>
 
@@ -1620,8 +1637,12 @@ animation:helpPulse 1.2s infinite;
 
 <body>
 
+<div id="subOverlay" class="goal-overlay" style="display:none;">
+  <img src="https://i.imgur.com/7mvFh4V.gif">
+</div>
+
 <div id="goalOverlay">
-  <img id="goalGif" src="https://i.imgur.com/Qh01O4F.gif" alt="Gol">
+  <img id="goalGif" src="https://i.imgur.com/6iVE1IR.gif" alt="Gol">
 </div>
 
 <div id="formationActions">

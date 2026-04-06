@@ -504,6 +504,18 @@ socket.on("flipSubToken", ({anchor, faceUp})=>{
   });
 
 });
+
+socket.on("subTokenFlipped", ({ anchor, faceUp }) => {
+
+  // 🔥 atualiza visual (se você já faz isso em outro lugar, pode remover essa parte)
+  const el = document.querySelector(`[data-anchor="${anchor}"]`);
+  if(el){
+    el.dataset.faceUp = faceUp ? "true" : "false";
+  }
+
+  // 🔥 efeito (IGUAL GOL)
+  showSubEffect();
+});
   
 socket.on("drawTwist", ()=>{
 

@@ -8,6 +8,7 @@ let bgMusic;
 let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
+let masterVolume = 0.2;
 let manualZoom = 1;
 let lastPlayedCardId = null;
 let lastPlayedSlot = null;
@@ -72,9 +73,9 @@ function playSFX(src){
   }
 
   const sound = audioCache[src].cloneNode();
-  sound.volume = 0.5;
+  sound.volume = masterVolume;
   sound.play().catch(()=>{});
-  }
+}
 
   const SOUNDS = {
   drag: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868297/dragtoken_th8vbx.mp3",
@@ -85,6 +86,27 @@ function playSFX(src){
   whistle: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/whistle_zwznax.mp3",
   drop: "https://res.cloudinary.com/dzjwlafsx/video/upload/v1773593574/dragcard_qgappw.mp3",
 };
+
+const subSound = new Audio("https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868298/whistle_zwznax.mp3");
+subSound.preload = "auto";
+
+function showSubEffect(){
+  const overlay = document.getElementById("subOverlay");
+  if(!overlay) return;
+
+  overlay.style.display = "flex";
+
+  if(sfxEnabled){
+    subSound.currentTime = 0;
+    subSound.volume = masterVolume;
+    subSound.play().catch(()=>{});
+  }
+
+  clearTimeout(window.subOverlayTimer);
+  window.subOverlayTimer = setTimeout(()=>{
+    overlay.style.display = "none";
+  }, 2200); // use o MESMO tempo do gol se quiser igual
+}
 
 document.getElementById("musicToggle")
   ?.addEventListener("click", ()=>{
@@ -144,10 +166,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if(volumeSlider){
     volumeSlider.addEventListener("input", () => {
-      bgMusic.volume = volumeSlider.value;
-      sessionStorage.setItem("musicVolume", volumeSlider.value);
+      currentVolume = parseFloat(volumeSlider.value);
+      masterVolume = currentVolume;
+
+      bgMusic.volume = currentVolume;
+      sessionStorage.setItem("musicVolume", currentVolume);
     });
   }
+
   // BOTÃO EFEITOS
   document.getElementById("sfxToggle")
     ?.addEventListener("click", ()=>{
@@ -176,6 +202,7 @@ window.addEventListener("DOMContentLoaded", () => {
     currentVolume = parseFloat(savedVolume);
   }
 
+  masterVolume = currentVolume;
   bgMusic.volume = currentVolume;
 
   // atualizar botão
@@ -2211,13 +2238,14 @@ socket.on("roomError", (msg)=>{
 
 socket.on("subTokenFlipped", ({anchor, faceUp})=>{
 
-  playSFX(SOUNDS.drag);
-
   const piece = document.querySelector(`[data-anchor="${anchor}"]`);
   if(!piece) return;
 
   piece.dataset.faceUp = faceUp ? "true" : "false";
   piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+
+  playSFX(SOUNDS.flip); // opcional, se existir
+  showSubEffect();
 
 });
 
@@ -2585,14 +2613,32 @@ const helpSteps = [
 
 {
 title:"Objetivo do jogo",
-text:"O objetivo é marcar mais gols que o adversário.\n\nA bola avança pelo campo conforme as disputas entre cartas de cada posição.",
+text:"O objetivo é marcar mais gols que o adversário.\n\nA bola avança conforme o jogador que tem sua posse vence as disputadas em direção ao gol.",
 highlight:"#board"
 },
 
 {
 title:"As posições do time",
-text:"Cada carta representa um jogador:\n\nA = Atacante\nM = Meio-campo\nD = Defesa\nG = Goleiro\n\nCada posição disputa apenas com a mesma posição do adversário.",
+text:"Cada carta representa um jogador e sua zona de atuação:\n\nA = Atacante\nM = Meio-campo\nD = Defesa\nG = Goleiro",
 highlight:".fixed-board-card"
+},
+
+{
+title:"Formação Tática",
+text:"Primeiro, defina sua formação tática escolhendo quantos jogadores quer em cada posição.\n\nIsso determina quantas cartas (possibilidades) em cada posição você pode jogar no campo.\n\nCaso queira ver a tabela ampliada, basta clicar com o botão direito ao redor da tabela.",
+highlight:".fixed-board-card"
+},
+
+{
+title:"Alterando a Formação Tática",
+text:"Dependendo do número de cartas em uma posição haverá bônus e ônus que serão somados ou subtraídos do valor das posições durante as disputas.\n\nAo lado da sua area de jogo há tokens (-2, -1 e 1) que podem ser posicionado sobre as areas de disputado no campo, facilitando a soma ou substração dos bônus e ônus durante as disputas.",
+highlight:".formationTable"
+},
+
+{
+title:"Quadro Auxiliar",
+text:"No lado esquerdo da área de jogo, há um quadro auxiliar mostrando:\n\n- O número de cartas em cada posição que o jogador precisa ter em mãos, conforme sua formação tática, para jogar cartas em campo.\n\n Os bônus e ônus que você deve somar as suas disputas em campo",
+highlight:".hand-counter"
 },
 
 {
@@ -2603,16 +2649,22 @@ highlight:"#hand, #hand_red"
 
 {
 title:"Comprar cartas",
-text:"Arraste um deck para comprar uma carta.\n\nCada deck contém cartas de uma posição específica.",
+text:"Clique sobre o deck e em 'Comprar'.\n\nCada deck contém cartas de uma posição específica.",
 highlight:'[data-deck="A"], [data-deck="M"], [data-deck="D"], [data-deck="G"], [data-deck="A_red"], [data-deck="M_red"], [data-deck="D_red"], [data-deck="G_red"]'
 },
 
 {
-title:"Disputar posições",
-text:"Arraste uma carta da sua mão para a posição correspondente no campo.\n\nO adversário disputará com uma carta da mesma posição.",
+title:"Disputas em campo",
+text:"Cada posição disputa contra a posição equivalente do adversário na zona do campo.\n\nDefesa (D) vs Meio-campo (M)\n\nAtaque (A) vs Goleiro (G)\n\nQuem está com a posse da bola avança em direção ao gol jogando uma carta primeiro seguido por seu adversário.\n\nCada carta tem um valor numérico, e bônus ou ônus da formação tática são aplicados a esse valor durante as disputas.",
 highlight:".slot-pile"
 },
 
+
+{
+title:"Início da Partida",
+text:"O jogo começa na disputa no meio-campo entre .",
+highlight:".slot-pile"
+},
 {
 title:"Resultado da disputa",
 text:"A carta com maior valor vence.\n\nQuem vencer empurra a bola para o lado do adversário.",
@@ -2634,7 +2686,7 @@ highlight:'[data-deck="T"]'
 {
 title:"Penaltis",
 text:"Cartas de penalti podem ser jogadas nas áreas de penalti.\n\nElas criam disputas diretas que podem resultar em gol.",
-highlight:'[data-slot="P1"],[data-slot="P2"],[data-slot="P1_red"],[data-slot="P2_red"]'
+highlight: '[data-slot="A"],[data-slot="M"],[data-slot="D"],[data-slot="G"],[data-slot="A_red"],[data-slot="M_red"],[data-slot="D_red"],[data-slot="G_red"],.bonus2a,.bonus1a,.onus1a,.bonus2v,.bonus1v,.onus1v'
 },
 
 {
