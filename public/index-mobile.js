@@ -7,6 +7,7 @@ let musicEnabled = true;
 let sfxEnabled = true;   // 🔥 ADICIONE ISSO
 let currentVolume = 0.2;
 let masterVolume = 0.2;
+let activePiece = null;
 let selectedSlotCard = null;
 let lastPlayedCardId = null;
 let lastPlayedSlot = null;
@@ -461,19 +462,19 @@ let startY = 0;
 board.addEventListener("touchstart", (e)=>{
 
   const clickable = e.target.closest(
-  ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece, .twist-card"
+    ".hand-card, .fan-card, .slot-pile, .deck-wrapper, button, .piece, .twist-card"
   );
 
-  // 🔥 se tocou em algo interativo, NÃO faz pan
-  if(clickable) return;
+  // se tocou em algo interativo, NÃO faz pan
+  if(clickable){
+    isPanning = false;
+    return;
+  }
 
   if(e.touches.length === 1){
-
     isPanning = true;
-
     startX = e.touches[0].clientX - panX;
     startY = e.touches[0].clientY - panY;
-
   }
 
   if(e.touches.length === 2){
@@ -482,13 +483,16 @@ board.addEventListener("touchstart", (e)=>{
     const dy = e.touches[0].clientY - e.touches[1].clientY;
 
     pinchStartDist = Math.sqrt(dx*dx + dy*dy);
-
   }
 
-},{passive:false});
+}, {passive:false});
 
 
 board.addEventListener("touchmove", (e)=>{
+
+  if(activePiece){
+    return;
+  }
 
   if(e.touches.length === 2){
 
@@ -498,17 +502,14 @@ board.addEventListener("touchmove", (e)=>{
     const dist = Math.sqrt(dx*dx + dy*dy);
 
     if(pinchStartDist){
-
       const ratio = dist / pinchStartDist;
 
       pinchZoom *= ratio;
-
       pinchZoom = Math.max(0.5, Math.min(3, pinchZoom));
 
       pinchStartDist = dist;
 
       updateBoardTransform();
-
     }
 
     return;
@@ -521,7 +522,7 @@ board.addEventListener("touchmove", (e)=>{
 
   updateBoardTransform();
 
-},{passive:false});
+}, {passive:false});
 
 
 board.addEventListener("touchend", ()=>{
@@ -1893,71 +1894,77 @@ function checkDeckEnd(){
 
 function enablePieceDragging(){
 
-  let activePiece = null;
 
   board.addEventListener("touchstart", function(e){
 
-    const touch = e.touches[0];
-    const piece = e.target.closest(".piece") || findClosestDraggablePiece(touch.clientX, touch.clientY, 28);
+  const touch = e.touches[0];
+  const piece = e.target.closest(".piece") || findClosestDraggablePiece(touch.clientX, touch.clientY, 28);
 
-    if(!piece) return;
+  if(!piece) return;
 
-    const isRedPiece = piece.classList.contains("red");
-    const isBall = piece.classList.contains("ball");
+  const isRedPiece = piece.classList.contains("red");
+  const isBall = piece.classList.contains("ball");
 
-    if(playerRole === "spectator") return;
-    if(playerRole === "blue" && isRedPiece) return;
-    if(playerRole === "red" && !isRedPiece && !isBall && !piece.classList.contains("twist-token")) return;
-    if(piece.classList.contains("token27")) return;
+  if(playerRole === "spectator") return;
+  if(playerRole === "blue" && isRedPiece) return;
+  if(playerRole === "red" && !isRedPiece && !isBall && !piece.classList.contains("twist-token")) return;
+  if(piece.classList.contains("token27")) return;
 
-    e.preventDefault();
+  e.preventDefault();
 
-    activePiece = piece;
-    activePiece.dataset.touching = "true";
+  isPanning = false;
+  pinchStartDist = null;
 
-  }, { passive:false });
+  activePiece = piece;
+  activePiece.dataset.touching = "true";
+
+}, { passive:false });
 
   board.addEventListener("touchmove", function(e){
 
-    if(!activePiece || activePiece.dataset.touching !== "true") return;
+  if(!activePiece || activePiece.dataset.touching !== "true") return;
 
-    const touch = e.touches[0];
-    const p = getCorrectPoint(touch.clientX, touch.clientY);
+  e.preventDefault();
 
-    const anchor = document.getElementById(activePiece.dataset.anchor);
-    if(anchor){
-      moveQueue.push({
-        anchor: activePiece.dataset.anchor,
-        x: p.x,
-        y: p.y
-      });
-    }
+  const touch = e.touches[0];
+  const p = getCorrectPoint(touch.clientX, touch.clientY);
 
-    if(!moveScheduled){
-      moveScheduled = true;
-      requestAnimationFrame(processMoveQueue);
-    }
+  const anchor = document.getElementById(activePiece.dataset.anchor);
+  if(anchor){
+    moveQueue.push({
+      anchor: activePiece.dataset.anchor,
+      x: p.x,
+      y: p.y
+    });
+  }
 
-  }, { passive:false });
+  if(!moveScheduled){
+    moveScheduled = true;
+    requestAnimationFrame(processMoveQueue);
+  }
+
+}, { passive:false });
 
   board.addEventListener("touchend", function(){
 
-    if(!activePiece) return;
+  if(!activePiece) return;
 
-    activePiece.dataset.touching = "false";
+  activePiece.dataset.touching = "false";
 
-    const anchor = document.getElementById(activePiece.dataset.anchor);
-    if(anchor){
-      socket.emit("moveToken", {
-        anchor: activePiece.dataset.anchor,
-        x: parseFloat(anchor.style.left),
-        y: parseFloat(anchor.style.top)
-      });
-    }
+  const anchor = document.getElementById(activePiece.dataset.anchor);
+  if(anchor){
+    socket.emit("moveToken", {
+      anchor: activePiece.dataset.anchor,
+      x: parseFloat(anchor.style.left),
+      y: parseFloat(anchor.style.top)
+    });
+  }
 
-    activePiece = null;
+  activePiece = null;
+  isPanning = false;
+  pinchStartDist = null;
 
-  });
+});
 }
 
   const SUB_BACK = "https://i.imgur.com/d6JyQJQ.png";
