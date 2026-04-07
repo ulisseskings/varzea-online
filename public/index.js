@@ -1600,19 +1600,24 @@ document.querySelectorAll(".piece").forEach(piece=>{
 
   piece.addEventListener("touchmove", function(e){
 
-    if(this.dataset.touching !== "true") return;
+  if(this.dataset.touching !== "true") return;
 
-    const touch = e.touches[0];
-    const rect = board.getBoundingClientRect();
+  const touch = e.touches[0];
+  const rect = board.getBoundingClientRect();
 
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
 
-    const anchor = document.getElementById(this.dataset.anchor);
-    if(anchor){
-      anchor.style.left = x + "px";
-      anchor.style.top  = y + "px";
-    }
+  const anchor = document.getElementById(this.dataset.anchor);
+  if(!anchor) return;
+
+  const pos = clampTokenPosition(
+    parseFloat(x),
+    parseFloat(y)
+  );
+
+  anchor.style.left = pos.x + "px";
+  anchor.style.top  = pos.y + "px";
 
   });
 
@@ -1986,27 +1991,32 @@ document.addEventListener("dragover", (e)=>{
 
   document.addEventListener("drop", (e) => {
 
-    e.preventDefault();
+  e.preventDefault();
 
-    let data = {};
+  let data = {};
 
-    try{
-      data = JSON.parse(e.dataTransfer.getData("text/plain"));
-    }catch(e){
-      return;
-    }
+  try{
+    data = JSON.parse(e.dataTransfer.getData("text/plain"));
+  }catch(e){
+    return;
+  }
 
-    if(data.type !== "token") return;
+  if(data.type !== "token") return;
 
-    const corrected = getCorrectPoint(e.clientX, e.clientY);
+  const corrected = getCorrectPoint(e.clientX, e.clientY);
 
-    socket.emit("moveToken", {
-      anchor: data.anchor,
-      x: corrected.x,
-      y: corrected.y
-    });
+  const pos = clampTokenPosition(
+    parseFloat(corrected.x),
+    parseFloat(corrected.y)
+  );
 
+  socket.emit("moveToken", {
+    anchor: data.anchor,
+    x: pos.x,
+    y: pos.y
   });
+
+});
 
 
    /* ===================== */
@@ -2768,6 +2778,20 @@ helpPrevBtn.onclick = () => {
 helpExitBtn.onclick = () => {
   closeHelp();
 };
+
+function clampTokenPosition(x, y){
+
+  const MIN_X = 0;
+  const MAX_X = 1152;
+
+  const MIN_Y = 49;
+  const MAX_Y = 580;
+
+  return {
+    x: Math.max(MIN_X, Math.min(MAX_X, x)),
+    y: Math.max(MIN_Y, Math.min(MAX_Y, y))
+  };
+}
 
 function showHelpStep(){
 

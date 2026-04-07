@@ -285,8 +285,13 @@ socket.on("syncTokens", (tokens)=>{
       const el = document.getElementById(anchor);
       if(!el) return;
 
-      el.style.left = tokens[anchor].x + "px";
-      el.style.top  = tokens[anchor].y + "px";
+      const pos = clampTokenPosition(
+        parseFloat(tokens[anchor].x),
+        parseFloat(tokens[anchor].y)
+      );
+
+      el.style.left = pos.x + "px";
+      el.style.top  = pos.y + "px";
 
     });
 
@@ -316,8 +321,13 @@ function processMoveQueue(){
     const anchor = document.getElementById(move.anchor);
     if(!anchor) return;
 
-    anchor.style.left = move.x + "px";
-    anchor.style.top  = move.y + "px";
+    const pos = clampTokenPosition(
+      parseFloat(move.x),
+      parseFloat(move.y)
+    );
+
+    anchor.style.left = pos.x + "px";
+    anchor.style.top  = pos.y + "px";
 
   });
 
@@ -2557,8 +2567,13 @@ socket.on("tokenMoved", (data)=>{
   const anchor = document.getElementById(data.anchor);
   if(!anchor) return;
 
-  anchor.style.left = parseFloat(data.x) + "px";
-  anchor.style.top  = parseFloat(data.y) + "px";
+  const pos = clampTokenPosition(
+    parseFloat(data.x),
+    parseFloat(data.y)
+  );
+
+  anchor.style.left = pos.x + "px";
+  anchor.style.top  = pos.y + "px";
 
   applyAnchors();
 
@@ -2566,9 +2581,9 @@ socket.on("tokenMoved", (data)=>{
   if(!piece) return;
 
   if(piece.classList.contains("ball")){
-    playSFX(SOUNDS.kick);   // ⚽ som da bola
+    playSFX(SOUNDS.kick);
   } else {
-    playSFX(SOUNDS.drag);   // outros tokens
+    playSFX(SOUNDS.drag);
   }
 
 });
@@ -3086,6 +3101,20 @@ return;
 showHelpStep();
 
 };
+
+function clampTokenPosition(x, y){
+
+  const MIN_X = 0;
+  const MAX_X = 1152;
+
+  const MIN_Y = 49;
+  const MAX_Y = 580;
+
+  return {
+    x: Math.max(MIN_X, Math.min(MAX_X, x)),
+    y: Math.max(MIN_Y, Math.min(MAX_Y, y))
+  };
+}
 
 function closeHelp(){
 
