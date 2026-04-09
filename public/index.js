@@ -2967,6 +2967,7 @@ function checkZoom(){
 
 window.addEventListener("load", checkZoom);
 
+
 function checkOrientation(){
 
 if(window.innerHeight > window.innerWidth){

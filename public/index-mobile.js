@@ -1967,6 +1967,7 @@ function enablePieceDragging(){
 });
 }
 
+
   const SUB_BACK = "https://i.imgur.com/d6JyQJQ.png";
 
   document.querySelectorAll(".piece.token27").forEach(piece => {

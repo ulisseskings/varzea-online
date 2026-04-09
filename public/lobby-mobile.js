@@ -345,6 +345,7 @@ document.getElementById("discordBtnLobby")
 
 });
 
+
 document.getElementById("discordTopBar")
   ?.addEventListener("click", ()=>{
 
