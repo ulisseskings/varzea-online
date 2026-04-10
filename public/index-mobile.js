@@ -2573,6 +2573,17 @@ socket.on("secondHalfStarted", ()=>{
   updateEmptyDeckVisuals();
 });
 
+socket.on("subTokenFlipped", ({ anchor, faceUp }) => {
+  const el = document.querySelector(`[data-anchor="${anchor}"]`);
+  if(el){
+    el.dataset.faceUp = faceUp ? "true" : "false";
+  }
+
+  if(typeof showSubEffect === "function"){
+    showSubEffect();
+  }
+});
+
 
 socket.on("spawnTwist", (card)=>{
 

@@ -505,16 +505,24 @@ socket.on("flipSubToken", ({anchor, faceUp})=>{
 
 });
 
-socket.on("subTokenFlipped", ({ anchor, faceUp }) => {
+socket.on("flipSubToken", ({anchor, faceUp})=>{
 
-  // 🔥 atualiza visual (se você já faz isso em outro lugar, pode remover essa parte)
-  const el = document.querySelector(`[data-anchor="${anchor}"]`);
-  if(el){
-    el.dataset.faceUp = faceUp ? "true" : "false";
+  const roomCode = socket.roomCode;
+  if(!roomCode || !rooms[roomCode]) return;
+
+  const room = rooms[roomCode];
+
+  if(!room.subTokens){
+    room.subTokens = {};
   }
 
-  // 🔥 efeito (IGUAL GOL)
-  showSubEffect();
+  room.subTokens[anchor] = faceUp;
+
+  io.to(roomCode).emit("subTokenFlipped", {
+    anchor,
+    faceUp
+  });
+
 });
   
 
