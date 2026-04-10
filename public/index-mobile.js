@@ -1379,40 +1379,91 @@ function renderHand() {
   highlightSlot(card.type);
 
   openRadial(touch.clientX, touch.clientY, [
- {
-    label: "Jogar",
+
+  ...(card.type === "P" || card.type === "P_red"
+    ? [
+        {
+          label: "Jogar no 1º espaço",
+          action: ()=>{
+            const targetSlot = card.type === "P" ? "P1" : "P1_red";
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: targetSlot
+            });
+
+            selectedCardId = null;
+            clearSelection();
+          }
+        },
+        {
+          label: "Jogar no 2º espaço",
+          action: ()=>{
+            const targetSlot = card.type === "P" ? "P2" : "P2_red";
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: targetSlot
+            });
+
+            selectedCardId = null;
+            clearSelection();
+          }
+        }
+      ]
+    : [
+        {
+          label: "Jogar",
+          action: ()=>{
+
+            const player = playerRole === "blue" ? "blue" : "red";
+
+            if(!canPlayCardFromHand(player, card.type)){
+
+              const totalAMDG = (player === "blue" ? hand : hand_red).filter(c =>
+                c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
+                c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
+              ).length;
+
+              const faltam = Math.max(0, 13 - totalAMDG);
+
+              openInfoModal(
+                "Jogada bloqueada",
+                `Você ainda não pode jogar esta carta.\n\n` +
+                `Faltam ${faltam} carta(s) AMDG para completar 13 na mão,\n` +
+                `enquanto ainda houver cartas disponíveis em todos os decks AMDG.`
+              );
+
+              return;
+            }
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: card.type
+            });
+
+            selectedCardId = null;
+            clearSelection();
+          }
+        }
+      ]),
+
+  {
+    label: "Voltar ao deck",
     action: ()=>{
-
-      const player = playerRole === "blue" ? "blue" : "red";
-
-      if(!canPlayCardFromHand(player, card.type)){
-
-	const totalAMDG = (player === "blue" ? hand : hand_red).filter(c =>
-		c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
-		c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
-	).length;
-
-	const faltam = Math.max(0, 13 - totalAMDG);
-
-	openInfoModal(
-		"Jogada bloqueada",
-		`Você ainda não pode jogar esta carta.\n\n` +
-		`Faltam ${faltam} carta(s) AMDG para completar 13 na mão,\n` +
-		`enquanto ainda houver cartas disponíveis em todos os decks AMDG.`
-	);
-
-	return;
-}
-
-      const slot = document.querySelector(`.slot-pile[data-slot="${card.type}"]`);
-      if(slot){
-        socket.emit("playCardToSlot", {
-          cardId: card.id,
-          slot: card.type
-        });
-      }
+      socket.emit("returnCardToDeck", {
+        cardId: card.id,
+        deck: card.type
+      });
+      selectedCardId = null;
+      clearSelection();
     }
   },
+  {
+    label: "Cancelar",
+    action: ()=>{}
+  },
+
     
     {
       label: "Voltar ao deck",

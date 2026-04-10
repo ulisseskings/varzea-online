@@ -804,42 +804,41 @@ function renderHand() {
 
         openRadial(e.clientX, e.clientY, [
 
+  ...(card.type === "P" || card.type === "P_red"
+    ? [
+        {
+          label: "Jogar no 1º espaço",
+          action: ()=>{
+            const targetSlot = card.type === "P" ? "P1" : "P1_red";
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: targetSlot
+            });
+
+            selectedCardId = null;
+            clearSelection();
+          }
+        },
+        {
+          label: "Jogar no 2º espaço",
+          action: ()=>{
+            const targetSlot = card.type === "P" ? "P2" : "P2_red";
+
+            socket.emit("playCardToSlot", {
+              cardId: card.id,
+              slot: targetSlot
+            });
+
+            selectedCardId = null;
+            clearSelection();
+          }
+        }
+      ]
+    : [
         {
           label: "Jogar",
           action: ()=>{
-
-            const cardBase = card.type.replace("_red", "");
-
-            if(cardBase === "P"){
-
-            clearHighlight();
-
-            if(card.type === "P"){
-              document.querySelector(`.slot-pile[data-slot="P1"]`)
-                ?.classList.add("highlight");
-              document.querySelector(`.slot-pile[data-slot="P2"]`)
-                ?.classList.add("highlight");
-
-              document.querySelector(`[data-deck="P"]`)
-                ?.closest(".deck-wrapper")
-                ?.classList.add("highlight-zone");
-            } else {
-              document.querySelector(`.slot-pile[data-slot="P1_red"]`)
-                ?.classList.add("highlight");
-              document.querySelector(`.slot-pile[data-slot="P2_red"]`)
-                ?.classList.add("highlight");
-
-              document.querySelector(`[data-deck="P_red"]`)
-                ?.closest(".deck-wrapper")
-                ?.classList.add("highlight-zone");
-            }
-
-            selectedCard = card;
-            selectedCardId = card.id;
-            selectedFrom = "hand";
-
-            return;
-          }
 
             if(mustRefillHand(playerRole)){
               alert("Você precisa ter 13 cartas na mão para jogar");
@@ -850,29 +849,32 @@ function renderHand() {
               cardId: card.id,
               slot: card.type
             });
-            selectedCardId = null;
-          }
-        },
 
-        {
-          label: "Voltar para o deck",
-          action: ()=>{
-            socket.emit("returnCardToDeck", {
-              cardId: card.id,
-              deck: card.type
-            });
             selectedCardId = null;
+            clearSelection();
           }
-        },
-
-        {
-          label: "Cancelar",
-          action: ()=>{}
         }
+      ]),
 
-      ]);
-
+  {
+    label: "Voltar para o deck",
+    action: ()=>{
+      socket.emit("returnCardToDeck", {
+        cardId: card.id,
+        deck: card.type
       });
+      selectedCardId = null;
+      clearSelection();
+    }
+  },
+
+  {
+    label: "Cancelar",
+    action: ()=>{}
+  }
+
+]);
+});
 
       groupDiv.appendChild(img);
 
@@ -1349,50 +1351,7 @@ openRadial(e.clientX, e.clientY, [
 
 });
 
-document.querySelectorAll(".slot-pile").forEach(slot=>{
 
-  slot.addEventListener("click", (e)=>{
-
-    console.log("CLICK SLOT", selectedCard, slot.dataset.slot);
-
-    e.stopPropagation();
-
-    if(!selectedCard || !selectedCard.type) return;
-
-    const slotType = slot.dataset.slot;
-    const card = selectedCard;
-
-    // 🔥 valida cor + tipo
-
-    const isCardRed = card.type.includes("_red");
-    const isSlotRed = slotType.includes("_red");
-
-    // cores diferentes → bloqueia
-    if(isCardRed !== isSlotRed) return;
-
-    // pega tipo base (A, M, D, G, P)
-    const cardBase = card.type.replace("_red", "");
-    const slotBase = slotType.replace("_red", "");
-
-    // tipo diferente → bloqueia (exceto P)
-    if(cardBase !== slotBase && cardBase !== "P") return;
-
-    // penalti pode entrar sempre, sem regra das 13 cartas
-    if(cardBase !== "P" && mustRefillHand(playerRole)){
-      alert("Você precisa ter 13 cartas na mão para jogar");
-      return;
-    }
-
-    socket.emit("playCardToSlot", {
-      cardId: card.id,
-      slot: slotType
-    });
-
-    clearSelection();
-
-  });
-
-});
 
 /* ===================== */
 /* DECK DRAG */
