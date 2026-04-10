@@ -1544,7 +1544,7 @@ function removeSlotTopCard(slotEl){
 }
 
 function openSlotView(type){
-  
+
   if(!canOpenSlotPile(type)) return;
 
   const overlay = document.createElement("div");
@@ -1555,10 +1555,10 @@ function openSlotView(type){
 
   slotPiles[type].forEach((card, i)=>{
 
-  const img = document.createElement("img");
-  img.src = card.front;
-  img.className = "slot-big-card";
-  img.style.transform = isRedOwnedCard(card) ? "rotate(180deg)" : "none";
+    const img = document.createElement("img");
+    img.src = card.front;
+    img.className = "slot-big-card";
+    img.style.transform = isRedOwnedCard(card) ? "rotate(180deg)" : "none";
 
     if(card.id === selectedCardId){
       img.classList.add("selected-card");
@@ -1569,7 +1569,9 @@ function openSlotView(type){
       e.stopPropagation();
 
       const isRedSlot = type.includes("_red");
-      const isSharedSlot = type === "P1" || type === "P2" || type === "P1_red" || type === "P2_red";
+      const isSharedSlot =
+        type === "P1" || type === "P2" ||
+        type === "P1_red" || type === "P2_red";
 
       if(!isSharedSlot){
         if(playerRole === "blue" && isRedSlot) return;
@@ -1589,7 +1591,7 @@ function openSlotView(type){
 
       openRadial(e.clientX, e.clientY, [
         {
-          label:"Voltar para a mão",
+          label: "Voltar para a mão",
           action: ()=>{
 
             socket.emit("returnCardToHand", {
@@ -1598,7 +1600,6 @@ function openSlotView(type){
               index: i
             });
 
-            // 🔥 ATUALIZA LOCAL IGUAL AO FAN
             if(playerRole === "blue"){
               hand.push(card);
             }else{
@@ -1614,14 +1615,26 @@ function openSlotView(type){
             renderSlot(type);
 
             overlay.remove();
-          } 
+          }
+        },
+        {
+          label: "Cancelar",
+          action: ()=>{}
         }
       ]);
-
     };
 
     container.appendChild(img);
   });
+
+  const back = document.createElement("button");
+  back.innerText = "Voltar";
+  back.onclick = ()=> overlay.remove();
+
+  overlay.appendChild(container);
+  overlay.appendChild(back);
+
+  document.body.appendChild(overlay);
 }
 
 document.querySelectorAll(".slot-pile").forEach(slot=>{
