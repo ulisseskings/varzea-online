@@ -1497,109 +1497,23 @@ function renderSlot(type) {
 	return;
 }
 
-if(!slotFanOpen[type]){
-
-	slotEl.style.backgroundImage = "none";
-
-	const topCard = ensureSlotTopCard(slotEl);
-	const lastCard = pile[pile.length - 1];
-
-	topCard.src = lastCard.front;
-	topCard.style.transform =
-		`translate(-50%, -50%)${getCardVisualRotation(lastCard)}`;
-
-	document.querySelectorAll(".slot-pile")
-		.forEach(el=>el.classList.remove("last-card"));
-
-	if(type === lastPlayedSlot){
-		slotEl.classList.add("last-card");
-	}
-
-	return;
-}
-
-removeSlotTopCard(slotEl);
 slotEl.style.backgroundImage = "none";
 
-  pile.forEach((card,i)=>{
-    const fan = document.createElement("img");
+const topCard = ensureSlotTopCard(slotEl);
+const lastCard = pile[pile.length - 1];
 
-fan.src = card.front;
-fan.className = "fan-card";
-fan.dataset.slot = type;
-fan.dataset.cardId = card.id;
+topCard.src = lastCard.front;
+topCard.style.transform =
+  `translate(-50%, -50%)${getCardVisualRotation(lastCard)}`;
 
-// ⭐ última carta jogada
-    if(type === lastPlayedSlot && i === pile.length - 1){
+document.querySelectorAll(".slot-pile")
+  .forEach(el => el.classList.remove("last-card"));
 
-      document.querySelectorAll(".last-card")
-        .forEach(el=>{
-          el.classList.remove("last-card");
-        });
+if(type === lastPlayedSlot){
+  slotEl.classList.add("last-card");
+}
 
-      fan.classList.add("last-card");
-
-    }
-
-fan.addEventListener("touchend", (e)=>{
-
-  const touch = e.changedTouches?.[0];
-  if(!touch) return;
-
-  e.stopPropagation();
-
-  const isRedSlot = type.includes("_red");
-  const isSharedSlot = type === "P1" || type === "P2" || type === "P1_red" || type === "P2_red";
-
-  if(!isSharedSlot){
-    if(playerRole === "blue" && isRedSlot) return;
-    if(playerRole === "red" && !isRedSlot) return;
-  }
-
-  selectElement(fan);
-  selectedCard = card;
-  selectedCardId = card.id;
-  selectedFrom = "fan";
-  selectedSlot = type;
-  selectedIndex = i;
-
-  openRadial(touch.clientX, touch.clientY, [
-    {
-      label: "Voltar para a mão",
-      action: ()=>{
-        socket.emit("returnCardToHand", {
-          cardId: card.id,
-          slot: type,
-          index: selectedIndex
-        });
-      }
-    },
-    {
-      label: "Cancelar",
-      action: ()=>{}
-    }
-  ]);
-});
-
-
-    fan.className="fan-card";
-    fan.dataset.slot=type;
-
-    fan.style.left = slotEl.style.left;
-    fan.style.top  = slotEl.style.top;
-    fan.style.transform =
-      `translate(-50%,-50%) rotate(${i*12-20}deg) translateY(-40px)`;
-
-    fan.style.transform += getCardVisualRotation(card);
-
-    const firstPiece = board.querySelector(".piece");
-
-    if(firstPiece){
-      board.insertBefore(fan, firstPiece);
-    }else{
-      board.appendChild(fan);
-    }
-  });
+return;
 }
 
 
@@ -1711,33 +1625,44 @@ function openSlotView(type){
 }
 
 document.querySelectorAll(".slot-pile").forEach(slot=>{
-  let tapTimer = null;
 
-  slot.addEventListener("touchstart",(e)=>{
+  slot.addEventListener("touchend", (e)=>{
+    const touch = e.changedTouches?.[0];
+    if(!touch) return;
+
     e.preventDefault();
+    e.stopPropagation();
 
-    if(tapTimer){
-      clearTimeout(tapTimer);
-      tapTimer = null;
+    document.querySelectorAll(".selected-card")
+      .forEach(el => el.classList.remove("selected-card"));
 
-      const type = slot.dataset.slot;
+    slot.classList.add("selected-card");
 
-      if(!canOpenSlotPile(type)){
-        clearHighlight();
-        clearSelection();
-        return;
-      }
+    const type = slot.dataset.slot;
 
-      slotFanOpen[type] = !slotFanOpen[type];
-      renderSlot(type);
-
-    } else {
-      tapTimer = setTimeout(()=>{
-        tapTimer = null;
-      },250);
+    if(!canOpenSlotPile(type)){
+      clearHighlight();
+      clearSelection();
+      return;
     }
 
-  },{ passive:false });
+    highlightSlot(type);
+
+    openRadial(touch.clientX, touch.clientY, [
+      {
+        label: "Abrir",
+        action: ()=>{
+          openSlotView(type);
+        }
+      },
+      {
+        label: "Cancelar",
+        action: ()=>{}
+      }
+    ]);
+
+  }, { passive:false });
+
 });
 
 /* ===================== */
@@ -2421,19 +2346,60 @@ function startSecondHalf(){
    /* ===================== */
   /* CARTAS FIXAS COM ZOOM */
 
-  document.querySelectorAll(".fixed-board-card").forEach(card=>{
+ document.querySelectorAll(".fixed-board-card").forEach(card=>{
 
-    card.addEventListener("dblclick", ()=>{
+  let holdTimer = null;
+  let startX = 0;
+  let startY = 0;
 
-        const overlay = document.getElementById("twistZoomOverlay");
-        const zoomImg = document.getElementById("twistZoomImg");
+  card.addEventListener("touchstart", (e)=>{
+    const touch = e.touches?.[0];
+    if(!touch) return;
 
-        zoomImg.src = card.src;
-        overlay.style.display = "flex";
+    startX = touch.clientX;
+    startY = touch.clientY;
 
-    });
+    holdTimer = setTimeout(()=>{
 
+      const overlay = document.getElementById("twistZoomOverlay");
+      const zoomImg = document.getElementById("twistZoomImg");
+      if(!overlay || !zoomImg) return;
+
+      zoomImg.src = card.src;
+      overlay.style.display = "flex";
+
+    }, 1000); // 👈 1 segundo igual twist
+
+  }, { passive:true });
+
+  card.addEventListener("touchmove", (e)=>{
+    const touch = e.touches?.[0];
+    if(!touch || !holdTimer) return;
+
+    const dx = Math.abs(touch.clientX - startX);
+    const dy = Math.abs(touch.clientY - startY);
+
+    if(dx > 8 || dy > 8){
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  }, { passive:true });
+
+  card.addEventListener("touchend", ()=>{
+    if(holdTimer){
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
   });
+
+  card.addEventListener("touchcancel", ()=>{
+    if(holdTimer){
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+  });
+
+});
   // ===============================
   // ✅ CONFIRMAR RELOAD AO APERTAR F5
 
