@@ -1101,123 +1101,61 @@ body{
 
 #helpOverlay{
   position: fixed;
-  inset:0;
-
-  background: transparent;
-
-  display:none;
-  justify-content:center;
-  align-items:center;
-
-  pointer-events:none;
-
-  z-index:9999999;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.85);
+  z-index: 9999999;
 }
 
-#helpBox{
-
-position:fixed;
-
-top:70px;
-left:50%;
-
-transform:translateX(-50%) scale(0.7);
-
-width:360px;
-max-width:90%;
-
-background:#0f0f0f;
-
-border:2px solid gold;
-border-radius:14px;
-
-padding:18px;
-
-font-family:Arial;
-color:white;
-
-z-index:999999;
-
+#helpImage{
+  max-width: 90vw;
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(0,0,0,0.6);
 }
 
-#helpTitle{
-font-size:14px;
-margin-bottom:6px;
+#helpPrev,
+#helpNext,
+#helpClose{
+  position: absolute;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  z-index: 10000000;
 }
 
-#helpText{
-font-size:11px;
-line-height:1.4;
+#helpClose{
+  top: 20px;
+  right: 20px;
+  font-size: 28px;
 }
 
-#helpBox{
-pointer-events:auto;
+#helpPrev{
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30px;
 }
 
-#helpBox button{
-
-margin-top:10px;
-padding:6px 12px;
-
-border-radius:8px;
-border:none;
-
-font-size:12px;
-
-background:gold;
-color:black;
-
-cursor:pointer;
-
+#helpNext{
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30px;
 }
 
-#helpBox button:hover{
-background:yellow;
-}
-
-#helpOverlay{
-  position: fixed;
-  inset:0;
-
-  background: rgba(0, 0, 0, 0);
-
-  display:none;
-  justify-content:center;
-  align-items:center;
-
-  z-index:9999999;
-}
-
-#helpBox button{
-
-  margin-top:15px;
-  padding:8px 14px;
-
-  border-radius:8px;
-  border:none;
-
-  cursor:pointer;
-}
-
-
-
-.help-highlight{
-
-outline:3px solid gold;
-box-shadow:0 0 15px gold;
-
-border-radius:8px;
-
-animation:helpPulse 1.2s infinite;
-
-}
-
-@keyframes helpPulse{
-
-0%{box-shadow:0 0 5px gold}
-50%{box-shadow:0 0 20px gold}
-100%{box-shadow:0 0 5px gold}
-
+#helpCounter{
+  position: absolute;
+  bottom: 20px;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
 }
 
 #discordBtn{
@@ -2140,20 +2078,17 @@ animation:helpPulse 1.2s infinite;
   </div>
 </div>
 
-<div id="helpOverlay">
+<div id="helpOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999999; justify-content:center; align-items:center;">
 
-  <div id="helpBox">
+  <button id="helpClose" style="position:absolute; top:20px; right:20px; font-size:28px;">✕</button>
 
-    <div style="margin-top:10px"></div>
+  <button id="helpPrev" style="position:absolute; left:10px; font-size:30px;">❮</button>
 
-    <h3 id="helpTitle"></h3>
-    <div id="helpText"></div>
+  <img id="helpImage" style="max-width:90vw; max-height:85vh; border-radius:12px;">
 
-    <button id="helpPrev">Voltar</button>
-    <button id="helpNext">Próximo</button>
-    <button id="helpClose">Fechar</button>
+  <button id="helpNext" style="position:absolute; right:10px; font-size:30px;">❯</button>
 
-  </div>
+  <div id="helpCounter" style="position:absolute; bottom:20px; color:white; font-weight:bold;"></div>
 
 </div>
 

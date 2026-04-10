@@ -2588,208 +2588,115 @@ function canOpenSlotPile(type){
   return false;
 }
 
-const helpSteps = [
-
-{
-title:"Objetivo do jogo",
-text:"O objetivo é marcar mais gols que o adversário.\n\nA bola avança conforme o jogador que tem sua posse vence as disputadas em direção ao gol.",
-highlight:"#board"
-},
-
-{
-title:"As posições do time",
-text:"Cada carta representa um jogador e sua zona de atuação:\n\nA = Atacante\nM = Meio-campo\nD = Defesa\nG = Goleiro",
-highlight:".fixed-board-card"
-},
-
-{
-title:"Formação Tática",
-text:"Primeiro, defina sua formação tática escolhendo quantos jogadores quer em cada posição.\n\nIsso determina quantas cartas (possibilidades) em cada posição você pode jogar no campo.\n\nCaso queira ver a tabela ampliada, basta clicar com o botão direito ao redor da tabela.",
-highlight:".fixed-board-card"
-},
-
-{
-title:"Alterando a Formação Tática",
-text:"Dependendo do número de cartas em uma posição haverá bônus e ônus que serão somados ou subtraídos do valor das posições durante as disputas.\n\nAo lado da sua area de jogo há tokens (-2, -1 e 1) que podem ser posicionado sobre as areas de disputado no campo, facilitando a soma ou substração dos bônus e ônus durante as disputas.",
-highlight:".formationTable"
-},
-
-{
-title:"Quadro Auxiliar",
-text:"No lado esquerdo da área de jogo, há um quadro auxiliar mostrando:\n\n- O número de cartas em cada posição que o jogador precisa ter em mãos, conforme sua formação tática, para jogar cartas em campo.\n\n Os bônus e ônus que você deve somar as suas disputas em campo",
-highlight:".hand-counter"
-},
-
-{
-title:"Sua mão de cartas",
-text:"Você começa com 13 cartas na mão.\n\nAntes de jogar no campo você deve sempre manter 13 cartas na mão, comprando dos decks.",
-highlight:"#hand, #hand_red"
-},
-
-{
-title:"Comprar cartas",
-text:"Clique sobre o deck e em 'Comprar'.\n\nCada deck contém cartas de uma posição específica.",
-highlight:'[data-deck="A"], [data-deck="M"], [data-deck="D"], [data-deck="G"], [data-deck="A_red"], [data-deck="M_red"], [data-deck="D_red"], [data-deck="G_red"]'
-},
-
-{
-title:"Disputas em campo",
-text:"Cada posição disputa contra a posição equivalente do adversário na zona do campo.\n\nDefesa (D) vs Meio-campo (M)\n\nAtaque (A) vs Goleiro (G)\n\nQuem está com a posse da bola avança em direção ao gol jogando uma carta primeiro seguido por seu adversário.\n\nCada carta tem um valor numérico, e bônus ou ônus da formação tática são aplicados a esse valor durante as disputas.",
-highlight:".slot-pile"
-},
-
-
-{
-title:"Início da Partida",
-text:"O jogo começa na disputa no meio-campo entre .",
-highlight:".slot-pile"
-},
-{
-title:"Resultado da disputa",
-text:"A carta com maior valor vence.\n\nQuem vencer empurra a bola para o lado do adversário.",
-highlight:".ball"
-},
-
-{
-title:"Movimento da bola",
-text:"A bola avança ou recua conforme as disputas.\n\nSe ela chegar ao gol do adversário, você marca um gol.",
-highlight:".ball"
-},
-
-{
-title:"Cartas Twist",
-text:"Cartas Twist criam eventos especiais durante o jogo.\n\nElas podem alterar posições, efeitos ou situações da partida.",
-highlight:'[data-deck="T"]'
-},
-
-{
-title:"Penaltis",
-text:"Cartas de penalti podem ser jogadas nas áreas de penalti.\n\nElas criam disputas diretas que podem resultar em gol.",
-highlight: '[data-slot="A"],[data-slot="M"],[data-slot="D"],[data-slot="G"],[data-slot="A_red"],[data-slot="M_red"],[data-slot="D_red"],[data-slot="G_red"],.bonus2a,.bonus1a,.onus1a,.bonus2v,.bonus1v,.onus1v'
-},
-
-{
-title:"Primeiro e segundo tempo",
-text:"Quando um jogador não puder mais jogar cartas em campo, o primeiro tempo termina.\n\nO segundo tempo começa com as cartas retornando aos decks.",
-highlight:"#tempoBtn"
-},
-
-{
-title:"Movendo peças",
-text:"As peças do campo e a bola podem ser movidas livremente pelos jogadores.\n\nUse isso para organizar o jogo.",
-highlight:".piece"
-},
-
-{
-title:"Zoom em cartas",
-text:"Clique com o botão direito do mouse sobre uma carta Twist para ampliá-la e vê-la melhor.",
-highlight:".twist-card"
-},
-
-{
-title:"Espectadores",
-text:"Espectadores podem clicar no campo para marcar pontos e chamar atenção dos jogadores.",
-highlight:"#board"
-},
-
-{
-title:"Dica estratégica",
-text:"Controle o meio-campo para dominar a posse da bola.\n\nDefesa protege seu gol.\n\nAtaque pressiona o adversário.",
-highlight:".slot-pile"
-},
-
-{
-title:"Pronto para jogar!",
-text:"Agora você já sabe o básico.\n\nBoa partida e que vença o melhor time!",
-highlight:"#board"
-}
-
+const constHelpImages = [
+  "https://i.imgur.com/bZw9ABv.jpg",
+  "https://i.imgur.com/JWx1xGy.jpg",
+  "https://i.imgur.com/kwxxQWo.jpg",
+  "https://i.imgur.com/1TyLqAW.jpg",
+  "https://i.imgur.com/9QPNDGp.jpg",
+  "https://i.imgur.com/lete13d.jpg",
+  "https://i.imgur.com/EsXZjW7.jpg",
+  "https://i.imgur.com/BUytZWp.jpg",
+  "https://i.imgur.com/GNowzvh.jpg",
+  "https://i.imgur.com/ogJzC3c.jpg",
+  "https://i.imgur.com/Hwx2B3m.jpg",
+  "https://i.imgur.com/SSsUxnB.jpg"
 ];
 
 let helpIndex = 0;
 
 const helpBtn = document.getElementById("helpBtn");
 const helpOverlay = document.getElementById("helpOverlay");
-const helpTitle = document.getElementById("helpTitle");
-const helpText = document.getElementById("helpText");
+const helpImage = document.getElementById("helpImage");
 const helpPrevBtn = document.getElementById("helpPrevBtn");
 const helpNextBtn = document.getElementById("helpNextBtn");
 const helpExitBtn = document.getElementById("helpExitBtn");
+const helpCounter = document.getElementById("helpCounter");
 
-helpBtn.onclick = () => {
-helpOverlay.style.display = "flex";
-helpIndex = 0;
-showHelpStep();
-};
+function updateHelpImage(){
+  if(!helpImage) return;
 
-helpNextBtn.onclick = () => {
+  helpImage.src = constHelpImages[helpIndex];
 
-  helpIndex++;
-
-  if(helpIndex >= helpSteps.length){
-    closeHelp();
-    return;
+  if(helpCounter){
+    helpCounter.innerText = `${helpIndex + 1} / ${constHelpImages.length}`;
   }
 
-  showHelpStep();
-};
-helpPrevBtn.onclick = () => {
-
-  helpIndex--;
-
-  if(helpIndex < 0){
-    helpIndex = 0;
+  if(helpPrevBtn){
+    helpPrevBtn.style.opacity = helpIndex === 0 ? "0.45" : "1";
   }
 
-  showHelpStep();
-};
-
-helpExitBtn.onclick = () => {
-  closeHelp();
-};
-
-function clampTokenPosition(x, y){
-
-  const MIN_X = 0;
-  const MAX_X = 1152;
-
-  const MIN_Y = 49;
-  const MAX_Y = 580;
-
-  return {
-    x: Math.max(MIN_X, Math.min(MAX_X, x)),
-    y: Math.max(MIN_Y, Math.min(MAX_Y, y))
-  };
+  if(helpNextBtn){
+    helpNextBtn.style.opacity = helpIndex === constHelpImages.length - 1 ? "0.45" : "1";
+  }
 }
 
-function showHelpStep(){
-
-  document.querySelectorAll(".help-highlight")
-    .forEach(el => el.classList.remove("help-highlight"));
-
-  const step = helpSteps[helpIndex];
-
-  helpTitle.innerText = step.title;
-  helpText.innerText  = step.text;
-
-  // 🔥 agora suporta múltiplos highlights
-  const elements = document.querySelectorAll(step.highlight);
-
-  elements.forEach(el=>{
-    el.classList.add("help-highlight");
-  });
-
-  updateHelpButtons();
-
+function openHelp(){
+  helpIndex = 0;
+  helpOverlay.style.display = "flex";
+  updateHelpImage();
 }
 
 function closeHelp(){
-helpOverlay.style.display = "none";
-document.querySelectorAll(".help-highlight")
-.forEach(el=>el.classList.remove("help-highlight"));
-
-updateHelpButtons();
+  helpOverlay.style.display = "none";
 }
+
+function nextHelpImage(){
+  if(helpIndex < constHelpImages.length - 1){
+    helpIndex++;
+    updateHelpImage();
+  }
+}
+
+function prevHelpImage(){
+  if(helpIndex > 0){
+    helpIndex--;
+    updateHelpImage();
+  }
+}
+
+if(helpBtn){
+  helpBtn.onclick = openHelp;
+}
+
+if(helpNextBtn){
+  helpNextBtn.onclick = nextHelpImage;
+}
+
+if(helpPrevBtn){
+  helpPrevBtn.onclick = prevHelpImage;
+}
+
+if(helpExitBtn){
+  helpExitBtn.onclick = closeHelp;
+}
+
+if(helpOverlay){
+  helpOverlay.addEventListener("click", (e)=>{
+    if(
+      e.target === helpOverlay ||
+      e.target.classList.contains("help-backdrop")
+    ){
+      closeHelp();
+    }
+  });
+}
+
+document.addEventListener("keydown", (e)=>{
+  if(!helpOverlay || helpOverlay.style.display !== "flex") return;
+
+  if(e.key === "Escape"){
+    closeHelp();
+  }
+
+  if(e.key === "ArrowRight"){
+    nextHelpImage();
+  }
+
+  if(e.key === "ArrowLeft"){
+    prevHelpImage();
+  }
+});
 
 function selectElement(el){
   

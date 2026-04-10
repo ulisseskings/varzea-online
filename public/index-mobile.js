@@ -2961,166 +2961,99 @@ function canOpenSlotPile(type){
   return false;
 }
 
-let helpStep = 0;
-
-const steps=[
-
-{
-title:"Bem-vindo ao Várzea Online",
-text:"Este guia rápido mostra como jogar e usar os controles na tela.\n\nToque em Próximo para continuar.",
-highlight:null
-},
-
-{
-title:"Objetivo do jogo",
-text:"Vença disputas de cartas para avançar no campo e marcar gols.\n\nA bola se move conforme o resultado das disputas.",
-highlight:".ball"
-},
-
-{
-title:"Posições do time",
-text:"Cada carta representa uma posição:\n\nA = Atacante\nM = Meio-campo\nD = Defesa\nG = Goleiro\n\nCada posição disputa apenas contra a mesma posição do adversário.",
-highlight:".fixed-board-card"
-},
-
-{
-title:"Decks de compra",
-text:"Toque em um deck para comprar uma carta.\n\nVocê deve manter 13 cartas na mão antes de jogar no campo.",
-highlight:'[data-deck="A"], [data-deck="M"], [data-deck="D"], [data-deck="G"]'
-},
-
-{
-title:"Sua mão de cartas",
-text:"As cartas compradas aparecem aqui.\n\nToque em uma carta para selecioná-la.",
-highlight:"#hand"
-},
-
-{
-title:"Jogando cartas",
-text:"Depois de selecionar uma carta, arraste ela até a posição correspondente no campo.",
-highlight:".slot-pile"
-},
-
-{
-title:"Disputa de cartas",
-text:"Cada carta possui valor de 1 a 11.\n\nA carta de maior valor vence a disputa.",
-highlight:".fan-card"
-},
-
-{
-title:"Movimento da bola",
-text:"Quando você vence uma disputa, a bola avança no campo em direção ao gol adversário.",
-highlight:".ball"
-},
-
-{
-title:"Movendo peças",
-text:"Segure uma peça do campo e arraste para mover.\n\nIsso inclui jogadores e a bola.",
-highlight:".piece"
-},
-
-{
-title:"Tokens de substituição",
-text:"Tokens de substituição viram com um toque simples.\n\nUse isso para indicar substituições.",
-highlight:".token27"
-},
-
-{
-title:"Pilhas de cartas",
-text:"Toque duas vezes em uma pilha para ver todas as cartas jogadas naquela posição.",
-highlight:".slot-pile"
-},
-
-{
-title:"Retirar carta da pilha",
-text:"Depois de abrir a pilha, arraste uma carta para devolver à mão ou ao deck.",
-highlight:".fan-card"
-},
-
-{
-title:"Cartas Twist",
-text:"Cartas Twist criam eventos especiais na partida.",
-highlight:'[data-deck="T"]'
-},
-
-{
-title:"Zoom das Twist",
-text:"Segure a carta Twist para ampliar e ver melhor.",
-highlight:".twist-card"
-},
-
-{
-title:"Girar Twist",
-text:"Toque duas vezes na carta Twist para girar.",
-highlight:".twist-card"
-},
-
-{
-title:"Fim do primeiro tempo",
-text:"Quando um jogador não puder mais jogar cartas de uma posição, o primeiro tempo termina.\n\nToque no botão para iniciar o 2º tempo.",
-highlight:"#tempoBtn"
-},
-
-{
-title:"Dica de estratégia",
-text:"Controlar o meio-campo ajuda a dominar a posse da bola.\n\nDefesa protege seu gol e ataque pressiona o adversário.",
-highlight:".slot-pile"
-},
-
-{
-title:"Fim do tutorial",
-text:"Você pode abrir este guia novamente pelo botão ?.\n\nPara aprender todas as regras consulte o Manual de Regras.",
-highlight:null
-}
-
+const constHelpImages = [
+  "https://i.imgur.com/bZw9ABv.jpg",
+  "https://i.imgur.com/JWx1xGy.jpg",
+  "https://i.imgur.com/kwxxQWo.jpg",
+  "https://i.imgur.com/1TyLqAW.jpg",
+  "https://i.imgur.com/9QPNDGp.jpg",
+  "https://i.imgur.com/lete13d.jpg",
+  "https://i.imgur.com/EsXZjW7.jpg",
+  "https://i.imgur.com/BUytZWp.jpg",
+  "https://i.imgur.com/GNowzvh.jpg",
+  "https://i.imgur.com/ogJzC3c.jpg",
+  "https://i.imgur.com/Hwx2B3m.jpg",
+  "https://i.imgur.com/SSsUxnB.jpg"
 ];
 
+let helpStep = 0;
 
+const helpBtn = document.getElementById("helpBtn");
+const helpOverlay = document.getElementById("helpOverlay");
+const helpImage = document.getElementById("helpImage");
+const helpNext = document.getElementById("helpNext");
+const helpPrev = document.getElementById("helpPrev");
+const helpClose = document.getElementById("helpClose");
+const helpCounter = document.getElementById("helpCounter");
 
-function showHelpStep(){
+function updateHelpImage(){
+  if(!helpImage) return;
 
-document.querySelectorAll(".help-highlight")
-.forEach(el=>el.classList.remove("help-highlight"));
+  helpImage.src = constHelpImages[helpStep];
 
-const step=steps[helpStep];
+  if(helpCounter){
+    helpCounter.innerText = `${helpStep + 1} / ${constHelpImages.length}`;
+  }
 
-document.getElementById("helpTitle").innerText=step.title;
-document.getElementById("helpText").innerText=step.text;
+  if(helpPrev){
+    helpPrev.style.opacity = helpStep === 0 ? "0.45" : "1";
+  }
 
-if(step.highlight){
-
-document.querySelectorAll(step.highlight)
-.forEach(el=>el.classList.add("help-highlight"));
-
+  if(helpNext){
+    helpNext.style.opacity = helpStep === constHelpImages.length - 1 ? "0.45" : "1";
+  }
 }
 
+function openHelp(){
+  helpStep = 0;
+  helpOverlay.style.display = "flex";
+  updateHelpImage();
 }
 
-document.getElementById("helpBtn").onclick = ()=>{
-
-helpStep = 0;
-
-document.getElementById("helpOverlay").style.display="flex";
-
-showHelpStep();
-
-};
-
-document.getElementById("helpNext").onclick = ()=>{
-
-helpStep++;
-
-if(helpStep >= steps.length){
-
-closeHelp();
-
-return;
-
+function closeHelpCarousel(){
+  helpOverlay.style.display = "none";
 }
 
-showHelpStep();
+function nextHelpImage(){
+  if(helpStep < constHelpImages.length - 1){
+    helpStep++;
+    updateHelpImage();
+  }
+}
 
-};
+function prevHelpImage(){
+  if(helpStep > 0){
+    helpStep--;
+    updateHelpImage();
+  }
+}
+
+if(helpBtn){
+  helpBtn.onclick = openHelp;
+}
+
+if(helpNext){
+  helpNext.onclick = nextHelpImage;
+}
+
+if(helpPrev){
+  helpPrev.onclick = prevHelpImage;
+}
+
+if(helpClose){
+  helpClose.onclick = closeHelpCarousel;
+}
+
+if(helpOverlay){
+  helpOverlay.addEventListener("click", (e)=>{
+    if(
+      e.target === helpOverlay ||
+      e.target.classList.contains("help-backdrop")
+    ){
+      closeHelpCarousel();
+    }
+  });
+}
 
 function clampTokenPosition(x, y){
 
