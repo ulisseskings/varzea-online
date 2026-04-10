@@ -1291,36 +1291,31 @@ function canPlayCardFromHand(player, cardType){
 
 function renderHand() {
 
-    const handDiv = handInnerBlue;
-    const handDivRed = handInnerRed;
-  
+  const handDiv = handInnerBlue;
+  const handDivRed = handInnerRed;
+
   // ✅ preserva contador e remove só as cartas/grupos
   handDiv.querySelectorAll(".hand-group").forEach(g => g.remove());
   handDivRed.querySelectorAll(".hand-group").forEach(g => g.remove());
-
 
   function renderGroup(handArray, targetDiv){
 
     const isRedHand = targetDiv.closest("#hand_red") !== null;
 
     const groups = {
-      A:[],M:[],D:[],G:[],P:[],
-      A_red:[],M_red:[],D_red:[],G_red:[],P_red:[]
+      A: [], M: [], D: [], G: [], P: [],
+      A_red: [], M_red: [], D_red: [], G_red: [], P_red: []
     };
 
     handArray.forEach(card => {
       if(groups[card.type]) groups[card.type].push(card);
     });
 
-    // Azul só mostra cartas azuis
-      const order = isRedHand
-      ? ["P_red", null,"G_red", "D_red","M_red","A_red", ]
-        : ["A","M","D","G", null,"P"];
+    const order = isRedHand
+      ? ["P_red", null, "G_red", "D_red", "M_red", "A_red"]
+      : ["A", "M", "D", "G", null, "P"];
 
-
-
-
-    order.forEach(type=>{
+    order.forEach(type => {
 
       if(type === null){
         const spacerGroup = document.createElement("div");
@@ -1328,160 +1323,140 @@ function renderHand() {
         targetDiv.appendChild(spacerGroup);
         return;
       }
-      if(groups[type].length===0) return;
 
+      if(groups[type].length === 0) return;
 
       const groupDiv = document.createElement("div");
-      groupDiv.className="hand-group";
+      groupDiv.className = "hand-group";
 
       const sortedCards = isRedHand
-        ? [...groups[type]].sort((a,b)=>b.value-a.value) // vermelho decrescente
-        : [...groups[type]].sort((a,b)=>a.value-b.value); // azul crescente
+        ? [...groups[type]].sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+        : [...groups[type]].sort((a, b) => (a.value ?? 0) - (b.value ?? 0));
 
-      sortedCards.forEach((card,i)=>{
+      sortedCards.forEach((card, i) => {
 
         const img = document.createElement("img");
         img.src = card.front;
-        img.className="hand-card";
+        img.className = "hand-card";
 
         if(card.id === selectedCardId){
-          img.classList.add("selected-card");if(card.id === selectedCardId){
-  img.classList.add("selected-card");
-}
+          img.classList.add("selected-card");
         }
 
-        // ⭐ leque visível
         img.style.marginLeft = i === 0 ? "0px" : "-25px";
 
-        // ⭐ ordem visual correta
         if(isRedHand){
-          img.style.zIndex = sortedCards.length - i; // invertido
-        }else{
+          img.style.zIndex = sortedCards.length - i;
+        } else {
           img.style.zIndex = i + 1;
         }
 
-        let touchCard = null;
+        img.addEventListener("touchend", function(e){
 
-    img.addEventListener("touchend", function(e){
+          const touch = e.changedTouches?.[0];
+          if(!touch) return;
 
-  const touch = e.changedTouches?.[0];
-  if(!touch) return;
+          e.preventDefault();
+          e.stopPropagation();
 
-  e.preventDefault();
-  e.stopPropagation();
+          selectElement(img);
 
-  selectElement(img);
+          selectedCard = card;
+          selectedCardId = card.id;
+          selectedFrom = "hand";
 
-  selectedCard = card;
-  selectedCardId = card.id;
-  selectedFrom = "hand";
+          highlightSlot(card.type);
 
-  highlightSlot(card.type);
+          openRadial(touch.clientX, touch.clientY, [
 
-  openRadial(touch.clientX, touch.clientY, [
+            ...(card.type === "P" || card.type === "P_red"
+              ? [
+                  {
+                    label: "Jogar no 1º espaço",
+                    action: ()=>{
+                      const targetSlot = card.type === "P" ? "P1" : "P1_red";
 
-  ...(card.type === "P" || card.type === "P_red"
-    ? [
-        {
-          label: "Jogar no 1º espaço",
-          action: ()=>{
-            const targetSlot = card.type === "P" ? "P1" : "P1_red";
+                      socket.emit("playCardToSlot", {
+                        cardId: card.id,
+                        slot: targetSlot
+                      });
 
-            socket.emit("playCardToSlot", {
-              cardId: card.id,
-              slot: targetSlot
-            });
+                      selectedCardId = null;
+                      clearSelection();
+                    }
+                  },
+                  {
+                    label: "Jogar no 2º espaço",
+                    action: ()=>{
+                      const targetSlot = card.type === "P" ? "P2" : "P2_red";
 
-            selectedCardId = null;
-            clearSelection();
-          }
-        },
-        {
-          label: "Jogar no 2º espaço",
-          action: ()=>{
-            const targetSlot = card.type === "P" ? "P2" : "P2_red";
+                      socket.emit("playCardToSlot", {
+                        cardId: card.id,
+                        slot: targetSlot
+                      });
 
-            socket.emit("playCardToSlot", {
-              cardId: card.id,
-              slot: targetSlot
-            });
+                      selectedCardId = null;
+                      clearSelection();
+                    }
+                  }
+                ]
+              : [
+                  {
+                    label: "Jogar",
+                    action: ()=>{
 
-            selectedCardId = null;
-            clearSelection();
-          }
-        }
-      ]
-    : [
-        {
-          label: "Jogar",
-          action: ()=>{
+                      const player = playerRole === "blue" ? "blue" : "red";
 
-            const player = playerRole === "blue" ? "blue" : "red";
+                      if(!canPlayCardFromHand(player, card.type)){
 
-            if(!canPlayCardFromHand(player, card.type)){
+                        const totalAMDG = (player === "blue" ? hand : hand_red).filter(c =>
+                          c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
+                          c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
+                        ).length;
 
-              const totalAMDG = (player === "blue" ? hand : hand_red).filter(c =>
-                c.type === "A" || c.type === "M" || c.type === "D" || c.type === "G" ||
-                c.type === "A_red" || c.type === "M_red" || c.type === "D_red" || c.type === "G_red"
-              ).length;
+                        const faltam = Math.max(0, 13 - totalAMDG);
 
-              const faltam = Math.max(0, 13 - totalAMDG);
+                        openInfoModal(
+                          "Jogada bloqueada",
+                          `Você ainda não pode jogar esta carta.\n\n` +
+                          `Faltam ${faltam} carta(s) AMDG para completar 13 na mão,\n` +
+                          `enquanto ainda houver cartas disponíveis em todos os decks AMDG.`
+                        );
 
-              openInfoModal(
-                "Jogada bloqueada",
-                `Você ainda não pode jogar esta carta.\n\n` +
-                `Faltam ${faltam} carta(s) AMDG para completar 13 na mão,\n` +
-                `enquanto ainda houver cartas disponíveis em todos os decks AMDG.`
-              );
+                        return;
+                      }
 
-              return;
+                      socket.emit("playCardToSlot", {
+                        cardId: card.id,
+                        slot: card.type
+                      });
+
+                      selectedCardId = null;
+                      clearSelection();
+                    }
+                  }
+                ]),
+
+            {
+              label: "Voltar ao deck",
+              action: ()=>{
+                socket.emit("returnCardToDeck", {
+                  cardId: card.id,
+                  deck: card.type
+                });
+
+                selectedCardId = null;
+                clearSelection();
+              }
+            },
+            {
+              label: "Cancelar",
+              action: ()=>{}
             }
 
-            socket.emit("playCardToSlot", {
-              cardId: card.id,
-              slot: card.type
-            });
+          ]);
 
-            selectedCardId = null;
-            clearSelection();
-          }
-        }
-      ]),
-
-  {
-    label: "Voltar ao deck",
-    action: ()=>{
-      socket.emit("returnCardToDeck", {
-        cardId: card.id,
-        deck: card.type
-      });
-      selectedCardId = null;
-      clearSelection();
-    }
-  },
-  {
-    label: "Cancelar",
-    action: ()=>{}
-  },
-
-    
-    {
-      label: "Voltar ao deck",
-      action: ()=>{
-        socket.emit("returnCardToDeck", {
-          cardId: card.id,
-          deck: card.type
-        });
-      }
-    },
-    {
-      label: "Cancelar",
-      action: ()=>{}
-    }
-  ]);
-
-}, { passive:false });
-        
+        }, { passive: false });
 
         groupDiv.appendChild(img);
       });
@@ -1490,25 +1465,21 @@ function renderHand() {
     });
   }
 
-// Azul renderiza apenas azul
-if (playerRole === "blue") {
-  renderGroup(hand, handDiv);
-}
+  // Azul renderiza apenas azul
+  if(playerRole === "blue"){
+    renderGroup(hand, handDiv);
+  }
 
-// Vermelho renderiza apenas vermelho
-if (playerRole === "red") {
-  renderGroup(hand_red, handDivRed);
-}
+  // Vermelho renderiza apenas vermelho
+  if(playerRole === "red"){
+    renderGroup(hand_red, handDivRed);
+  }
 
-// Espectador não renderiza nenhuma mão
+  // Espectador não renderiza nenhuma mão
 
   updateHandCounters();
   updateFormationUI();
-
 }
-
-
-
   
 /* ===================== */
 /* SLOT */
