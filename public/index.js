@@ -45,8 +45,128 @@ let lastMouse = { x:0, y:0 };
 document.addEventListener("mousemove", (e)=>{
   lastMouse.x = e.clientX;
   lastMouse.y = e.clientY;
+
+  if(tooltipEl?.classList.contains("show")){
+    moveTooltip(e.clientX, e.clientY);
+  }
 });
 
+const TOOLTIP_DELAY = 1500;
+const TOOLTIP_OFFSET_Y = 30;
+
+let tooltipTimer = null;
+let tooltipCurrentTarget = null;
+let tooltipCurrentText = "";
+
+const tooltipEl = document.getElementById("gameTooltip");
+
+function moveTooltip(x, y){
+  if(!tooltipEl) return;
+
+  let left = x;
+  let top = y - TOOLTIP_OFFSET_Y;
+
+  tooltipEl.style.left = left + "px";
+  tooltipEl.style.top = top + "px";
+
+  // ajusta depois de medir
+  const rect = tooltipEl.getBoundingClientRect();
+
+  if(rect.left < 6){
+    left = rect.width / 2 + 6;
+  }
+
+  if(rect.right > window.innerWidth - 6){
+    left = window.innerWidth - (rect.width / 2) - 6;
+  }
+
+  if(rect.top < 6){
+    top = y + 22;
+    tooltipEl.style.top = top + "px";
+  }
+
+  tooltipEl.style.left = left + "px";
+}
+
+function bindTooltip(selector, getText){
+  document.addEventListener("mouseover", (e)=>{
+    const el = e.target.closest(selector);
+    if(!el) return;
+
+    const text = typeof getText === "function" ? getText(el) : getText;
+    if(!text) return;
+
+    scheduleTooltip(el, text, e);
+  });
+
+  document.addEventListener("mouseout", (e)=>{
+    const el = e.target.closest(selector);
+    if(!el) return;
+
+    const related = e.relatedTarget;
+    if(related && el.contains(related)) return;
+
+    clearTooltipTimer();
+    hideTooltip();
+  });
+
+  document.addEventListener("mousedown", (e)=>{
+    const el = e.target.closest(selector);
+    if(!el) return;
+
+    clearTooltipTimer();
+    hideTooltip();
+  });
+
+  document.addEventListener("click", (e)=>{
+    const el = e.target.closest(selector);
+    if(!el) return;
+
+    clearTooltipTimer();
+    hideTooltip();
+  });
+}
+
+function showTooltip(text, x = lastMouse.x, y = lastMouse.y){
+  if(!tooltipEl || !text) return;
+
+  tooltipEl.textContent = text;
+  tooltipEl.classList.add("show");
+
+  moveTooltip(x, y);
+}
+
+function hideTooltip(){
+  if(!tooltipEl) return;
+
+  tooltipEl.classList.remove("show");
+  tooltipEl.textContent = "";
+  tooltipCurrentText = "";
+  tooltipCurrentTarget = null;
+}
+
+function clearTooltipTimer(){
+  if(tooltipTimer){
+    clearTimeout(tooltipTimer);
+    tooltipTimer = null;
+  }
+}
+
+function scheduleTooltip(target, text, event){
+  clearTooltipTimer();
+  hideTooltip();
+
+  tooltipCurrentTarget = target;
+  tooltipCurrentText = text;
+
+  const startX = event.clientX;
+  const startY = event.clientY;
+
+  tooltipTimer = setTimeout(()=>{
+    if(tooltipCurrentTarget !== target) return;
+    showTooltip(text, startX, startY);
+  }, TOOLTIP_DELAY);
+}
 
 let lastPlayedColor = null;
 
@@ -780,6 +900,7 @@ function renderHand() {
         }
         img.src = card.front;
         img.className="hand-card";
+        img.dataset.cardType = card.type;
 
         if(isRedHand){
           img.style.zIndex = groups[type].length - i;
@@ -3052,3 +3173,94 @@ document.getElementById("formationCancel").onclick = ()=>{
 };
 
 
+function setupGameTooltips(){
+
+  // =====================
+  // CARTAS DA MÃO
+  bindTooltip(".hand-card", (el)=>{
+  const cardType = el.dataset.cardType;
+
+  if(cardType === "P" || cardType === "P_red"){
+    return "Clique para escolher em qual espaço de pênalti jogar ou devolver ao deck.";
+  }
+
+  return "Clique para jogar no slot correspondente ou devolver ao deck.";
+});
+
+  // =====================
+  // SLOTS
+  bindTooltip(".slot-pile", "Clique para abrir o slot e ver as cartas.");
+
+  // =====================
+  // CARTAS ABERTAS NO SLOT
+  bindTooltip(".fan-card", "Clique para devolver a carta para a mão.");
+  bindTooltip(".slot-big-card", "Clique para devolver a carta para a mão.");
+
+  // =====================
+  // DECKS
+  bindTooltip(".deck-slot[data-deck]", (el)=>{
+    const deckType = el.dataset.deck;
+
+    if(deckType === "T"){
+      return "Clique para comprar uma carta de twist. Use o botão amarelo para embaralhar.";
+    }
+
+    return "Clique para comprar uma carta deste deck. Use o botão amarelo para embaralhar.";
+  });
+
+  // =====================
+  // BOTÃO DE EMBARALHAR
+  bindTooltip(".shuffle-btn", "Clique para embaralhar este deck.");
+
+  // =====================
+  // PEÇAS / TOKENS
+  bindTooltip(".piece", (el)=>{
+
+    if(
+      el.dataset.anchor === "tokengola" ||
+      el.dataset.anchor === "tokengolv"
+    ){
+      return "Arraste o token até a posição desejada.";
+    }
+
+    if(
+      el.dataset.anchor?.toLowerCase().includes("sub") ||
+      el.classList.contains("sub-token")
+    ){
+      return "Dê um duplo clique para virar o token.";
+    }
+
+    if(el.classList.contains("ball")){
+      return "Arraste a bola até a posição desejada.";
+    }
+
+    return "Arraste a peça até a posição desejada.";
+  });
+
+  // =====================
+  // CARTAS DE TWIST NA MESA
+  bindTooltip(".twist-card", "Arraste para mover, dê um duplo clique para girar e segure para ampliar.");
+
+  // =====================
+  // TABELAS DE FORMAÇÃO
+  bindTooltip("#formationTable, #formationTable_red", "Clique para alterar a formação. Dê um duplo clique ao redor da tabela para vê-la ampliada.");
+
+  // =====================
+  // CÉLULAS DA FORMAÇÃO
+  bindTooltip(".formation-cell", "Dê um duplo clique ao redor da tabela para vê-la ampliada.");
+
+  // =====================
+  // CONTROLES / UI
+  bindTooltip("#roomCodeBox", "Clique para copiar o código da sala.");
+  bindTooltip("#musicToggle", "Clique para ligar ou desligar a música.");
+  bindTooltip("#sfxToggle", "Clique para ligar ou desligar os efeitos sonoros.");
+  bindTooltip("#volumeSlider", "Arraste para ajustar o volume do jogo.");
+  bindTooltip("#actionLogToggle", "Clique para abrir ou fechar o log de ações.");
+  bindTooltip("#helpBtn", "Clique para abrir as imagens de ajuda.");
+  bindTooltip("#helpPrevBtn", "Clique para ver a imagem anterior.");
+  bindTooltip("#helpNextBtn", "Clique para ver a próxima imagem.");
+  bindTooltip("#helpExitBtn", "Clique para fechar a ajuda.");
+  bindTooltip("#discordBtn", "Clique para acessar o Discord oficial do jogo.");
+}
+
+setupGameTooltips();

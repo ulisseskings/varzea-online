@@ -1520,6 +1520,40 @@
     max-width: 80vw;
   }
 
+  /* ===================== */
+/* TOOLTIP DE AJUDA POR HOVER */
+
+#gameTooltip{
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -100%);
+  display: none;
+
+  max-width: 260px;
+  padding: 6px 10px;
+
+  background: rgba(0,0,0,0.88);
+  color: white;
+
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+
+  white-space: normal;
+  pointer-events: none;
+  z-index: 10000001;
+
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
+
+#gameTooltip.show{
+  display: block;
+}
 
     </style>
   </head>
@@ -1528,6 +1562,8 @@
 
 
   <body>
+
+    <div id="gameTooltip"></div>
 
   <div id="subOverlay" class="goal-overlay" style="display:none;">
     <img src="https://i.imgur.com/7mvFh4V.gif">
