@@ -395,27 +395,47 @@ const playerRole = sessionStorage.getItem("playerRole");
 
 function scaleBoard(){
 
-  const baseWidth  = 1152;
+  const baseWidth = 1152;
   const baseHeight = 658;
 
-  const screenWidth  = window.innerWidth;
-  const screenHeight = window.innerHeight;
+  const topbarHeight = document.getElementById("topbar")?.offsetHeight || 55;
+  const handHeight = 90;
+  const safeTop = 10;
+  const safeBottom = 20;
+  const safeSides = 20;
 
-  const scaleX = screenWidth  / baseWidth;
-  const scaleY = screenHeight / baseHeight;
+  const availableWidth = window.innerWidth - safeSides;
+  const availableHeight =
+    window.innerHeight - topbarHeight - handHeight - safeTop - safeBottom;
+
+  const scaleX = availableWidth / baseWidth;
+  const scaleY = availableHeight / baseHeight;
 
   const scale = Math.min(scaleX, scaleY) * manualZoom;
-  // 👆 era Math.min, isso deixava pequeno
 
-  if (playerRole === "red") {
+  if(playerRole === "red"){
     board.style.transform =
       `translate(-50%, -50%) scale(${scale}) rotate(180deg)`;
-  } else {
+  }else{
     board.style.transform =
       `translate(-50%, -50%) scale(${scale})`;
   }
-
 }
+
+function positionBoardDesktop(){
+  const topbarHeight = document.getElementById("topbar")?.offsetHeight || 55;
+  const handHeight = 90;
+
+  const usableTop = topbarHeight;
+  const usableBottom = handHeight;
+  const usableHeight = window.innerHeight - usableTop - usableBottom;
+
+  const centerY = usableTop + (usableHeight / 2);
+
+  board.style.left = "50%";
+  board.style.top = centerY + "px";
+}
+
 board.addEventListener("wheel", (e)=>{
 
   e.preventDefault();
@@ -432,8 +452,15 @@ board.addEventListener("wheel", (e)=>{
 
 });
 
-window.addEventListener("resize", scaleBoard);
-window.addEventListener("load", scaleBoard);
+window.addEventListener("resize", ()=>{
+  positionBoardDesktop();
+  scaleBoard();
+});
+
+window.addEventListener("load", ()=>{
+  positionBoardDesktop();
+  scaleBoard();
+});
 
 
 const playerName = sessionStorage.getItem("playerName");
