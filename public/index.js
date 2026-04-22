@@ -2096,6 +2096,18 @@ document.addEventListener("dragover", (e)=>{
   e.preventDefault();
 });
 
+function clampTokenPosition(x, y){
+  const minX = 0;
+  const maxX = 1152;
+  const minY = 0;
+  const maxY = 570;
+
+  return {
+    x: Math.max(minX, Math.min(maxX, x)),
+    y: Math.max(minY, Math.min(maxY, y))
+  };
+}
+
   document.addEventListener("drop", (e) => {
 
   e.preventDefault();
