@@ -349,24 +349,6 @@ app.get("/api/dev-salas", (req, res) => {
   res.json(data);
 });
 
-  const data = Object.values(rooms).map(room => {
-    const createdAt = room.devInfo?.createdAt || null;
-    const closedAt = room.devInfo?.closedAt || null;
-
-    return {
-      roomCode: room.devInfo?.roomCode || "sem código",
-      createdAt,
-      closedAt,
-      duration: getRoomDuration(createdAt, closedAt),
-      status: closedAt ? "encerrada" : "aberta",
-      players: room.players || {},
-      spectators: room.spectators || [],
-      accesses: room.devInfo?.accesses || []
-    };
-  });
-
-  res.json(data);
-
 /* ===============================
    CONEXÃO
 ================================ */

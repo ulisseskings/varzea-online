@@ -84,7 +84,7 @@
   <h1>Controle de Salas</h1>
 
   <div class="topbar">
-    <input id="senha" type="password" placeholder="Senha do painel">
+  
     <button onclick="loadRooms()">Atualizar</button>
   </div>
 
@@ -119,7 +119,7 @@
       }
 
       try{
-        const res = await fetch(`/api/dev-salas?senha=${encodeURIComponent(senha)}`);
+        const res = await fetch(`/api/dev-salas`);
         const data = await res.json();
 
         if(!res.ok){
