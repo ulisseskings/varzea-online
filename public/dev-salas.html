@@ -109,69 +109,62 @@
   </table>
 
   <script>
-    async function loadRooms(){
-      const senha = document.getElementById("senha").value.trim();
-      const tbody = document.getElementById("roomsBody");
+  async function loadRooms(){
+    const tbody = document.getElementById("roomsBody");
 
-      if(!senha){
-        alert("Digite a senha.");
+    try{
+      const res = await fetch("/api/dev-salas");
+      const data = await res.json();
+
+      if(!res.ok){
+        tbody.innerHTML = `<tr><td colspan="8">Erro ao carregar registros.</td></tr>`;
         return;
       }
 
-      try{
-        const res = await fetch(`/api/dev-salas`);
-        const data = await res.json();
-
-        if(!res.ok){
-          tbody.innerHTML = `<tr><td colspan="8">Acesso negado.</td></tr>`;
-          return;
-        }
-
-        if(data.length === 0){
-          tbody.innerHTML = `<tr><td colspan="8">Nenhuma sala registrada.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = data.map(room => {
-          const statusClass = room.status === "aberta" ? "open" : "closed";
-
-          const accesses = room.accesses.map(a => `
-            <div class="access">
-              ${new Date(a.at).toLocaleString()} —
-              ${a.name} (${a.role}) —
-              ${a.action}
-            </div>
-          `).join("");
-
-          return `
-            <tr>
-              <td>${room.roomCode}</td>
-              <td class="${statusClass}">${room.status}</td>
-              <td>${room.createdAt ? new Date(room.createdAt).toLocaleString() : "-"}</td>
-              <td>${room.duration}</td>
-              <td>${room.players.blue || "-"}</td>
-              <td>${room.players.red || "-"}</td>
-              <td>${room.spectators.length ? room.spectators.join(", ") : "-"}</td>
-              <td>
-                <details>
-                  <summary>${room.accesses.length} registros</summary>
-                  ${accesses || "Sem acessos"}
-                </details>
-              </td>
-            </tr>
-          `;
-        }).join("");
-
-      }catch(err){
-        tbody.innerHTML = `<tr><td colspan="8">Erro ao carregar dados.</td></tr>`;
+      if(data.length === 0){
+        tbody.innerHTML = `<tr><td colspan="8">Nenhuma sala registrada.</td></tr>`;
+        return;
       }
-    }
 
-    setInterval(() => {
-      const senha = document.getElementById("senha").value.trim();
-      if(senha) loadRooms();
-    }, 10000);
-  </script>
+      tbody.innerHTML = data.map(room => {
+        const statusClass = room.status === "aberta" ? "open" : "closed";
+
+        const accesses = room.accesses.map(a => `
+          <div class="access">
+            ${new Date(a.at).toLocaleString()} —
+            ${a.name} (${a.role}) —
+            ${a.action}
+          </div>
+        `).join("");
+
+        return `
+          <tr>
+            <td>${room.roomCode}</td>
+            <td class="${statusClass}">${room.status}</td>
+            <td>${room.createdAt ? new Date(room.createdAt).toLocaleString() : "-"}</td>
+            <td>${room.duration}</td>
+            <td>${room.players.blue || "-"}</td>
+            <td>${room.players.red || "-"}</td>
+            <td>${room.spectators.length ? room.spectators.join(", ") : "-"}</td>
+            <td>
+              <details>
+                <summary>${room.accesses.length} registros</summary>
+                ${accesses || "Sem acessos"}
+              </details>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+    }catch(err){
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="8">Erro ao carregar dados.</td></tr>`;
+    }
+  }
+
+  loadRooms();
+  setInterval(loadRooms, 10000);
+</script>
 
 </body>
 </html>
