@@ -69,6 +69,20 @@ function registerRoomAccess(roomCode, socket, action){
     };
   }
 
+  const now = Date.now();
+
+  const lastSame = [...room.devInfo.accesses]
+    .reverse()
+    .find(a =>
+      a.name === socket.playerName &&
+      a.role === socket.role &&
+      a.action === action
+    );
+
+  if(lastSame && now - new Date(lastSame.at).getTime() < 3000){
+    return;
+  }
+
   room.devInfo.accesses.push({
     name: socket.playerName || "Sem nome",
     role: socket.role || "sem função",
