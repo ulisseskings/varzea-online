@@ -129,7 +129,9 @@
       tbody.innerHTML = data.map(room => {
         const statusClass = room.status === "aberta" ? "open" : "closed";
 
-        const accesses = room.accesses.map(a => `
+        const accesses = [...room.accesses]
+        .reverse()
+        .map(a => `
           <div class="access">
             ${new Date(a.at).toLocaleString()} —
             ${a.name} (${a.role}) —
