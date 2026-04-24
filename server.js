@@ -37,6 +37,47 @@ function generateRoomCode(length = 5){
 
 let rooms = {};
 
+const DEV_PANEL_PASSWORD = process.env.DEV_PANEL_PASSWORD || "admin123";
+
+function getRoomDuration(createdAt, closedAt = null){
+  if(!createdAt) return "00:00:00";
+
+  const end = closedAt ? new Date(closedAt).getTime() : Date.now();
+  const start = new Date(createdAt).getTime();
+
+  let seconds = Math.floor((end - start) / 1000);
+
+  const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
+  seconds %= 3600;
+
+  const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const s = String(seconds % 60).padStart(2, "0");
+
+  return `${h}:${m}:${s}`;
+}
+
+function registerRoomAccess(roomCode, socket, action){
+  const room = rooms[roomCode];
+  if(!room) return;
+
+  if(!room.devInfo){
+    room.devInfo = {
+      roomCode,
+      createdAt: new Date().toISOString(),
+      closedAt: null,
+      accesses: []
+    };
+  }
+
+  room.devInfo.accesses.push({
+    name: socket.playerName || "Sem nome",
+    role: socket.role || "sem função",
+    socketId: socket.id,
+    action,
+    at: new Date().toISOString()
+  });
+}
+
 function shuffle(array){
   for(let i = array.length - 1; i > 0; i--){
     const j = Math.floor(Math.random() * (i + 1));
@@ -286,6 +327,45 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log("Servidor rodando na porta:", PORT);
 });
+
+app.get("/api/dev-salas", (req, res) => {
+
+  const data = Object.values(rooms).map(room => {
+    const createdAt = room.devInfo?.createdAt || null;
+    const closedAt = room.devInfo?.closedAt || null;
+
+    return {
+      roomCode: room.devInfo?.roomCode || "sem código",
+      createdAt,
+      closedAt,
+      duration: getRoomDuration(createdAt, closedAt),
+      status: closedAt ? "encerrada" : "aberta",
+      players: room.players || {},
+      spectators: room.spectators || [],
+      accesses: room.devInfo?.accesses || []
+    };
+  });
+
+  res.json(data);
+});
+
+  const data = Object.values(rooms).map(room => {
+    const createdAt = room.devInfo?.createdAt || null;
+    const closedAt = room.devInfo?.closedAt || null;
+
+    return {
+      roomCode: room.devInfo?.roomCode || "sem código",
+      createdAt,
+      closedAt,
+      duration: getRoomDuration(createdAt, closedAt),
+      status: closedAt ? "encerrada" : "aberta",
+      players: room.players || {},
+      spectators: room.spectators || [],
+      accesses: room.devInfo?.accesses || []
+    };
+  });
+
+  res.json(data);
 
 /* ===============================
    CONEXÃO
@@ -714,7 +794,13 @@ socket.on("createRoom", ({ name, role }) => {
     subTokens:{},
     blueConnected:false,
     redConnected:false,
-    spectators:[]
+    spectators:[],
+devInfo:{
+  roomCode,
+  createdAt: new Date().toISOString(),
+  closedAt: null,
+  accesses:[]
+}
   };
 
 
@@ -724,6 +810,7 @@ socket.on("createRoom", ({ name, role }) => {
   socket.playerName = name;
 
   socket.join(roomCode);
+  registerRoomAccess(roomCode, socket, "createRoom");
 
   if(role === "blue") rooms[roomCode].players.blue = name;
   if(role === "red")  rooms[roomCode].players.red  = name;
@@ -773,6 +860,7 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
   socket.playerName = name;
 
   socket.join(roomCode);
+  registerRoomAccess(roomCode, socket, "joinRoom");
 
   
 
@@ -854,6 +942,7 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
   socket.playerName = name;
 
   socket.join(roomCode);
+  registerRoomAccess(roomCode, socket, "reconnectRoom");
 
   // 🔥 REASSUME POSIÇÃO
   if(role === "blue"){
@@ -1102,6 +1191,18 @@ socket.on("moveTwist", (data)=>{
 		if(role === "spectator"){
 			room.spectators = room.spectators.filter(n => n !== playerName);
 		}
+
+    registerRoomAccess(roomCode, socket, "disconnect");
+
+const hasBlue = !!room.players.blue;
+const hasRed = !!room.players.red;
+const hasSpectators = room.spectators && room.spectators.length > 0;
+
+if(!hasBlue && !hasRed && !hasSpectators){
+  if(room.devInfo && !room.devInfo.closedAt){
+    room.devInfo.closedAt = new Date().toISOString();
+  }
+}
 
 		io.to(roomCode).emit("syncPlayers", room.players);
 		io.to(roomCode).emit("syncSpectators", room.spectators);
