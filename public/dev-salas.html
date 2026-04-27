@@ -146,7 +146,7 @@
         .map(a => `
           <div class="access">
             ${new Date(a.at).toLocaleString()} —
-            ${a.name} (${a.role}) —
+            ${a.name} (${a.role}) —createdAt: new Date(room.devInfo.createdAt),
             ${a.action}
           </div>
         `).join("");

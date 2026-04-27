@@ -411,18 +411,24 @@ app.get("/api/dev-salas", async (req, res) => {
       roomCode: room.roomCode,
       createdAt: room.createdAt,
       closedAt: room.closedAt,
-      duration: getRoomDuration(room.createdAt, room.closedAt),
+      duration: getRoomDuration(
+        room.createdAt ? new Date(room.createdAt) : null,
+        room.closedAt ? new Date(room.closedAt) : null
+      ),
       status: room.status || "aberta",
       players: room.players || {},
       spectators: room.spectators || [],
       accesses: room.accesses || []
     }));
 
+    console.log("Logs Mongo:", logs);
+
     res.json(data);
   }catch(err){
     console.error("Erro ao buscar logs:", err);
     res.status(500).json({ error: "Erro ao buscar logs" });
   }
+  console.error("Erro detalhado:", err);
 });
 
 /* ===============================
