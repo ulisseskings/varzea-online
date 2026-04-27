@@ -42,6 +42,14 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB conectado"))
   .catch(err => console.error("❌ Erro ao conectar MongoDB:", err));
 
+mongoose.connection.on("connected", () => {
+  console.log("✅ Mongoose conectado de verdade");
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("❌ Erro de conexão Mongoose:", err.message);
+});
+
 const roomLogSchema = new mongoose.Schema({
   roomCode: String,
   createdAt: Date,
