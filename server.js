@@ -411,10 +411,7 @@ app.get("/api/dev-salas", async (req, res) => {
       roomCode: room.roomCode,
       createdAt: room.createdAt,
       closedAt: room.closedAt,
-      duration: getRoomDuration(
-        room.createdAt ? new Date(room.createdAt) : null,
-        room.closedAt ? new Date(room.closedAt) : null
-      ),
+      duration: "-",
       status: room.status || "aberta",
       players: room.players || {},
       spectators: room.spectators || [],
