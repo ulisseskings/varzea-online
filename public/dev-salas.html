@@ -126,7 +126,19 @@
         return;
       }
 
-      tbody.innerHTML = data.map(room => {
+      tbody.innerHTML = [...data]
+  .sort((a, b) => {
+    const dateA = a.accesses?.length
+      ? new Date(a.accesses[a.accesses.length - 1].at)
+      : new Date(a.createdAt);
+
+    const dateB = b.accesses?.length
+      ? new Date(b.accesses[b.accesses.length - 1].at)
+      : new Date(b.createdAt);
+
+    return dateB - dateA;
+  })
+  .map(room => {
         const statusClass = room.status === "aberta" ? "open" : "closed";
 
         const accesses = [...room.accesses]

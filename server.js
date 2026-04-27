@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { randomUUID } = require("crypto");
+const mongoose = require("mongoose");
 
 const app = express();
 
@@ -37,6 +38,33 @@ function generateRoomCode(length = 5){
 
 let rooms = {};
 
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB conectado"))
+  .catch(err => console.error("❌ Erro ao conectar MongoDB:", err));
+
+const roomLogSchema = new mongoose.Schema({
+  roomCode: String,
+  createdAt: Date,
+  closedAt: Date,
+  status: String,
+  players: {
+    blue: String,
+    red: String
+  },
+  spectators: [String],
+  accesses: [
+    {
+      name: String,
+      role: String,
+      action: String,
+      socketId: String,
+      at: Date
+    }
+  ]
+});
+
+const RoomLog = mongoose.model("RoomLog", roomLogSchema);
+
 const DEV_PANEL_PASSWORD = process.env.DEV_PANEL_PASSWORD || "admin123";
 
 function getRoomDuration(createdAt, closedAt = null){
@@ -56,7 +84,7 @@ function getRoomDuration(createdAt, closedAt = null){
   return `${h}:${m}:${s}`;
 }
 
-function registerRoomAccess(roomCode, socket, action){
+async function registerRoomAccess(roomCode, socket, action){
   const room = rooms[roomCode];
   if(!room) return;
 
@@ -69,7 +97,7 @@ function registerRoomAccess(roomCode, socket, action){
     };
   }
 
-  const now = Date.now();
+  const now = new Date();
 
   const lastSame = [...room.devInfo.accesses]
     .reverse()
@@ -79,17 +107,47 @@ function registerRoomAccess(roomCode, socket, action){
       a.action === action
     );
 
-  if(lastSame && now - new Date(lastSame.at).getTime() < 3000){
+  if(lastSame && now - new Date(lastSame.at) < 3000){
     return;
   }
 
-  room.devInfo.accesses.push({
+  const access = {
     name: socket.playerName || "Sem nome",
     role: socket.role || "sem função",
     socketId: socket.id,
     action,
-    at: new Date().toISOString()
-  });
+    at: now
+  };
+
+  room.devInfo.accesses.push(access);
+
+  try{
+    await RoomLog.findOneAndUpdate(
+      { roomCode },
+      {
+        $setOnInsert: {
+          roomCode,
+          createdAt: room.devInfo.createdAt,
+          status: "aberta"
+        },
+        $set: {
+          players: room.players || {},
+          spectators: room.spectators || [],
+          closedAt: room.devInfo.closedAt || null,
+          status: room.devInfo.closedAt ? "encerrada" : "aberta"
+        },
+        $push: {
+          accesses: access
+        }
+      },
+      {
+        upsert: true,
+        new: true
+      }
+    );
+  }catch(err){
+    console.error("Erro ao salvar log no Mongo:", err);
+  }
 }
 
 function shuffle(array){
@@ -342,25 +400,29 @@ server.listen(PORT, () => {
   console.log("Servidor rodando na porta:", PORT);
 });
 
-app.get("/api/dev-salas", (req, res) => {
+app.get("/api/dev-salas", async (req, res) => {
+  try{
+    const logs = await RoomLog
+      .find({})
+      .sort({ createdAt: -1 })
+      .lean();
 
-  const data = Object.values(rooms).map(room => {
-    const createdAt = room.devInfo?.createdAt || null;
-    const closedAt = room.devInfo?.closedAt || null;
-
-    return {
-      roomCode: room.devInfo?.roomCode || "sem código",
-      createdAt,
-      closedAt,
-      duration: getRoomDuration(createdAt, closedAt),
-      status: closedAt ? "encerrada" : "aberta",
+    const data = logs.map(room => ({
+      roomCode: room.roomCode,
+      createdAt: room.createdAt,
+      closedAt: room.closedAt,
+      duration: getRoomDuration(room.createdAt, room.closedAt),
+      status: room.status || "aberta",
       players: room.players || {},
       spectators: room.spectators || [],
-      accesses: room.devInfo?.accesses || []
-    };
-  });
+      accesses: room.accesses || []
+    }));
 
-  res.json(data);
+    res.json(data);
+  }catch(err){
+    console.error("Erro ao buscar logs:", err);
+    res.status(500).json({ error: "Erro ao buscar logs" });
+  }
 });
 
 /* ===============================
@@ -1198,6 +1260,20 @@ if(!hasBlue && !hasRed && !hasSpectators){
   if(room.devInfo && !room.devInfo.closedAt){
     room.devInfo.closedAt = new Date().toISOString();
   }
+}
+
+if(room.devInfo?.closedAt){
+  RoomLog.findOneAndUpdate(
+    { roomCode },
+    {
+      $set: {
+        closedAt: room.devInfo.closedAt,
+        status: "encerrada",
+        players: room.players || {},
+        spectators: room.spectators || []
+      }
+    }
+  ).catch(err => console.error("Erro ao encerrar sala no Mongo:", err));
 }
 
 		io.to(roomCode).emit("syncPlayers", room.players);
