@@ -880,11 +880,12 @@ devInfo:{
   socket.playerName = name;
 
   socket.join(roomCode);
-  registerRoomAccess(roomCode, socket, "createRoom");
 
-  if(role === "blue") rooms[roomCode].players.blue = name;
-  if(role === "red")  rooms[roomCode].players.red  = name;
-  if(role === "spectator") rooms[roomCode].spectators.push(name);
+if(role === "blue") rooms[roomCode].players.blue = name;
+if(role === "red")  rooms[roomCode].players.red  = name;
+if(role === "spectator") rooms[roomCode].spectators.push(name);
+
+registerRoomAccess(roomCode, socket, "createRoom");
 
   socket.emit("roomCreated", roomCode);
 
@@ -930,24 +931,24 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
   socket.playerName = name;
 
   socket.join(roomCode);
-  registerRoomAccess(roomCode, socket, "joinRoom");
 
-  
+if(role === "blue"){
+  room.players.blue = name;
+}
 
-  // 🔥 CONFIRMA ENTRADA
-  socket.emit("roomJoined", roomCode);
+if(role === "red"){
+  room.players.red = name;
+}
 
-  if(role === "blue"){
-    room.players.blue = name;
-  }
+if(role === "spectator"){
+  room.spectators.push(name);
+}
 
-  if(role === "red"){
-    room.players.red = name;
-  }
+registerRoomAccess(roomCode, socket, "joinRoom");
 
-  if(role === "spectator"){
-    room.spectators.push(name);
-  }
+// 🔥 CONFIRMA ENTRADA
+socket.emit("roomJoined", roomCode);
+
 
   // 🔥 MENSAGEM GLOBAL DE ENTRADA
   io.to(roomCode).emit("playerJoinedMessage", {
@@ -1011,23 +1012,24 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
   socket.roomCode = roomCode;
   socket.playerName = name;
 
-  socket.join(roomCode);
-  registerRoomAccess(roomCode, socket, "reconnectRoom");
+ socket.join(roomCode);
 
-  // 🔥 REASSUME POSIÇÃO
-  if(role === "blue"){
-    room.players.blue = name;
-  }
+// 🔥 REASSUME POSIÇÃO
+if(role === "blue"){
+  room.players.blue = name;
+}
 
-  if(role === "red"){
-    room.players.red = name;
-  }
+if(role === "red"){
+  room.players.red = name;
+}
 
-  if(role === "spectator"){
-    if(!room.spectators.includes(name)){
-      room.spectators.push(name);
-    }
+if(role === "spectator"){
+  if(!room.spectators.includes(name)){
+    room.spectators.push(name);
   }
+}
+
+registerRoomAccess(roomCode, socket, "reconnectRoom");
 
   io.to(roomCode).emit("syncPlayers", room.players);
   io.to(roomCode).emit("syncSpectators", room.spectators);
