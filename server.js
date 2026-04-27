@@ -421,7 +421,11 @@ app.get("/api/dev-salas", async (req, res) => {
     res.json(data);
   }catch(err){
     console.error("Erro ao buscar logs:", err);
-    res.status(500).json({ error: "Erro ao buscar logs" });
+
+    res.status(500).json({
+      error: err.message,
+      name: err.name
+    });
   }
 });
 
