@@ -93,6 +93,12 @@ function getRoomDuration(createdAt, closedAt = null){
 }
 
 async function registerRoomAccess(roomCode, socket, action){
+  console.log("📌 registerRoomAccess chamado:", {
+  roomCode,
+  action,
+  name: socket.playerName,
+  role: socket.role
+});
   const room = rooms[roomCode];
   if(!room) return;
 
@@ -153,8 +159,10 @@ async function registerRoomAccess(roomCode, socket, action){
         new: true
       }
     );
+    console.log("✅ Registro salvo no Mongo:", roomCode, action);
   }catch(err){
-    console.error("Erro ao salvar log no Mongo:", err);
+    console.error("❌ Erro ao salvar log no Mongo:", err.message);
+    console.error(err);
   }
 }
 
