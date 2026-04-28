@@ -141,8 +141,7 @@ async function registerRoomAccess(roomCode, socket, action){
       {
         $setOnInsert: {
           roomCode,
-          createdAt: room.devInfo.createdAt,
-          status: "aberta"
+          createdAt: room.devInfo.createdAt
         },
         $set: {
           players: room.players || {},
