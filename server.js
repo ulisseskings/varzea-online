@@ -1219,6 +1219,10 @@ socket.on("restartMatch", ()=>{
 
   room.isSecondHalf = false;
 
+  io.to(socket.roomCode).emit("syncSecondHalf", {
+  isSecondHalf: false
+});
+
   // 🔥 envia estado completo
   io.to(socket.roomCode).emit("matchRestarted");
   room.lastSlotPlayed = null;

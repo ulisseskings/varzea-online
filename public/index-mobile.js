@@ -2692,80 +2692,105 @@ if(el) el.remove();
 });
 
 function setSecondHalfButtonLocked(isLocked){
-const btn = document.getElementById("secondHalfBtn");
+  const btn = document.getElementById("secondHalfBtn");
+  if(!btn) return;
 
-if(!btn) return;
+  btn.disabled = isLocked;
+  btn.style.opacity = isLocked ? "0.45" : "1";
+  btn.style.cursor = isLocked ? "not-allowed" : "pointer";
+  btn.innerText = isLocked ? "2º tempo iniciado" : "Iniciar 2º tempo";
+}
 
-btn.disabled = isLocked;
-btn.style.opacity = isLocked ? "0.45" : "1";
-btn.style.cursor = isLocked ? "not-allowed" : "pointer";
-btn.innerText = isLocked ? "2º tempo iniciado" : "Iniciar 2º tempo";
+function saveInitialAnchorPositionsOnce(){
+  document.querySelectorAll(".anchor").forEach(anchor=>{
+    if(!anchor.dataset.initialLeft){
+      anchor.dataset.initialLeft = anchor.style.left;
+      anchor.dataset.initialTop  = anchor.style.top;
+    }
+  });
 }
 
 function applySecondHalfLayout(){
+  saveInitialAnchorPositionsOnce();
 
-firstHalfEnded = true;
+  firstHalfEnded = true;
 
-const tempo = document.getElementById("tempoStatus");
-if(tempo) tempo.innerText = "2º Tempo";
+  const tempo = document.getElementById("tempoStatus");
+  if(tempo) tempo.innerText = "2º Tempo";
 
-const bg = document.getElementById("boardBg");
-if(bg) bg.src = "https://i.imgur.com/auIBYLo.png";
+  const bg = document.getElementById("boardBg");
+  if(bg) bg.src = "https://i.imgur.com/auIBYLo.png";
 
-Object.keys(slotPositionsSecondHalf).forEach(slotId => {
+  Object.keys(slotPositionsSecondHalf).forEach(slotId => {
+    const pos = slotPositionsSecondHalf[slotId];
 
-  const anchor = document.getElementById(slotId);
-  if(anchor){
-    anchor.style.left = slotPositionsSecondHalf[slotId].left;
-    anchor.style.top  = slotPositionsSecondHalf[slotId].top;
+    const anchor = document.getElementById(slotId);
+    if(anchor){
+      anchor.style.left = pos.left;
+      anchor.style.top  = pos.top;
+    }
+
+    const pile =
+      document.querySelector(`.slot-pile[data-anchor="${slotId}"]`) ||
+      document.querySelector(`.slot-pile[data-slot="${slotId}"]`);
+
+    if(pile){
+      pile.style.left = pos.left;
+      pile.style.top  = pos.top;
+    }
+  });
+
+  setSecondHalfButtonLocked(true);
+
+  if(typeof positionDecks === "function"){
+    positionDecks();
   }
 
-  const pile = document.querySelector(`.slot-pile[data-anchor="${slotId}"]`);
-  if(pile){
-    pile.style.left = slotPositionsSecondHalf[slotId].left;
-    pile.style.top  = slotPositionsSecondHalf[slotId].top;
+  if(typeof updateEmptyDeckVisuals === "function"){
+    updateEmptyDeckVisuals();
   }
-
-});
-
-setSecondHalfButtonLocked(true);
-
-if(typeof updateEmptyDeckVisuals === "function"){
-  updateEmptyDeckVisuals();
-}
 }
 
 function applyFirstHalfLayout(){
+  saveInitialAnchorPositionsOnce();
 
-firstHalfEnded = false;
+  firstHalfEnded = false;
 
-const tempo = document.getElementById("tempoStatus");
-if(tempo) tempo.innerText = "1º Tempo";
+  const tempo = document.getElementById("tempoStatus");
+  if(tempo) tempo.innerText = "1º Tempo";
 
-const bg = document.getElementById("boardBg");
-if(bg) bg.src = "https://i.imgur.com/GUyhwlh.png";
+  const bg = document.getElementById("boardBg");
+  if(bg) bg.src = "https://i.imgur.com/GUyhwlh.png";
 
-document.querySelectorAll(".anchor").forEach(anchor=>{
-  if(anchor.dataset.initialLeft){
-    anchor.style.left = anchor.dataset.initialLeft;
-    anchor.style.top  = anchor.dataset.initialTop;
+  document.querySelectorAll(".anchor").forEach(anchor=>{
+    if(anchor.dataset.initialLeft){
+      anchor.style.left = anchor.dataset.initialLeft;
+      anchor.style.top  = anchor.dataset.initialTop;
+    }
+  });
+
+  positionSlots();
+  setSecondHalfButtonLocked(false);
+
+  if(typeof positionDecks === "function"){
+    positionDecks();
   }
-});
 
-positionSlots();
-setSecondHalfButtonLocked(false);
+  if(typeof updateEmptyDeckVisuals === "function"){
+    updateEmptyDeckVisuals();
+  }
 }
 
 socket.on("secondHalfStarted", () => {
-applySecondHalfLayout();
+  applySecondHalfLayout();
 });
 
 socket.on("syncSecondHalf", ({ isSecondHalf }) => {
-if(isSecondHalf){
-  applySecondHalfLayout();
-}else{
-  applyFirstHalfLayout();
-}
+  if(isSecondHalf){
+    applySecondHalfLayout();
+  }else{
+    applyFirstHalfLayout();
+  }
 });
 
 socket.on("subTokenFlipped", ({ anchor, faceUp }) => {
@@ -3042,12 +3067,7 @@ panX = 0;
 panY = 0;
 updateBoardTransform();
 
-document.getElementById("tempoStatus").innerText = "1º Tempo";
-
-setSecondHalfButtonLocked(false);
-
-document.getElementById("boardBg").src =
-  "https://i.imgur.com/GUyhwlh.png";
+applyFirstHalfLayout();
 
 });
 
