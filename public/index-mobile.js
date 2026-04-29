@@ -2117,10 +2117,13 @@ piece.addEventListener("touchstart", function(e){
   const now = Date.now();
   const lastTap = parseInt(this.dataset.lastTap || "0");
 
-  if(now - lastTap < 350){
+  if(now - lastTap < 450){
 
     e.preventDefault();
     e.stopPropagation();
+
+    activePiece = null;
+    this.dataset.touching = "false";
 
     const faceUp = this.dataset.faceUp === "true";
     const newState = !faceUp;
@@ -2736,23 +2739,35 @@ function applySecondHalfLayout(){
   if(bg) bg.src = "https://i.imgur.com/auIBYLo.png";
 
   Object.keys(slotPositionsSecondHalf).forEach(slotId => {
-    const pos = slotPositionsSecondHalf[slotId];
+  const pos = slotPositionsSecondHalf[slotId];
 
-    const anchor = document.getElementById(slotId);
-    if(anchor){
-      anchor.style.left = pos.left;
-      anchor.style.top  = pos.top;
-    }
+  let left = parseFloat(pos.left);
+  let top  = parseFloat(pos.top);
 
-    const pile =
-      document.querySelector(`.slot-pile[data-anchor="${slotId}"]`) ||
-      document.querySelector(`.slot-pile[data-slot="${slotId}"]`);
+  // ajuste apenas no mobile, apenas no 2º tempo, apenas slots vermelhos
+  if(playerRole === "red" && slotId.includes("_red")){
+    left -= 18;
+    top  -= 18;
+  }
 
-    if(pile){
-      pile.style.left = pos.left;
-      pile.style.top  = pos.top;
-    }
-  });
+  const finalLeft = left + "px";
+  const finalTop  = top + "px";
+
+  const anchor = document.getElementById(slotId);
+  if(anchor){
+    anchor.style.left = finalLeft;
+    anchor.style.top  = finalTop;
+  }
+
+  const pile =
+    document.querySelector(`.slot-pile[data-anchor="${slotId}"]`) ||
+    document.querySelector(`.slot-pile[data-slot="${slotId}"]`);
+
+  if(pile){
+    pile.style.left = finalLeft;
+    pile.style.top  = finalTop;
+  }
+});
 
   setSecondHalfButtonLocked(true);
 
