@@ -2746,8 +2746,8 @@ function applySecondHalfLayout(){
 
   // ajuste apenas no mobile, apenas no 2º tempo, apenas slots vermelhos
   if(playerRole === "red" && slotId.includes("_red")){
-    left -= 18;
-    top  -= 18;
+    left += 22;
+    top  += 22;
   }
 
   const finalLeft = left + "px";
