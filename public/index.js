@@ -3574,21 +3574,6 @@ bindTooltip("#discordBtn", "Clique para acessar o Discord oficial do jogo.");
 
 setupGameTooltips();
 
-function applySecondHalfLayout(){
-
-Object.keys(slotPositionsSecondHalf).forEach(key => {
-
-  const slot = document.querySelector(`.slot-pile[data-slot="${key}"]`);
-  if(!slot) return;
-
-  const pos = slotPositionsSecondHalf[key];
-
-  slot.style.left = pos.left;
-  slot.style.top  = pos.top;
-
-});
-
-}
 
 function updateExpulsionTokenScale(){
 

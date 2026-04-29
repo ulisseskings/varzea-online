@@ -2110,9 +2110,17 @@ document.querySelectorAll(".piece.token27").forEach(piece => {
   piece.dataset.back  = SUB_BACK;
   piece.dataset.faceUp = "true";
 
-  piece.addEventListener("dblclick", function(e){
+piece.dataset.lastTap = "0";
+
+piece.addEventListener("touchstart", function(e){
+
+  const now = Date.now();
+  const lastTap = parseInt(this.dataset.lastTap || "0");
+
+  if(now - lastTap < 350){
 
     e.preventDefault();
+    e.stopPropagation();
 
     const faceUp = this.dataset.faceUp === "true";
     const newState = !faceUp;
@@ -2125,7 +2133,13 @@ document.querySelectorAll(".piece.token27").forEach(piece => {
       faceUp: newState
     });
 
-  });
+    this.dataset.lastTap = "0";
+    return;
+  }
+
+  this.dataset.lastTap = String(now);
+
+}, { passive:false });
 
 });
 
@@ -3391,21 +3405,6 @@ if(!formationEditMode) return;
 positionFormationActions(getCurrentFormationTableId());
 });
 
-function applySecondHalfLayout(){
-
-Object.keys(slotPositionsSecondHalf).forEach(key => {
-
-  const slot = document.querySelector(`.slot-pile[data-slot="${key}"]`);
-  if(!slot) return;
-
-  const pos = slotPositionsSecondHalf[key];
-
-  slot.style.left = pos.left;
-  slot.style.top  = pos.top;
-
-});
-
-}
 
 function updateExpulsionTokenScale(){
 
