@@ -2822,16 +2822,7 @@ socket.on("syncSecondHalf", ({ isSecondHalf }) => {
   }
 });
 
-socket.on("subTokenFlipped", ({ anchor, faceUp }) => {
-const el = document.querySelector(`[data-anchor="${anchor}"]`);
-if(el){
-  el.dataset.faceUp = faceUp ? "true" : "false";
-}
 
-if(typeof showSubEffect === "function"){
-  showSubEffect();
-}
-});
 
 
 socket.on("spawnTwist", (card)=>{
@@ -2891,14 +2882,16 @@ setTimeout(()=>{
 
 socket.on("subTokenFlipped", ({anchor, faceUp})=>{
 
-const piece = document.querySelector(`[data-anchor="${anchor}"]`);
-if(!piece) return;
+  const piece = document.querySelector(`[data-anchor="${anchor}"]`);
+  if(!piece) return;
 
-piece.dataset.faceUp = faceUp ? "true" : "false";
-piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+  piece.dataset.front = piece.dataset.front || piece.src;
+  piece.dataset.back = piece.dataset.back || "https://i.imgur.com/d6JyQJQ.png";
 
-playSFX(SOUNDS.flip); // opcional, se existir
-showSubEffect();
+  piece.dataset.faceUp = faceUp ? "true" : "false";
+  piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+
+  showSubEffect();
 
 });
 
