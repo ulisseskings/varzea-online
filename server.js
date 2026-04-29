@@ -513,11 +513,13 @@ io.on("connection", (socket) => {
 });
 
 socket.on("startSecondHalf", () => {
-  const room = rooms[roomCode];
+
+  const room = rooms[socket.roomCode];
   if(!room) return;
 
-  Object.keys(room.slotPiles).forEach(slot => {
-    const cards = room.slotPiles[slot];
+  Object.keys(room.boardSlots).forEach(slot => {
+
+    const cards = room.boardSlots[slot];
 
     cards.forEach(card => {
       if(room.decks[card.type]){
@@ -525,18 +527,40 @@ socket.on("startSecondHalf", () => {
       }
     });
 
-    room.slotPiles[slot] = [];
+    room.boardSlots[slot] = [];
   });
 
   Object.keys(room.decks).forEach(type => {
     shuffle(room.decks[type]);
   });
 
-  room.secondHalf = true;
+  room.isSecondHalf = true;
+  room.lastSlotPlayed = null;
 
-  io.to(roomCode).emit("syncSlots", room.slotPiles);
-  io.to(roomCode).emit("syncDeckCounts", getDeckCounts(room.decks));
-  io.to(roomCode).emit("secondHalfStarted");
+  io.to(socket.roomCode).emit("updateBoardSlots", {
+    slots: room.boardSlots,
+    lastSlot: null
+  });
+
+  io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+
+  io.to(socket.roomCode).emit("syncSecondHalf", {
+    isSecondHalf: true
+  });
+
+  io.to(socket.roomCode).emit("secondHalfStarted");
+
+  io.to(socket.roomCode).emit("handCounts", {
+    blue: countHandTypes(room.hands.blue),
+    red: countHandTypes(room.hands.red)
+  });
+
+  emitActionLog(
+    socket.roomCode,
+    "Segundo tempo iniciado. As mãos foram mantidas e os slots voltaram para os decks.",
+    "white"
+  );
+
 });
 
 socket.on("updateFormation", ({ formation }) => {
