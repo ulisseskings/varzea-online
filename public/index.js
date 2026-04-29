@@ -2496,16 +2496,7 @@ setTimeout(()=>wrapper.classList.remove("shuffling"),300);
 }
 });
 
-socket.on("subTokenFlipped", ({ anchor, faceUp }) => {
-const el = document.querySelector(`[data-anchor="${anchor}"]`);
-if(el){
-  el.dataset.faceUp = faceUp ? "true" : "false";
-}
 
-if(typeof showSubEffect === "function"){
-  showSubEffect();
-}
-});
 
 socket.on("spawnTwist", (card)=>{
 
@@ -2562,14 +2553,24 @@ setTimeout(()=>{
 
 socket.on("subTokenFlipped", ({anchor, faceUp})=>{
 
-const piece = document.querySelector(`[data-anchor="${anchor}"]`);
-if(!piece) return;
+  const piece = document.querySelector(`[data-anchor="${anchor}"]`);
+  if(!piece) return;
 
-piece.dataset.faceUp = faceUp ? "true" : "false";
-piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+  // garante front/back
+  if(!piece.dataset.front){
+    piece.dataset.front = piece.src;
+  }
 
-playSFX(SOUNDS.flip); // opcional, se existir
-showSubEffect();
+  if(!piece.dataset.back){
+    piece.dataset.back = "https://i.imgur.com/d6JyQJQ.png";
+  }
+
+  // troca estado
+  piece.dataset.faceUp = faceUp ? "true" : "false";
+  piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+
+  // 🔥 efeito + som
+  showSubEffect();
 
 });
 

@@ -2746,8 +2746,8 @@ function applySecondHalfLayout(){
 
   // ajuste apenas no mobile, apenas no 2º tempo, apenas slots vermelhos
   if(playerRole === "red" && slotId.includes("_red")){
-    left += 22;
-    top  += 22;
+    left += 25;
+    top  += 29;
   }
 
   const finalLeft = left + "px";
@@ -2885,12 +2885,20 @@ socket.on("subTokenFlipped", ({anchor, faceUp})=>{
   const piece = document.querySelector(`[data-anchor="${anchor}"]`);
   if(!piece) return;
 
-  piece.dataset.front = piece.dataset.front || piece.src;
-  piece.dataset.back = piece.dataset.back || "https://i.imgur.com/d6JyQJQ.png";
+  // garante front/back
+  if(!piece.dataset.front){
+    piece.dataset.front = piece.src;
+  }
 
+  if(!piece.dataset.back){
+    piece.dataset.back = "https://i.imgur.com/d6JyQJQ.png";
+  }
+
+  // troca estado
   piece.dataset.faceUp = faceUp ? "true" : "false";
   piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
 
+  // 🔥 efeito + som
   showSubEffect();
 
 });
