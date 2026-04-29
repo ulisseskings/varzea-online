@@ -1,2077 +1,2105 @@
-  <!DOCTYPE html>
-  <html lang="pt-br">
-  <head>
-    <link rel="icon" type="image/x-icon" href="/icon.ico">
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width,
-                  initial-scale=1,
-                  maximum-scale=1,
-                  user-scalable=no">
-                
-    <meta name="screen-orientation" content="landscape">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <link rel="icon" type="image/x-icon" href="/icon.ico">
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,
+                initial-scale=1,
+                maximum-scale=1,
+                user-scalable=no">
+              
+  <meta name="screen-orientation" content="landscape">
 
-    <title>Várzea Online</title>
-
-
-    <style>
-      body {
-        margin: 0;
-        background: #1A7547;
-        overflow: hidden;
-        width: 100vw;
-        height: 100vh;
-      }
-      :root {
-        --board-offset: 20px;
-      }
-      #board {
-        width: 1152px;
-        height: 658px;
-        position: fixed;
-        left: 50%;
-        top: 50%;
-        transform-origin: center center;
-      }
-
-      .anchor {
-        position: absolute;
-        width: 0;
-        height: 0;
-      }
-
-      /* ===================== */
-      /* DECKS */
-  #boardBg {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 1152px;
-    height: 658px;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .deck-slot {
-    position: absolute;
-    left: 0;
-    top: 0;
-
-    width: 74px;
-    height: 103px;
-    display: block;
-  }
-      /* ===================== */
-      /* SLOT PILHA */
-
-      .slot-pile {
-        position: absolute;
-        width: 74px;
-        height: 103px;
-        border: 2px solid transparent;
-        border-radius: 10px;
-        cursor: pointer;
-        background-size: 100% 100%;
-        background-position: center;
-        background-repeat: no-repeat;
-        transition: border 0.2s;
-        z-index: 20;
-        pointer-events:auto;
-        overflow: visible;
-      }
+  <title>Várzea Online</title>
 
 
-      .slot-pile.highlight {
-        border: 2px solid yellow;
-      }
-
-      .slot-top-card{
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 74px;
-    height: 103px;
-    transform: translate(-50%, -50%);
-    z-index: 2;
-    pointer-events: none;
-  }
-
-      /* ===================== */
-      /* MÃO */
-
-  #hand {
-    position: fixed;          /* ✅ não depende do body */
-    bottom: -30px;              /* ✅ colado na base */
-    left: 0;
-
-    width: 100%;
-    height: 90px;
-
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-
-    z-index: 10000;
-    background: transparent;
-
-  }
-
-
-
-
-  /* Azul: hover ou drag */
-  #hand:hover,
-  #hand.active-zone {
-    background: rgba(0, 120, 255, 0.2);
-  }
-
-  /* Vermelho: hover ou drag */
-  #hand_red:hover,
-  #hand_red.active-zone {
-    background: rgba(255, 0, 0, 0.2);
-  }
-
-
-  /* Hover também ativa o brilho */
-  #hand:hover {
-    background: rgba(0, 120, 255, 0.2);
-  }
-
-  #hand_red:hover {
-    background: rgba(255, 0, 0, 0.2);
-  }
-
-      .hand-group {
-        display: flex;
-        gap: 0px;
-        margin: 0 30px;
-        pointer-events:auto;
-        
-      }
-
-      .hand-card {
-        width: 90px;
-        height: 125px;
-        margin: 0 -25px;
-        transform: translateY(30px);
-        transition: 0.2s;
-        cursor: grab;
-        pointer-events:auto;
-      }
-
-      .hand-card:hover {
-        transform: translateY(27px) scale(1.1);
-        z-index: 999;
-      }
-
-      /* ===================== */
-      /* LEQUE */
-
-      .fan-card {
-        position: absolute;
-        width: 74px;
-        height: 103px;
-        transition: 0.2s;
-        cursor: grab;
-        z-index: 300;
-      }
-
-      /* ======================= */
-      /* PEÇAS DO TABULEIRO */
-
-      .piece {
-        position: absolute;
-        transform: translate(-50%, -50%);
-        pointer-events: auto;
-        cursor: grab;
-        z-index: 5;
-      }
-
-      .token14 { width: 14px; height: 14px; }
-      .token27 { width: 27px; height: 27px; z-index: 5000;}
-      .bonus-token {width: 20px !important; height: 20px !important;}
-      .cardred { width: 11px; height: 17px; }
-      .ball    { width: 30px; height: 30px; z-index: 5000 !important; position: absolute;
-  }
-
-
-    img.red:not(.token27) {
-      transform: translate(-50%, -50%) rotate(180deg);
+  <style>
+    body {
+      margin: 0;
+      background: #1A7547;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    :root {
+      --board-offset: 20px;
+    }
+    #board {
+      width: 1152px;
+      height: 658px;
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform-origin: center center;
     }
 
-    .token27 {
-    transform: translate(-50%, -50%);
-  }
-
-
-  #hand .hand-inner {
-    justify-content: center;
-  }
-
-  body.red-player #hand_red{
-    top:-20px;
-  }
-
-  body.red-player #board{
-    bottom:-30px !important;
-  }
-
-  #matchBox{
-    position: absolute;
-    left: 50%;
-    top: 65px;
-
-    transform: translate(-50%, -50%);
-
-    background: rgb(37,37,37);
-    color: white;
-
-    padding: 4px 15px;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-
-    font-size: 11px;
-    font-weight: bold;
-    font-family: Arial;
-
-    border: 1px solid rgb(0,151,20);
-
-    display: flex;
-    align-items: center;
-    gap: 5px;
-
-    z-index: 2000;
-  }
-
-  #matchBox .vs{
-    font-size: 16px;
-    color: rgb(0,255,120);
-  }
-
-  /* ===================== */
-  /* TOPBAR ESTILO GAME HUD */
-
-  #spectatorBox{
-    top:55px;
-    right:120px;
-
-    background:#065e2e;
-    color:white;
-
-    padding:8px 14px;
-    border-radius:10px;
-
-    font-size:9px;
-    font-weight:bold;
-    font-family:Arial;
-
-    border:1px solid rgb(0,151,20);
-
-    z-index:2000;
-  }
-  #rightPanel{
-    position:absolute;
-    top:55px;
-    right:120px;
-
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-
-    z-index:3000;
-  }
-
-  .rightPanelBtn{
-    background:#065e2e;
-    color:white;
-
-    padding:8px 14px;
-    border-radius:10px;
-
-    font-size:9px;
-    font-weight:bold;
-    font-family:Arial;
-
-    border:1px solid rgb(0,151,20);
-
-    cursor:pointer;
-  }
-  #spectatorList{
-    margin-top:4px;
-    color:yellow;
-    max-height:80px;
-    overflow-y:auto;
-  }
-  .rightPanelBtn:hover{
-    background:#08783c;
-  }
-  #topbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 55px;
-
-    background: linear-gradient(to bottom, rgb(12, 151, 54), #00440f);
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    gap: 15px;
-    z-index: 999999;
-  }
-
-  /* Grupos laterais mais próximos */
-  .bar-left,
-  .bar-right {
-    display: flex;
-    gap: 10px;
-  }
-
-  /* Centro real */
-  .bar-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-  }
-
-  /* Logo */
-  #topLogo {
-    height: 50px;
-    width: auto;
-  }
-
-  /* ===================== */
-  /* BOTÕES ESTILO FIFA */
-
-  #topbar button {
-    background: rgba(255,255,255,0.08);
-    color: white;
-
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 10px;
-
-    padding: 7px 14px;
-    font-size: 12px;
-    font-weight: 600;
-
-    cursor: pointer;
-    transition: 0.25s;
-  }
-
-  /* Hover bonito */
-  #topbar button:hover {
-    background: rgba(0, 0, 0, 0.452);
-    transform: translateY(-2px);
-    border-color: rgba(255,255,255,0.5);
-  }
-
-  /* Clique */
-  #topbar button:active {
-    transform: translateY(0px);
-    background: rgba(30, 255, 0);
-  }
-
-
-
-  /* ===================== */
-  /* MODAL */
-
-  #modalOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-
-    display: none;
-    justify-content: center;
-    align-items: center;
-
-    z-index: 999999;
-  }
-
-  #modalBox {
-    width: 460px;
-    max-width: 90%;
-
-    background: #111;
-    border: 2px solid white;
-    border-radius: 16px;
-
-    padding: 25px;
-    text-align: center;
-
-    font-family: Arial, sans-serif;
-    color: white;
-  }
-
-  #modalTitle {
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
-
-  #modalText {
-    font-size: 14px;
-    line-height: 1.5;
-    white-space: pre-line;
-  }
-
-  #modalButtons {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-  }
-
-  /* Botões */
-  #modalButtons button {
-    padding: 10px 18px;
-    font-size: 14px;
-    font-weight: bold;
-
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-
-    min-width: 110px;
-  }
-
-  /* Reiniciar */
-  #confirmBtn {
-    background: green;
-    color: white;
-  }
-
-  #confirmBtn:hover {
-    background: limegreen;
-  }
-
-  /* Cancelar */
-  #cancelBtn {
-    background: darkred;
-    color: white;
-  }
-
-  #cancelBtn:hover {
-    background: red;
-  }
-
-
-  /* ===================== */
-  /* HIGHLIGHT AMARELO GERAL */
-
-  .highlight-zone {
-    outline: 2px solid rgb(0, 255, 98) !important;
-    border-radius: 5px;
-  }
-
-  /* Highlight para mão */
-  #hand.highlight-zone,
-  #hand_red.highlight-zone {
-    background: rgba(255,255,0,0.15) !important;
-  }
-
-  /* ===================== */
-  /* SHUFFLE BUTTON EM CIMA DO DECK */
-
-  .deck-wrapper {
-    position: absolute;
-    width: 74px;
-    height: 103px;
-
-    /* ✅ igual as peças */
-    transform: translate(-100%, -100%);
-
-    z-index: 50;
-    pointer-events: auto;
-  }
-  .shuffle-btn {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-
-    width: 18px;
-    height: 18px;
-
-    border-radius: 50%;
-    border: none;
-
-    background: rgba(238, 255, 0, 0.85);
-    cursor: pointer;
-
-    display: none;
-    align-items: center;
-    justify-content: center;
-
-    box-shadow: 0 0 6px rgba(0,0,0,0.6);
-
-    z-index: 999; /* ✅ ISSO FAZ APARECER */
-  }
-
-  .shuffle-icon {
-    width: 12px;
-    height: 12px;
-    pointer-events: none;
-  }
-
-  .deck-wrapper.red-zone .shuffle-btn{
-    transform: rotate(180deg);
-    left: 50px;
-    top: 80px;
-  }
-
-  .deck-wrapper.show-shuffle .shuffle-btn {
-    display: flex;
-  }
-
-  .shuffle-btn:hover {
-    background: yellow;
-    transform: scale(1.15);
-  }
-
-  /* ===================== */
-  /* ANIMAÇÃO SHUFFLE */
-
-  @keyframes shakeDeck {
-    0%   { transform: translate(-105%, -105%) rotate(0deg); }
-    25%  { transform: translate(-105%, -105%) rotate(-3deg); }
-    50%  { transform: translate(-105%, -105%) rotate(3deg); }
-    75%  { transform: translate(-105%, -105%) rotate(-3deg); }
-    100% { transform: translate(-105%, -105%) rotate(0deg); }
-  }
-
-  /* classe aplicada durante shuffle */
-  .deck-wrapper.shuffling {
-    animation: shakeDeck 0.3s ease;
-  }
-
-  /* ===================== */
-  /* PEÇAS SEMPRE ACIMA */
-
-  .piece {
-    z-index: 5000;
-  }
-
-  /* Cartas abertas abaixo das peças */
-  .fan-card {
-    z-index: 3000 !important;
-  }
-
-  /* Mão não bloqueia o tabuleiro */
-  #hand_red {
-    position: fixed;
-    top: 5px;
-    left: 0;
-    width: 100%;
-    height: 70px;
-
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-
-    z-index: 10000;
-  }
-
-
-  #hand_red .hand-card {
-    transform: translateY(-50px) rotate(180deg);
-  }
-
-  #hand_red .hand-card:hover {
-    transform: translateY(-50px) scale(1.15) rotate(180deg);
-    z-index: 999;
-  }
-
-
-  .deck-wrapper.red-zone.deck-count{
-    transform: rotate(180deg);
-  }
-
-  body.red-player .deck-count{
-    transform: rotate(180deg);
-  }
-  /* ===================== */
-  /* ZOOM TWIST */
-
-  #twistZoomOverlay{
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    background: rgba(0,0,0,0.85);
-    display: none;
-
-    justify-content: center;
-    align-items: center;
-
-    z-index: 999999;
-  }
-
-  #twistZoomImg{
-    width: auto;
-    height: 400px;
-
-    border-radius: 15px;
-    box-shadow: 0 0 25px black;
-
-    transform: scale(1.05);
-  }
-  /* ===================== */
-  /* CRÉDITOS + DIREITOS */
-
-  #copyright {
-    position: fixed;
-    bottom: 30px;
-    right: 8px;
-
-    font-size: 8px;
-    font-family: Arial, sans-serif;
-
-    color: rgba(255, 255, 255, 0.65);
-    text-align: right;
-
-    z-index: 999999;
-    pointer-events: none;
-
-    line-height: 1.3;
-  }
-
-  .twist-card{
-    z-index: 9000;
-    position: absolute;
-  }
-  /* ===================== */
-  /* CONTADOR DE CARTAS NA MÃO */
-
-  .hand-counter{
-    position: fixed;
-
-    padding: 5px 8px;
-    border-radius: 10px;
-
-    font-size: 10px;
-    font-family: Arial;
-    font-weight: bold;
-
-    color: white;
-    z-index: 999999;
-    pointer-events: none;
-
-  }
-  /* 🔵 CONTADOR AZUL */
-  #counter_blue{
-    bottom: 100px;
-    left: 100px;
-
-    background: rgba(0, 120, 255, 0.55);
-    border: 1px solid rgba(0, 170, 255, 0.85);
-  }
-
-  /* 🔴 CONTADOR VERMELHO */
-  #counter_red{
-    top: 105px;
-    left: 930px;
-
-    background: rgba(255, 40, 40, 0.55);
-    border: 1px solid rgba(255, 120, 120, 0.85);
-  }
-  /* gira somente para quem é jogador vermelho */
-  body.red-player #counter_red{
-    transform: rotate(180deg);
-  }
-  body.red-player #counter_blue{
-    transform: rotate(180deg);
-  }
-  /* ===================== */
-  /* CARTAS FIXAS DO TABULEIRO */
-
-  .fixed-board-card{
-    position: absolute;
-
-    height: 125px;      /* ✅ tamanho pedido */
-    width: auto;
-
-    cursor: pointer;
-    z-index: 13;
-
-    border-radius: 0px;
-    transition: transform 0.15s;
-  }
-  /* ===================== */
-  /* DECK VAZIO (SEM CARTAS) */
-
-  .deck-slot.deck-empty{
-    filter: brightness(0.25) grayscale(1);
-  }
-
-
-  .deck-wrapper.deck-empty-wrapper{
-    position: absolute;
-  }
-
-  .deck-wrapper.deck-empty-wrapper::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    background: linear-gradient(
-      45deg,
-      transparent 48%,
-      red 50%,
-      transparent 52%
-    );
-  }
-
-  #tempoStatus{
-    background: rgb(37, 37, 37);
-    color: white;
-
-    padding: 6px 14px;
-    border-radius: 10px;
-
-    font-size: 12px;
-    font-weight: bold;
-    font-family: Arial;
-
-    border: 1px solid rgb(0, 151, 20);
-
-    position: absolute;
-    right: 125px;
-  }
-  .topbox{
-    background: rgb(37, 37, 37);
-    color: white;
-
-    padding: 6px 14px;
-    border-radius: 10px;
-
-    font-size: 12px;
-    font-weight: bold;
-    font-family: Arial;
-
-    border: 1px solid rgb(0, 151, 20);
-    position: absolute;
-    left: 125px;
-  }
-
-  .hand-inner {
-    display: flex;
-    justify-content: center;
-    max-width: 1150px;   /* largura do tabuleiro */
-    margin: 0 auto;
-    overflow: visible;
-  }
-  .hand-group.spacer {
-    width: 70px;
-    margin: 0;
-  }
-
-  /* 🔴 Decks vermelhos virados 180° */
-  .deck-wrapper.red-zone .deck-slot {
-    transform: rotate(180deg);
-  }
-
-  .spectator-cross{
-    position: absolute;
-    width: 44px;      /* 🔥 AUMENTA AQUI */
-    height: 44px;
-    pointer-events: none;
-    z-index: 999999;
-    transform: translate(-50%,-50%);
-  }
-  #audioControls{
-    position:absolute;
-    right:0px;
-
-    /* 🔥 distância abaixo da spectatorBox */
-    top:95px;
-
-    display:flex;
-    flex-direction:column;
-    gap:1px;
-
-    z-index:3000;
-  }
-
-  #volumeSlider{
-    width: 50px;
-    accent-color: rgb(0, 255, 120);
-    cursor: pointer;
-  }
-
-
-  #audioControls button{
-    background:#111;
-    color:white;
-    border:1px solid #555;
-    padding:6px 15px;
-    border-radius:30px;
-    cursor:pointer;
-    font-size:10px;
-  }
-
-  #audioControls button:hover{
-    background:#222;
-  }
-
-
-
-  #joinMessage{
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    
-    background: rgba(0,0,0,0.85);
-    color: gold;
-
-    padding: 25px 50px;
-    border-radius: 15px;
-
-    font-size: 22px;
-    font-family: Arial;
-    font-weight: bold;
-    text-align: center;
-
-    z-index: 999999;
-    display: none;
-
-    box-shadow: 0 0 25px rgba(255,215,0,0.5);
-  }
-
-  #contactBtn{
-    position:absolute;
-    width: 50px;
-    height:20px;
-    bottom:75px; /* acima do copyright */
-    right:40px;
-    font-size:10px;
-    padding:4px 8px;
-    border:none;
-    border-radius:6px;
-    background:#222;
-    color:#fff;
-    cursor:pointer;
-    opacity:0.8;
-  }
-
-
-  #contactBtn:hover{
-    opacity:1;
-    background:#333;
-  }
-
-
-  #rotateWarning{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:#111;
-    color:white;
-    font-family:Arial;
-    font-size:20px;
-    font-weight:bold;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    z-index:9999999;
-  }
-
-  @media (orientation: portrait){
-    #rotateWarning{
-      display:flex;
+    .anchor {
+      position: absolute;
+      width: 0;
+      height: 0;
     }
-    #board,
-    #topbar,
-    #rightPanel,
-    #matchBox,
-    #hand,
-    #hand_red{
-      display:none !important;
+
+    /* ===================== */
+    /* DECKS */
+#boardBg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1152px;
+  height: 658px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.deck-slot {
+  position: absolute;
+  left: 0;
+  top: 0;
+
+  width: 74px;
+  height: 103px;
+  display: block;
+}
+    /* ===================== */
+    /* SLOT PILHA */
+
+    .slot-pile {
+      position: absolute;
+      width: 74px;
+      height: 103px;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: border 0.2s;
+      z-index: 20;
+      pointer-events:auto;
+      overflow: visible;
     }
+
+
+    .slot-pile.highlight {
+      border: 2px solid yellow;
+    }
+
+    .slot-top-card{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 74px;
+  height: 103px;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+    /* ===================== */
+    /* MÃO */
+
+#hand {
+  position: fixed;          /* ✅ não depende do body */
+  bottom: -30px;              /* ✅ colado na base */
+  left: 0;
+
+  width: 100%;
+  height: 90px;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+
+  z-index: 10000;
+  background: transparent;
+
+}
+
+
+
+
+/* Azul: hover ou drag */
+#hand:hover,
+#hand.active-zone {
+  background: rgba(0, 120, 255, 0.2);
+}
+
+/* Vermelho: hover ou drag */
+#hand_red:hover,
+#hand_red.active-zone {
+  background: rgba(255, 0, 0, 0.2);
+}
+
+
+/* Hover também ativa o brilho */
+#hand:hover {
+  background: rgba(0, 120, 255, 0.2);
+}
+
+#hand_red:hover {
+  background: rgba(255, 0, 0, 0.2);
+}
+
+    .hand-group {
+      display: flex;
+      gap: 0px;
+      margin: 0 30px;
+      pointer-events:auto;
+      
+    }
+
+    .hand-card {
+      width: 90px;
+      height: 125px;
+      margin: 0 -25px;
+      transform: translateY(30px);
+      transition: 0.2s;
+      cursor: grab;
+      pointer-events:auto;
+    }
+
+    .hand-card:hover {
+      transform: translateY(27px) scale(1.1);
+      z-index: 999;
+    }
+
+    /* ===================== */
+    /* LEQUE */
+
+    .fan-card {
+      position: absolute;
+      width: 74px;
+      height: 103px;
+      transition: 0.2s;
+      cursor: grab;
+      z-index: 300;
+    }
+
+    /* ======================= */
+    /* PEÇAS DO TABULEIRO */
+
+    .piece {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: grab;
+      z-index: 5;
+    }
+
+    .token14 { width: 14px; height: 14px; }
+    .token27 { width: 27px; height: 27px; z-index: 5000;}
+    .bonus-token {width: 20px !important; height: 20px !important;}
+    .cardred { width: 11px; height: 17px; z-index: 3000 !important;}
+    .ball    { width: 30px; height: 30px; z-index: 5000 !important; position: absolute;
+}
+
+
+  img.red:not(.token27) {
+    transform: translate(-50%, -50%) rotate(180deg);
   }
 
-  img{
-    -webkit-user-drag: element;
-  }
+  .token27 {
+  transform: translate(-50%, -50%);
+}
 
-  img {
-    pointer-events: auto;
-  }
 
-  #helpBtn{
-    position: fixed;
-    bottom: 110px;
-    right: 27px;
+#hand .hand-inner {
+  justify-content: center;
+}
 
-    width: 18px;
-    height: 18px;
+body.red-player #hand_red{
+  top:-20px;
+}
 
-    border-radius: 50%;
-    border: none;
+body.red-player #board{
+  bottom:-30px !important;
+}
 
-    background: gold;
-    color: black;
+#matchBox{
+  position: absolute;
+  left: 50%;
+  top: 65px;
 
-    font-weight: bold;
-    font-size: 12px;
+  transform: translate(-50%, -50%);
 
-    cursor: pointer;
-    z-index: 999999;
-  }
+  background: rgb(37,37,37);
+  color: white;
 
-  #helpOverlay{
+  padding: 4px 15px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+
+  font-size: 11px;
+  font-weight: bold;
+  font-family: Arial;
+
+  border: 1px solid rgb(0,151,20);
+
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  z-index: 2000;
+}
+
+#matchBox .vs{
+  font-size: 16px;
+  color: rgb(0,255,120);
+}
+
+/* ===================== */
+/* TOPBAR ESTILO GAME HUD */
+
+#spectatorBox{
+  top:55px;
+  right:120px;
+
+  background:#065e2e;
+  color:white;
+
+  padding:8px 14px;
+  border-radius:10px;
+
+  font-size:9px;
+  font-weight:bold;
+  font-family:Arial;
+
+  border:1px solid rgb(0,151,20);
+
+  z-index:2000;
+}
+#rightPanel{
+  position:absolute;
+  top:55px;
+  right:120px;
+
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+
+  z-index:3000;
+}
+
+.rightPanelBtn{
+  background:#065e2e;
+  color:white;
+
+  padding:8px 14px;
+  border-radius:10px;
+
+  font-size:9px;
+  font-weight:bold;
+  font-family:Arial;
+
+  border:1px solid rgb(0,151,20);
+
+  cursor:pointer;
+}
+#spectatorList{
+  margin-top:4px;
+  color:yellow;
+  max-height:80px;
+  overflow-y:auto;
+}
+.rightPanelBtn:hover{
+  background:#08783c;
+}
+#topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 55px;
+
+  background: linear-gradient(to bottom, rgb(12, 151, 54), #00440f);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  gap: 15px;
+  z-index: 999999;
+}
+
+/* Grupos laterais mais próximos */
+.bar-left,
+.bar-right {
+  display: flex;
+  gap: 10px;
+}
+
+/* Centro real */
+.bar-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+}
+
+/* Logo */
+#topLogo {
+  height: 50px;
+  width: auto;
+}
+
+/* ===================== */
+/* BOTÕES ESTILO FIFA */
+
+#topbar button {
+  background: rgba(255,255,255,0.08);
+  color: white;
+
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+/* Hover bonito */
+#topbar button:hover {
+  background: rgba(0, 0, 0, 0.452);
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.5);
+}
+
+/* Clique */
+#topbar button:active {
+  transform: translateY(0px);
+  background: rgba(30, 255, 0);
+}
+
+
+
+/* ===================== */
+/* MODAL */
+
+#modalOverlay {
   position: fixed;
   inset: 0;
+  background: rgba(0,0,0,0.75);
+
   display: none;
   justify-content: center;
   align-items: center;
+
+  z-index: 999999;
+}
+
+#modalBox {
+  width: 460px;
+  max-width: 90%;
+
+  background: #111;
+  border: 2px solid white;
+  border-radius: 16px;
+
+  padding: 25px;
+  text-align: center;
+
+  font-family: Arial, sans-serif;
+  color: white;
+}
+
+#modalTitle {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+#modalText {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+#modalButtons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* Botões */
+#modalButtons button {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: bold;
+
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+
+  min-width: 110px;
+}
+
+/* Reiniciar */
+#confirmBtn {
+  background: green;
+  color: white;
+}
+
+#confirmBtn:hover {
+  background: limegreen;
+}
+
+/* Cancelar */
+#cancelBtn {
+  background: darkred;
+  color: white;
+}
+
+#cancelBtn:hover {
+  background: red;
+}
+
+
+/* ===================== */
+/* HIGHLIGHT AMARELO GERAL */
+
+.highlight-zone {
+  outline: 2px solid rgb(0, 255, 98) !important;
+  border-radius: 5px;
+}
+
+/* Highlight para mão */
+#hand.highlight-zone,
+#hand_red.highlight-zone {
+  background: rgba(255,255,0,0.15) !important;
+}
+
+/* ===================== */
+/* SHUFFLE BUTTON EM CIMA DO DECK */
+
+.deck-wrapper {
+  position: absolute;
+  width: 74px;
+  height: 103px;
+
+  /* ✅ igual as peças */
+  transform: translate(-100%, -100%);
+
+  z-index: 50;
+  pointer-events: auto;
+}
+.shuffle-btn {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+  border: none;
+
+  background: rgba(238, 255, 0, 0.85);
+  cursor: pointer;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 0 6px rgba(0,0,0,0.6);
+
+  z-index: 999; /* ✅ ISSO FAZ APARECER */
+}
+
+.shuffle-icon {
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.deck-wrapper.red-zone .shuffle-btn{
+  transform: rotate(180deg);
+  left: 50px;
+  top: 80px;
+}
+
+.deck-wrapper.show-shuffle .shuffle-btn {
+  display: flex;
+}
+
+.shuffle-btn:hover {
+  background: yellow;
+  transform: scale(1.15);
+}
+
+/* ===================== */
+/* ANIMAÇÃO SHUFFLE */
+
+@keyframes shakeDeck {
+  0%   { transform: translate(-105%, -105%) rotate(0deg); }
+  25%  { transform: translate(-105%, -105%) rotate(-3deg); }
+  50%  { transform: translate(-105%, -105%) rotate(3deg); }
+  75%  { transform: translate(-105%, -105%) rotate(-3deg); }
+  100% { transform: translate(-105%, -105%) rotate(0deg); }
+}
+
+/* classe aplicada durante shuffle */
+.deck-wrapper.shuffling {
+  animation: shakeDeck 0.3s ease;
+}
+
+/* ===================== */
+/* PEÇAS SEMPRE ACIMA */
+
+.piece {
+  z-index: 5000;
+}
+
+/* Cartas abertas abaixo das peças */
+.fan-card {
+  z-index: 3000 !important;
+}
+
+/* Mão não bloqueia o tabuleiro */
+#hand_red {
+  position: fixed;
+  top: 5px;
+  left: 0;
+  width: 100%;
+  height: 70px;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  z-index: 10000;
+}
+
+
+#hand_red .hand-card {
+  transform: translateY(-50px) rotate(180deg);
+}
+
+#hand_red .hand-card:hover {
+  transform: translateY(-50px) scale(1.15) rotate(180deg);
+  z-index: 999;
+}
+
+
+.deck-wrapper.red-zone.deck-count{
+  transform: rotate(180deg);
+}
+
+body.red-player .deck-count{
+  transform: rotate(180deg);
+}
+/* ===================== */
+/* ZOOM TWIST */
+
+#twistZoomOverlay{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
   background: rgba(0,0,0,0.85);
-  z-index: 9999999;
+  display: none;
+
+  justify-content: center;
+  align-items: center;
+
+  z-index: 999999;
+}
+
+#twistZoomImg{
+  width: auto;
+  height: 400px;
+
+  border-radius: 15px;
+  box-shadow: 0 0 25px black;
+
+  transform: scale(1.05);
+}
+/* ===================== */
+/* CRÉDITOS + DIREITOS */
+
+#copyright {
+  position: fixed;
+  bottom: 30px;
+  right: 8px;
+
+  font-size: 8px;
+  font-family: Arial, sans-serif;
+
+  color: rgba(255, 255, 255, 0.65);
+  text-align: right;
+
+  z-index: 999999;
+  pointer-events: none;
+
+  line-height: 1.3;
+}
+
+.twist-card{
+  z-index: 9000;
+  position: absolute;
+}
+/* ===================== */
+/* CONTADOR DE CARTAS NA MÃO */
+
+.hand-counter{
+  position: fixed;
+
+  padding: 5px 8px;
+  border-radius: 10px;
+
+  font-size: 10px;
+  font-family: Arial;
+  font-weight: bold;
+
+  color: white;
+  z-index: 999999;
+  pointer-events: none;
+
+}
+/* 🔵 CONTADOR AZUL */
+#counter_blue{
+  bottom: 100px;
+  left: 100px;
+
+  background: rgba(0, 120, 255, 0.55);
+  border: 1px solid rgba(0, 170, 255, 0.85);
+}
+
+/* 🔴 CONTADOR VERMELHO */
+#counter_red{
+  top: 105px;
+  left: 930px;
+
+  background: rgba(255, 40, 40, 0.55);
+  border: 1px solid rgba(255, 120, 120, 0.85);
+}
+/* gira somente para quem é jogador vermelho */
+body.red-player #counter_red{
+  transform: rotate(180deg);
+}
+body.red-player #counter_blue{
+  transform: rotate(180deg);
+}
+/* ===================== */
+/* CARTAS FIXAS DO TABULEIRO */
+
+.fixed-board-card{
+  position: absolute;
+
+  height: 125px;      /* ✅ tamanho pedido */
+  width: auto;
+
+  cursor: pointer;
+  z-index: 13;
+
+  border-radius: 0px;
+  transition: transform 0.15s;
+}
+/* ===================== */
+/* DECK VAZIO (SEM CARTAS) */
+
+.deck-slot.deck-empty{
+  filter: brightness(0.25) grayscale(1);
+}
+
+
+.deck-wrapper.deck-empty-wrapper{
+  position: absolute;
+}
+
+.deck-wrapper.deck-empty-wrapper::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: linear-gradient(
+    45deg,
+    transparent 48%,
+    red 50%,
+    transparent 52%
+  );
+}
+
+#tempoStatus{
+  background: rgb(37, 37, 37);
+  color: white;
+
+  padding: 6px 14px;
+  border-radius: 10px;
+
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Arial;
+
+  border: 1px solid rgb(0, 151, 20);
+
+  position: absolute;
+  right: 125px;
+}
+.topbox{
+  background: rgb(37, 37, 37);
+  color: white;
+
+  padding: 6px 14px;
+  border-radius: 10px;
+
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Arial;
+
+  border: 1px solid rgb(0, 151, 20);
+  position: absolute;
+  left: 125px;
+}
+
+.hand-inner {
+  display: flex;
+  justify-content: center;
+  max-width: 1150px;   /* largura do tabuleiro */
+  margin: 0 auto;
+  overflow: visible;
+}
+.hand-group.spacer {
+  width: 70px;
+  margin: 0;
+}
+
+/* 🔴 Decks vermelhos virados 180° */
+.deck-wrapper.red-zone .deck-slot {
+  transform: rotate(180deg);
+}
+
+.spectator-cross{
+  position: absolute;
+  width: 44px;      /* 🔥 AUMENTA AQUI */
+  height: 44px;
+  pointer-events: none;
+  z-index: 999999;
+  transform: translate(-50%,-50%);
+}
+#audioControls{
+  position:absolute;
+  right:0px;
+
+  /* 🔥 distância abaixo da spectatorBox */
+  top:95px;
+
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+
+  z-index:3000;
+}
+
+#volumeSlider{
+  width: 50px;
+  accent-color: rgb(0, 255, 120);
+  cursor: pointer;
+}
+
+
+#audioControls button{
+  background:#111;
+  color:white;
+  border:1px solid #555;
+  padding:6px 15px;
+  border-radius:30px;
+  cursor:pointer;
+  font-size:10px;
+}
+
+#audioControls button:hover{
+  background:#222;
+}
+
+
+
+#joinMessage{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  background: rgba(0,0,0,0.85);
+  color: gold;
+
+  padding: 25px 50px;
+  border-radius: 15px;
+
+  font-size: 22px;
+  font-family: Arial;
+  font-weight: bold;
+  text-align: center;
+
+  z-index: 999999;
+  display: none;
+
+  box-shadow: 0 0 25px rgba(255,215,0,0.5);
+}
+
+#contactBtn{
+  position:absolute;
+  width: 50px;
+  height:20px;
+  bottom:75px; /* acima do copyright */
+  right:40px;
+  font-size:10px;
+  padding:4px 8px;
+  border:none;
+  border-radius:6px;
+  background:#222;
+  color:#fff;
+  cursor:pointer;
+  opacity:0.8;
+}
+
+
+#contactBtn:hover{
+  opacity:1;
+  background:#333;
+}
+
+
+#rotateWarning{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#111;
+  color:white;
+  font-family:Arial;
+  font-size:20px;
+  font-weight:bold;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  z-index:9999999;
+}
+
+@media (orientation: portrait){
+  #rotateWarning{
+    display:flex;
+  }
+  #board,
+  #topbar,
+  #rightPanel,
+  #matchBox,
+  #hand,
+  #hand_red{
+    display:none !important;
+  }
+}
+
+img{
+  -webkit-user-drag: element;
+}
+
+img {
+  pointer-events: auto;
+}
+
+#helpBtn{
+  position: fixed;
+  bottom: 110px;
+  right: 27px;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+  border: none;
+
+  background: gold;
+  color: black;
+
+  font-weight: bold;
+  font-size: 12px;
+
+  cursor: pointer;
+  z-index: 999999;
+}
+
+#helpOverlay{
+position: fixed;
+inset: 0;
+display: none;
+justify-content: center;
+align-items: center;
+background: rgba(0,0,0,0.85);
+z-index: 9999999;
 }
 
 #helpImage{
-  max-width: 90vw;
-  max-height: 85vh;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.6);
+max-width: 90vw;
+max-height: 85vh;
+width: auto;
+height: auto;
+object-fit: contain;
+border-radius: 12px;
+box-shadow: 0 0 30px rgba(0,0,0,0.6);
 }
 
 #helpPrevBtn,
 #helpNextBtn,
 #helpExitBtn{
-  position: absolute;
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  z-index: 10000000;
+position: absolute;
+background: none;
+border: none;
+color: white;
+cursor: pointer;
+z-index: 10000000;
 }
 
 #helpExitBtn{
-  top: 20px;
-  right: 20px;
-  font-size: 28px;
+top: 20px;
+right: 20px;
+font-size: 28px;
 }
 
 #helpPrevBtn{
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 30px;
+left: 10px;
+top: 50%;
+transform: translateY(-50%);
+font-size: 30px;
 }
 
 #helpNextBtn{
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 30px;
+right: 10px;
+top: 50%;
+transform: translateY(-50%);
+font-size: 30px;
 }
 
 #helpCounter{
-  position: absolute;
-  bottom: 20px;
-  color: white;
-  font-weight: bold;
-  font-size: 16px;
+position: absolute;
+bottom: 20px;
+color: white;
+font-weight: bold;
+font-size: 16px;
 }
 
-  .deck-count{
+.deck-count{
 
-  position:absolute;
-  right:1px;
-  bottom:1px;
+position:absolute;
+right:1px;
+bottom:1px;
 
-  width:18px;
-  height:18px;
+width:18px;
+height:18px;
 
-  border-radius:50%;
+border-radius:50%;
 
-  background:rgba(0,0,0,0.3);
-  color:white;
+background:rgba(0,0,0,0.3);
+color:white;
 
-  font-size:9px;
-  font-family:Arial;
-  font-weight:bold;
+font-size:9px;
+font-family:Arial;
+font-weight:bold;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+pointer-events:none;
+z-index:9999;
+
+}
+
+.selected-card{
+transform: translateY(-15px) scale(1.02);
+filter: drop-shadow(0 0 10px gold);
+z-index: 999999 !important; /* 🔥 ESSENCIAL */
+position: relative; /* 🔥 garante z-index funcionar */
+}
+
+#rotateOverlay{
+position:fixed;
+inset:0;
+background:linear-gradient(180deg,#0b5e2b,#003b1a);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:9999999;
+}
+
+*{
+-webkit-user-select:none;
+user-select:none;
+}
+
+.card-hover-zoom{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  width: 280px;
+  z-index: 999999;
+  pointer-events: none;
+  display: none;
+}
+
+#discordBtn{
+  position: fixed;
+  bottom: 140px;
+  right: 27px;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+  border: none;
+
+  background: white;
+
+  cursor: pointer;
+  z-index: 999999;
 
   display:flex;
   align-items:center;
   justify-content:center;
+}
 
-  pointer-events:none;
-  z-index:9999;
+#discordBtn img{
+  width:14px;
+  height:14px;
+}
 
-  }
+#discordBtn:hover{
+  transform:scale(1.1);
+}
 
-  .selected-card{
-  transform: translateY(-15px) scale(1.02);
-  filter: drop-shadow(0 0 10px gold);
-  z-index: 999999 !important; /* 🔥 ESSENCIAL */
-  position: relative; /* 🔥 garante z-index funcionar */
-  }
+/* ===================== */
+/* ÚLTIMA CARTA JOGADA */
 
-  #rotateOverlay{
-  position:fixed;
+.last-card{
+  animation: cardSwing 1.2s infinite ease-in-out;
+}
+
+@keyframes cardSwing{
+  0%{ transform: translate(0%,-0%) rotate(-2deg); }
+  50%{ transform: translate(-0%,-0%) rotate(2deg); }
+  100%{ transform: translate(-0%,-0%) rotate(-2deg); }
+}
+
+html {
+  zoom: 1;
+}
+
+.radial-menu{
+  position: fixed;
+  z-index: 999999;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  transform: none;
+}
+
+.radial-btn{
+  min-width: 20px;
+  padding: 8px 12px;
+
+  border-radius: 15px;
+
+  background: #f1c40f;
+
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-size: 8px;
+
+  cursor: pointer;
+
+  text-align: center;
+
+  transition: 0.15s ease;
+
+}
+
+.radial-btn:hover{
+  background: #ffd84d;
+  transform: translateY(-2px);
+}
+
+.slot-overlay{
+  position: fixed;
   inset:0;
-  background:linear-gradient(180deg,#0b5e2b,#003b1a);
-  display:none;
+  background: rgba(0,0,0,0.7); /* 🔥 fundo escuro */
+  display:flex;
+  flex-direction:column;
   justify-content:center;
   align-items:center;
-  z-index:9999999;
+  z-index:999999;
+}
+
+.slot-container{
+  display:flex;
+  gap:10px;
+  flex-wrap: wrap;
+  max-width: 80%;
+}
+
+.slot-big-card{
+  width:120px;
+  cursor:pointer;
+  
+}
+
+/* SLOT (onde pode jogar) */
+.slot-pile.highlight{
+  outline: 3px solid #00ff00;
+  box-shadow: 0 0 12px #00ff00;
+  z-index: 5;
+    animation: pulse 0.8s infinite alternate;
+}
+
+@keyframes pulse{
+  from{
+    box-shadow: 0 0 5px #00ff00;
   }
-
-  *{
-  -webkit-user-select:none;
-  user-select:none;
+  to{
+    box-shadow: 0 0 20px #00ff00;
   }
+}
+
+
+/* DECK + HAND (zonas) */
+.highlight-zone{
+  outline: 3px solid #00ccff;
+  box-shadow: 0 0 10px #00ccff;
+  border-radius: 6px;
+}
+
+/* CARTA SELECIONADA */
+.hand-card.selected-card,
+.fan-card.selected-card{
+
+  box-shadow: 0 0 12px yellow;
+  transform: scale(1.05);
+}
+
+.formation-box{
+  position: absolute;
+  width: 120px;
+  height: 60px;
+
+  background: rgba(0,0,0,0.6);
+  color: white;
+
+  border: 2px solid yellow;
+  border-radius: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  z-index: 9000;
+}
+
+/* 🔵 POSICIONAMENTO */
+#formation_blue{
+  left: 900px;  /* AJUSTA FINO AQUI */
+  top: 500px;
+}
+
+/* 🔴 POSICIONAMENTO */
+#formation_red{
+  left: 100px; /* AJUSTA FINO */
+  top: 100px;
+}
+
+.formation-table{
+  position: absolute;
+  width: 145px;
+  height: 70px;
+
+  top: 421px;
+  left: 457px;
+
+  background: rgba(0,0,0,0.6);
+  border: 2px solid yellow;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+
+  z-index: 8000;
+}
+
+.formation-table .row{
+  display: flex;
+  align-items: center;
+}
+
+.formation-table .label{
+  width: 120px;
+  text-align: center;
+  font-weight: bold;
+  color: white;
+}
+
+.formation-table .cell{
+  flex: 1;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* 🔥 selecionado */
+.formation-table .cell.active{
+  background: yellow;
+  color: black;
+  font-weight: bold;
+}
+
+.formation-table{
+  position: absolute;
+
+  width: 148px;
+  height: 70px;
+
+  left: 418px;
+  top: 462px;
 
-  .card-hover-zoom{
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%,-50%);
-    width: 280px;
-    z-index: 999999;
-    pointer-events: none;
-    display: none;
-  }
-
-  #discordBtn{
-    position: fixed;
-    bottom: 140px;
-    right: 27px;
-
-    width: 18px;
-    height: 18px;
-
-    border-radius: 50%;
-    border: none;
-
-    background: white;
-
-    cursor: pointer;
-    z-index: 999999;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-
-  #discordBtn img{
-    width:14px;
-    height:14px;
-  }
-
-  #discordBtn:hover{
-    transform:scale(1.1);
-  }
-
-  /* ===================== */
-  /* ÚLTIMA CARTA JOGADA */
-
-  .last-card{
-    animation: cardSwing 1.2s infinite ease-in-out;
-  }
-
-  @keyframes cardSwing{
-    0%{ transform: translate(0%,-0%) rotate(-2deg); }
-    50%{ transform: translate(-0%,-0%) rotate(2deg); }
-    100%{ transform: translate(-0%,-0%) rotate(-2deg); }
-  }
-
-  html {
-    zoom: 1;
-  }
-
-  .radial-menu{
-    position: fixed;
-    z-index: 999999;
-
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-    transform: none;
-  }
-
-  .radial-btn{
-    min-width: 20px;
-    padding: 8px 12px;
-
-    border-radius: 15px;
-
-    background: #f1c40f;
-
-    font-family: Arial, sans-serif;
-    font-weight: bold;
-    font-size: 8px;
-
-    cursor: pointer;
-
-    text-align: center;
-
-    transition: 0.15s ease;
-
-  }
-
-  .radial-btn:hover{
-    background: #ffd84d;
-    transform: translateY(-2px);
-  }
-
-  .slot-overlay{
-    position: fixed;
-    inset:0;
-    background: rgba(0,0,0,0.7); /* 🔥 fundo escuro */
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    z-index:999999;
-  }
-
-  .slot-container{
-    display:flex;
-    gap:10px;
-    flex-wrap: wrap;
-    max-width: 80%;
-  }
-
-  .slot-big-card{
-    width:120px;
-    cursor:pointer;
-    
-  }
-
-  /* SLOT (onde pode jogar) */
-  .slot-pile.highlight{
-    outline: 3px solid #00ff00;
-    box-shadow: 0 0 12px #00ff00;
-    z-index: 5;
-      animation: pulse 0.8s infinite alternate;
-  }
-
-  @keyframes pulse{
-    from{
-      box-shadow: 0 0 5px #00ff00;
-    }
-    to{
-      box-shadow: 0 0 20px #00ff00;
-    }
-  }
-
-
-  /* DECK + HAND (zonas) */
-  .highlight-zone{
-    outline: 3px solid #00ccff;
-    box-shadow: 0 0 10px #00ccff;
-    border-radius: 6px;
-  }
-
-  /* CARTA SELECIONADA */
-  .hand-card.selected-card,
-  .fan-card.selected-card{
-
-    box-shadow: 0 0 12px yellow;
-    transform: scale(1.05);
-  }
-
-  .formation-box{
-    position: absolute;
-    width: 120px;
-    height: 60px;
-
-    background: rgba(0,0,0,0.6);
-    color: white;
-
-    border: 2px solid yellow;
-    border-radius: 6px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    cursor: pointer;
-    z-index: 9000;
-  }
-
-  /* 🔵 POSICIONAMENTO */
-  #formation_blue{
-    left: 900px;  /* AJUSTA FINO AQUI */
-    top: 500px;
-  }
-
-  /* 🔴 POSICIONAMENTO */
-  #formation_red{
-    left: 100px; /* AJUSTA FINO */
-    top: 100px;
-  }
-
-  .formation-table{
-    position: absolute;
-    width: 145px;
-    height: 70px;
-
-    top: 421px;
-    left: 457px;
-
-    background: rgba(0,0,0,0.6);
-    border: 2px solid yellow;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-
-    z-index: 8000;
-  }
-
-  .formation-table .row{
-    display: flex;
-    align-items: center;
-  }
-
-  .formation-table .label{
-    width: 120px;
-    text-align: center;
-    font-weight: bold;
-    color: white;
-  }
-
-  .formation-table .cell{
-    flex: 1;
-    text-align: center;
-    color: white;
-    cursor: pointer;
-    padding: 6px;
-    border: 1px solid rgba(255,255,255,0.3);
-  }
-
-  /* 🔥 selecionado */
-  .formation-table .cell.active{
-    background: yellow;
-    color: black;
-    font-weight: bold;
-  }
-
-  .formation-table{
-    position: absolute;
-
-    width: 148px;
-    height: 70px;
-
-    left: 418px;
-    top: 462px;
-
-    background: #8a4f3d00; /* marrom */
-    border: 1px solid #7fc8c400;
-
-    display: flex;
-    flex-direction: column;
-
-    font-family: Arial;
-    z-index: 9999;
-  }
-
-  /* TÍTULO */
-  .formation-header{
-    height: 15px;
-    background: #8a4f3d00;
-    color: rgba(255, 255, 255, 0);
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-weight: bold;
-    font-size: 4px;
-
-    border-bottom: 1px solid #7fc8c400;
-  }
-
-  /* LINHAS */
-  .formation-row{
-    flex: 1;
-    display: flex;
-  }
-
-  /* LABEL (ATAQUE, MEIO, DEFESA) */
-  .formation-label{
-    width: 48px;
-    background: #8a4f3d00;
-    color: rgba(255, 255, 255, 0);
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 4px;font-weight: bold;
-
-    border-right: 1px solid #7fc8c400;
-  }
-
-  /* CÉLULAS */
-  .formation-cell{
-    position: relative;
-    flex: 1;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    color: rgba(255, 255, 255, 0);
-    font-weight: bold;
-    font-size: 4px;
-
-    border-right: 1px solid #7fc8c400;
-    border-bottom: 1px solid #7fc8c400;
-
-    cursor: pointer;
-  }
-
-  /* REMOVE BORDA FINAL */
-  .formation-cell:last-child{
-    border-right: none;
-  }
-
-  /* SELEÇÃO */
-  .formation-cell.active{
-    background: #7fc8c400;
-    color: rgba(0, 0, 0, 0);
-  }
-
-  /* 🔥 CÍRCULO */
-  .formation-cell.active::after{
-    content: "";
-
-    position: absolute;
-
-    width: 14px;
-    height: 14px;
-
-    background: yellow;
-    border-radius: 50%;
-
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-
-    z-index: 0;
-  }
-
-
-  /* 🔥 vermelho em edição */
-  .formation-table.editing .formation-cell.active::after{
-    background: red;
-  }
-
-  #formationTable_red{
-    position: absolute;
-
-    /* 🔥 ajuste fino aqui */
-    left: 599px;
-    top: 125px;
-
-    transform: rotate(180deg);
-    z-index: 9999;
-    color: rgba(255, 255, 255, 0);
-  }
-
-  #formationActions{
-    position: absolute;
-    display: none;
-    gap: 6px;
-    z-index: 20000;
-  }
-
-  #actionLogToggle{
-    position: fixed;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 30000;
-    background: #1f1f1f;
-    color: #fff;
-    border: 2px solid #555;
-    border-radius: 10px;
-    padding: 5px 5px;
-    cursor: pointer;
-    font-size: 18px;
-    user-select: none;
-  }
-
-  #actionLogPanel{
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 250px;
-    height: 100vh;
-    background: rgba(15,15,15,0.97);
-    color: #fff;
-    z-index: 29999;
-    display: flex;
-    flex-direction: column;
-    border-right: 2px solid #444;
-    transition: transform 0.25s ease;
-    font-family: Arial, sans-serif;
-  }
-
-  #actionLogPanel.closed{
-    transform: translateX(-100%);
-  }
-
-  #actionLogHeader{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #444;
-    font-weight: bold;
-    background: #222;
-  }
-
-  #actionLogClose{
-    background: #444;
-    color: #fff;
-    border: none;
-    padding: 6px 10px;
-    cursor: pointer;
-    border-radius: 6px;
-  }
-
-  #actionLogList{
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 8px;
-  }
-
-  .action-log-entry{
-    background: #2a2a2a;
-    border-left: 4px solid #777;
-    padding: 8px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-    line-height: 1.4;
-    word-break: break-word;
-    font-size: 10px;
-  }
-
-  /* 🎯 SLOT PENALTI */
-  .slot-pile[data-slot^="P"]{
-    border: 2px solid rgba(255,255,255,0.041);
-    position: relative;
-  }
-
-  .slot-pile[data-slot^="P"]::after{
-    content: "P";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 28px;
-    font-weight: bold;
-    color: rgba(83, 152, 255, 0.15);
-    pointer-events: none;
-  }
-
-  .slot-pile[data-slot$="_red"]::after{
-    color: rgba(255,80,80,0.35);
-    transform: translate(-50%, -50%) rotate(180deg);
-  }
-
-  #goalOverlay{
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.185);
-
-    display: none;
-    justify-content: center;
-    align-items: center;
-
-    z-index: 9999999;
-  }
-
-  #goalGif{
-    width: 400px;
-    max-width: 80%;
-    pointer-events: none;
-  }
-
-  #subOverlay{
-    position: fixed;
-    inset: 0;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0,0,0,0.35);
-    z-index: 9999999;
-    pointer-events: none;
-  }
-
-  #subOverlay img{
-    width: 450px;
-    max-width: 80vw;
-  }
-
-  /* ===================== */
-/* TOOLTIP DE AJUDA POR HOVER */
-
-#gameTooltip{
+  background: #8a4f3d00; /* marrom */
+  border: 1px solid #7fc8c400;
+
+  display: flex;
+  flex-direction: column;
+
+  font-family: Arial;
+  z-index: 9999;
+}
+
+/* TÍTULO */
+.formation-header{
+  height: 15px;
+  background: #8a4f3d00;
+  color: rgba(255, 255, 255, 0);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: bold;
+  font-size: 4px;
+
+  border-bottom: 1px solid #7fc8c400;
+}
+
+/* LINHAS */
+.formation-row{
+  flex: 1;
+  display: flex;
+}
+
+/* LABEL (ATAQUE, MEIO, DEFESA) */
+.formation-label{
+  width: 48px;
+  background: #8a4f3d00;
+  color: rgba(255, 255, 255, 0);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 4px;font-weight: bold;
+
+  border-right: 1px solid #7fc8c400;
+}
+
+/* CÉLULAS */
+.formation-cell{
+  position: relative;
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: rgba(255, 255, 255, 0);
+  font-weight: bold;
+  font-size: 4px;
+
+  border-right: 1px solid #7fc8c400;
+  border-bottom: 1px solid #7fc8c400;
+
+  cursor: pointer;
+}
+
+/* REMOVE BORDA FINAL */
+.formation-cell:last-child{
+  border-right: none;
+}
+
+/* SELEÇÃO */
+.formation-cell.active{
+  background: #7fc8c400;
+  color: rgba(0, 0, 0, 0);
+}
+
+/* 🔥 CÍRCULO */
+.formation-cell.active::after{
+  content: "";
+
+  position: absolute;
+
+  width: 14px;
+  height: 14px;
+
+  background: yellow;
+  border-radius: 50%;
+
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  z-index: 0;
+}
+
+
+/* 🔥 vermelho em edição */
+.formation-table.editing .formation-cell.active::after{
+  background: red;
+}
+
+#formationTable_red{
+  position: absolute;
+
+  /* 🔥 ajuste fino aqui */
+  left: 599px;
+  top: 125px;
+
+  transform: rotate(180deg);
+  z-index: 9999;
+  color: rgba(255, 255, 255, 0);
+}
+
+#formationActions{
+  position: absolute;
+  display: none;
+  gap: 6px;
+  z-index: 20000;
+}
+
+#actionLogToggle{
+  position: fixed;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30000;
+  background: #1f1f1f;
+  color: #fff;
+  border: 2px solid #555;
+  border-radius: 10px;
+  padding: 5px 5px;
+  cursor: pointer;
+  font-size: 18px;
+  user-select: none;
+}
+
+#actionLogPanel{
   position: fixed;
   left: 0;
   top: 0;
-  transform: translate(-50%, -100%);
-  display: none;
-
-  max-width: 260px;
-  padding: 6px 10px;
-
-  background: rgba(0,0,0,0.88);
-  color: white;
-
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 8px;
-
+  width: 250px;
+  height: 100vh;
+  background: rgba(15,15,15,0.97);
+  color: #fff;
+  z-index: 29999;
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #444;
+  transition: transform 0.25s ease;
   font-family: Arial, sans-serif;
+}
+
+#actionLogPanel.closed{
+  transform: translateX(-100%);
+}
+
+#actionLogHeader{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #444;
+  font-weight: bold;
+  background: #222;
+}
+
+#actionLogClose{
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+#actionLogList{
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+}
+
+.action-log-entry{
+  background: #2a2a2a;
+  border-left: 4px solid #777;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
   font-size: 10px;
-  line-height: 1.25;
-  text-align: center;
+}
 
-  white-space: normal;
+/* 🎯 SLOT PENALTI */
+.slot-pile[data-slot^="P"]{
+  border: 2px solid rgba(255,255,255,0.041);
+  position: relative;
+}
+
+.slot-pile[data-slot^="P"]::after{
+  content: "P";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 28px;
+  font-weight: bold;
+  color: rgba(83, 152, 255, 0.15);
   pointer-events: none;
-  z-index: 10000001;
+}
 
-  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+.slot-pile[data-slot$="_red"]::after{
+  color: rgba(255,80,80,0.35);
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+#goalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.185);
+
+  display: none;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 9999999;
+}
+
+#goalGif{
+  width: 400px;
+  max-width: 80%;
+  pointer-events: none;
+}
+
+#subOverlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.35);
+  z-index: 9999999;
+  pointer-events: none;
+}
+
+#subOverlay img{
+  width: 450px;
+  max-width: 80vw;
+}
+
+/* ===================== */
+/* TOOLTIP DE AJUDA POR HOVER */
+
+#gameTooltip{
+position: fixed;
+left: 0;
+top: 0;
+transform: translate(-50%, -100%);
+display: none;
+
+max-width: 260px;
+padding: 6px 10px;
+
+background: rgba(0,0,0,0.88);
+color: white;
+
+border: 1px solid rgba(255,255,255,0.18);
+border-radius: 8px;
+
+font-family: Arial, sans-serif;
+font-size: 10px;
+line-height: 1.25;
+text-align: center;
+
+white-space: normal;
+pointer-events: none;
+z-index: 10000001;
+
+box-shadow: 0 4px 14px rgba(0,0,0,0.35);
 }
 
 #gameTooltip.show{
-  display: block;
+display: block;
 }
 
-    </style>
-  </head>
+.piece.cardred,
+.cardred,
+.piece[data-anchor^="red"][data-anchor$="a"],
+.piece[data-anchor^="red"][data-anchor$="v"]{
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
 
-  <script src="/socket.io/socket.io.js"></script>
+  </style>
+</head>
+
+<script src="/socket.io/socket.io.js"></script>
 
 
-  <body>
+<body>
 
-    <div id="gameTooltip"></div>
+  <div id="gameTooltip"></div>
 
-  <div id="subOverlay" class="goal-overlay" style="display:none;">
-    <img src="https://i.imgur.com/7mvFh4V.gif">
+<div id="subOverlay" class="goal-overlay" style="display:none;">
+  <img src="https://i.imgur.com/7mvFh4V.gif">
+</div>
+
+<div id="goalOverlay">
+  <img src="https://i.imgur.com/6iVE1IR.gif" id="goalGif">
+</div>
+
+<div id="actionLogToggle">📜</div>
+
+<div id="actionLogPanel" class="closed">
+  <div id="actionLogHeader">
+    <span>Log de ações</span>
+    <button id="actionLogClose">✕</button>
   </div>
 
-  <div id="goalOverlay">
-    <img src="https://i.imgur.com/6iVE1IR.gif" id="goalGif">
-  </div>
+  <div id="actionLogList"></div>
+</div>
 
-  <div id="actionLogToggle">📜</div>
+  <button id="discordBtn">
+  <img src="https://i.imgur.com/2Czv8Fd.png">
+</button>
 
-  <div id="actionLogPanel" class="closed">
-    <div id="actionLogHeader">
-      <span>Log de ações</span>
-      <button id="actionLogClose">✕</button>
-    </div>
+<button id="helpBtn">?</button>
 
-    <div id="actionLogList"></div>
-  </div>
+<div id="helpOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999999; justify-content:center; align-items:center;">
 
-    <button id="discordBtn">
-    <img src="https://i.imgur.com/2Czv8Fd.png">
+<button id="helpExitBtn" style="position:absolute; top:20px; right:20px; font-size:28px; background:none; border:none; color:white; cursor:pointer;">✕</button>
+
+<button id="helpPrevBtn" style="position:absolute; left:10px; font-size:30px; background:none; border:none; color:white; cursor:pointer;">❮</button>
+
+<img id="helpImage" style="max-width:90vw; max-height:85vh; border-radius:12px; box-shadow:0 0 30px rgba(0,0,0,0.6);">
+
+<button id="helpNextBtn" style="position:absolute; right:10px; font-size:30px; background:none; border:none; color:white; cursor:pointer;">❯</button>
+
+<div id="helpCounter" style="position:absolute; bottom:20px; color:white; font-weight:bold; font-size:16px;">
+  1 / 11
+</div>
+
+</div>
+
+<div id="rotateOverlay">
+<div class="rotateBox">
+<div class="phoneIcon">📱</div>
+<h2>Gire o dispositivo</h2>
+<button onclick="location.reload()">Atualizar</button>
+</div>
+</div>
+
+<div id="rotateWarning">
+  🔄 Gire o celular para o modo horizontal
+</div>
+
+<button id="contactBtn">Contato</button>
+
+  <div id="matchBox">
+  <span id="playerBlueName">...</span>
+  <span class="vs">x</span>
+  <span id="playerRedName">...</span>
+</div>
+
+<div id="rightPanel">
+    <button id="fullscreenBtn" class="rightPanelBtn">
+    ⛶ Tela Cheia
   </button>
 
-  <button id="helpBtn">?</button>
+  <div id="spectatorBox">
+    Espectadores: <div id="spectatorList">Nenhum</div>
+  </div>
 
-  <div id="helpOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999999; justify-content:center; align-items:center;">
+  <div id="audioControls">
+        <button id="sfxToggle">🔊 ON</button>
+        <button id="musicToggle">🎵 ON</button>
 
-  <button id="helpExitBtn" style="position:absolute; top:20px; right:20px; font-size:28px; background:none; border:none; color:white; cursor:pointer;">✕</button>
 
-  <button id="helpPrevBtn" style="position:absolute; left:10px; font-size:30px; background:none; border:none; color:white; cursor:pointer;">❮</button>
+    <input 
+    type="range" 
+    id="volumeSlider"
+    min="0"
+    max="1"
+    step="0.01"
+    value="0.2">
+    
+  </div>
+</div>
 
-  <img id="helpImage" style="max-width:90vw; max-height:85vh; border-radius:12px; box-shadow:0 0 30px rgba(0,0,0,0.6);">
+<!-- ZOOM TWIST -->
+<div id="twistZoomOverlay">
+  <img id="twistZoomImg">
+</div>
 
-  <button id="helpNextBtn" style="position:absolute; right:10px; font-size:30px; background:none; border:none; color:white; cursor:pointer;">❯</button>
+<div id="topbar">
 
-  <div id="helpCounter" style="position:absolute; bottom:20px; color:white; font-weight:bold; font-size:16px;">
-    1 / 11
+  
+  <div class="bar-left">
+
+  <div id="roomCodeBox" class="topbox"></div>
+
+  <button id="tempoBtn">Iniciar o 2º tempo</button>
+  <button id="restartBtn">Reiniciar a partida</button>
+
+</div>
+
+
+  <!-- LOGO CENTRAL -->
+  <div class="bar-center">
+    <img src="https://i.imgur.com/sMvCcAU.png" id="topLogo">
+  </div>
+
+  <!-- LADO DIREITO -->
+  <div class="bar-right">
+    <button id="manualBtn">Manual de Regras</button>
+    <button id="guiaBtn">Guia de Referências</button>
+  </div>
+<!-- STATUS DO TEMPO -->
+<div id="tempoStatus">1º Tempo</div>
+</div>
+
+<div id="board">
+
+<!-- CARTAS FIXAS CENTRAIS -->
+<img
+  src="https://i.imgur.com/Xh6qbwe.png"
+  class="fixed-board-card"
+  id="fixedCard1"
+  style="left: 385px; top: 435px;"
+>
+
+<img
+  src="https://i.imgur.com/9SDRfxH.png"
+  class="fixed-board-card"
+  id="fixedCard2"
+  style="left: 565px; top: 98px; transform: rotate(180deg);"
+>
+
+<img id="boardBg" src="https://i.imgur.com/GUyhwlh.png">
+
+
+
+<div id="formationTable" class="formation-table">
+
+  <div class="formation-header">
+    FORMAÇÃO TÁTICA (10 JOGADORES)
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">ATAQUE</div>
+    <div class="formation-cell" data-type="A" data-value="1">1</div>
+    <div class="formation-cell" data-type="A" data-value="2">2</div>
+    <div class="formation-cell" data-type="A" data-value="3">3</div>
+    <div class="formation-cell" data-type="A" data-value="4">4</div>
+    <div class="formation-cell" data-type="A" data-value="5">5</div>
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">MEIO-CAMPO</div>
+    <div class="formation-cell" data-type="M" data-value="1">1</div>
+    <div class="formation-cell" data-type="M" data-value="2">2</div>
+    <div class="formation-cell" data-type="M" data-value="3">3</div>
+    <div class="formation-cell" data-type="M" data-value="4">4</div>
+    <div class="formation-cell" data-type="M" data-value="5">5</div>
+  </div>
+
+  <div class="formation-row">
+    <div class="formation-label">DEFESA</div>
+    <div class="formation-cell" data-type="D" data-value="1">1</div>
+    <div class="formation-cell" data-type="D" data-value="2">2</div>
+    <div class="formation-cell" data-type="D" data-value="3">3</div>
+    <div class="formation-cell" data-type="D" data-value="4">4</div>
+    <div class="formation-cell" data-type="D" data-value="5">5</div>
   </div>
 
 </div>
 
-  <div id="rotateOverlay">
-  <div class="rotateBox">
-  <div class="phoneIcon">📱</div>
-  <h2>Gire o dispositivo</h2>
-  <button onclick="location.reload()">Atualizar</button>
-  </div>
+<div id="formationTable_red" class="formation-table red">
+
+  <div class="formation-header">
+    FORMAÇÃO TÁTICA (10 JOGADORES)
   </div>
 
-  <div id="rotateWarning">
-    🔄 Gire o celular para o modo horizontal
+  <div class="formation-row">
+    <div class="formation-label">ATAQUE</div>
+    <div class="formation-cell" data-type="A" data-value="1">1</div>
+    <div class="formation-cell" data-type="A" data-value="2">2</div>
+    <div class="formation-cell" data-type="A" data-value="3">3</div>
+    <div class="formation-cell" data-type="A" data-value="4">4</div>
+    <div class="formation-cell" data-type="A" data-value="5">5</div>
   </div>
 
-  <button id="contactBtn">Contato</button>
-
-    <div id="matchBox">
-    <span id="playerBlueName">...</span>
-    <span class="vs">x</span>
-    <span id="playerRedName">...</span>
+  <div class="formation-row">
+    <div class="formation-label">MEIO-CAMPO</div>
+    <div class="formation-cell" data-type="M" data-value="1">1</div>
+    <div class="formation-cell" data-type="M" data-value="2">2</div>
+    <div class="formation-cell" data-type="M" data-value="3">3</div>
+    <div class="formation-cell" data-type="M" data-value="4">4</div>
+    <div class="formation-cell" data-type="M" data-value="5">5</div>
   </div>
 
-  <div id="rightPanel">
-      <button id="fullscreenBtn" class="rightPanelBtn">
-      ⛶ Tela Cheia
-    </button>
-
-    <div id="spectatorBox">
-      Espectadores: <div id="spectatorList">Nenhum</div>
-    </div>
-
-    <div id="audioControls">
-          <button id="sfxToggle">🔊 ON</button>
-          <button id="musicToggle">🎵 ON</button>
-
-
-      <input 
-      type="range" 
-      id="volumeSlider"
-      min="0"
-      max="1"
-      step="0.01"
-      value="0.2">
-      
-    </div>
+  <div class="formation-row">
+    <div class="formation-label">DEFESA</div>
+    <div class="formation-cell" data-type="D" data-value="1">1</div>
+    <div class="formation-cell" data-type="D" data-value="2">2</div>
+    <div class="formation-cell" data-type="D" data-value="3">3</div>
+    <div class="formation-cell" data-type="D" data-value="4">4</div>
+    <div class="formation-cell" data-type="D" data-value="5">5</div>
   </div>
 
-  <!-- ZOOM TWIST -->
-  <div id="twistZoomOverlay">
-    <img id="twistZoomImg">
-  </div>
+</div>
 
-  <div id="topbar">
+<div id="formationActions" style="position:absolute; left:920px; top:421px; display:none; z-index:200;">
+  <button id="formationOk">OK</button>
+  <button id="formationCancel">Cancelar</button>
+</div>
 
-    
-    <div class="bar-left">
+  <!-- ===================== -->
+  <!-- SLOT ANCHORS -->
+  <div class="anchor" id="slotA" style="left:345px; top:320px;"></div>
+  <div class="anchor" id="slotM" style="left:507px; top:320px;"></div>
+  <div class="anchor" id="slotD" style="left:665px; top:320px;"></div>
+  <div class="anchor" id="slotG" style="left:825px; top:320px;"></div>
+  <div class="anchor" id="slotP1" style="left:930px; top:330px;"></div>
+  <div class="anchor" id="slotP2" style="left:1020px; top:223px;"></div>
 
-    <div id="roomCodeBox" class="topbox"></div>
-
-    <button id="tempoBtn">Iniciar o 2º tempo</button>
-    <button id="restartBtn">Reiniciar a partida</button>
-
-  </div>
-
-
-    <!-- LOGO CENTRAL -->
-    <div class="bar-center">
-      <img src="https://i.imgur.com/sMvCcAU.png" id="topLogo">
-    </div>
-
-    <!-- LADO DIREITO -->
-    <div class="bar-right">
-      <button id="manualBtn">Manual de Regras</button>
-      <button id="guiaBtn">Guia de Referências</button>
-    </div>
-  <!-- STATUS DO TEMPO -->
-  <div id="tempoStatus">1º Tempo</div>
-  </div>
-
-  <div id="board">
-
-  <!-- CARTAS FIXAS CENTRAIS -->
-  <img
-    src="https://i.imgur.com/Xh6qbwe.png"
-    class="fixed-board-card"
-    id="fixedCard1"
-    style="left: 385px; top: 435px;"
-  >
-
-  <img
-    src="https://i.imgur.com/9SDRfxH.png"
-    class="fixed-board-card"
-    id="fixedCard2"
-    style="left: 565px; top: 98px; transform: rotate(180deg);"
-  >
-
-  <img id="boardBg" src="https://i.imgur.com/GUyhwlh.png">
+  <div class="anchor" id="slotA_red" style="left:743px; top:235px;"></div>
+  <div class="anchor" id="slotM_red" style="left:586px; top:235px;"></div>
+  <div class="anchor" id="slotD_red" style="left:424px; top:235px;"></div>
+  <div class="anchor" id="slotG_red" style="left:265px; top:235px;"></div>
+  <div class="anchor" id="slotP1_red" style="left:930px; top:5px;"></div>
+  <div class="anchor" id="slotP2_red" style="left:1020px; top:-102px;"></div>
 
 
-
-  <div id="formationTable" class="formation-table">
-
-    <div class="formation-header">
-      FORMAÇÃO TÁTICA (10 JOGADORES)
-    </div>
-
-    <div class="formation-row">
-      <div class="formation-label">ATAQUE</div>
-      <div class="formation-cell" data-type="A" data-value="1">1</div>
-      <div class="formation-cell" data-type="A" data-value="2">2</div>
-      <div class="formation-cell" data-type="A" data-value="3">3</div>
-      <div class="formation-cell" data-type="A" data-value="4">4</div>
-      <div class="formation-cell" data-type="A" data-value="5">5</div>
-    </div>
-
-    <div class="formation-row">
-      <div class="formation-label">MEIO-CAMPO</div>
-      <div class="formation-cell" data-type="M" data-value="1">1</div>
-      <div class="formation-cell" data-type="M" data-value="2">2</div>
-      <div class="formation-cell" data-type="M" data-value="3">3</div>
-      <div class="formation-cell" data-type="M" data-value="4">4</div>
-      <div class="formation-cell" data-type="M" data-value="5">5</div>
-    </div>
-
-    <div class="formation-row">
-      <div class="formation-label">DEFESA</div>
-      <div class="formation-cell" data-type="D" data-value="1">1</div>
-      <div class="formation-cell" data-type="D" data-value="2">2</div>
-      <div class="formation-cell" data-type="D" data-value="3">3</div>
-      <div class="formation-cell" data-type="D" data-value="4">4</div>
-      <div class="formation-cell" data-type="D" data-value="5">5</div>
-    </div>
-
-  </div>
-
-  <div id="formationTable_red" class="formation-table red">
-
-    <div class="formation-header">
-      FORMAÇÃO TÁTICA (10 JOGADORES)
-    </div>
-
-    <div class="formation-row">
-      <div class="formation-label">ATAQUE</div>
-      <div class="formation-cell" data-type="A" data-value="1">1</div>
-      <div class="formation-cell" data-type="A" data-value="2">2</div>
-      <div class="formation-cell" data-type="A" data-value="3">3</div>
-      <div class="formation-cell" data-type="A" data-value="4">4</div>
-      <div class="formation-cell" data-type="A" data-value="5">5</div>
-    </div>
-
-    <div class="formation-row">
-      <div class="formation-label">MEIO-CAMPO</div>
-      <div class="formation-cell" data-type="M" data-value="1">1</div>
-      <div class="formation-cell" data-type="M" data-value="2">2</div>
-      <div class="formation-cell" data-type="M" data-value="3">3</div>
-      <div class="formation-cell" data-type="M" data-value="4">4</div>
-      <div class="formation-cell" data-type="M" data-value="5">5</div>
-    </div>
-
-    <div class="formation-row">
-      <div class="formation-label">DEFESA</div>
-      <div class="formation-cell" data-type="D" data-value="1">1</div>
-      <div class="formation-cell" data-type="D" data-value="2">2</div>
-      <div class="formation-cell" data-type="D" data-value="3">3</div>
-      <div class="formation-cell" data-type="D" data-value="4">4</div>
-      <div class="formation-cell" data-type="D" data-value="5">5</div>
-    </div>
-
-  </div>
-
-  <div id="formationActions" style="position:absolute; left:920px; top:421px; display:none; z-index:200;">
-    <button id="formationOk">OK</button>
-    <button id="formationCancel">Cancelar</button>
-  </div>
-
-    <!-- ===================== -->
-    <!-- SLOT ANCHORS -->
-    <div class="anchor" id="slotA" style="left:345px; top:320px;"></div>
-    <div class="anchor" id="slotM" style="left:507px; top:320px;"></div>
-    <div class="anchor" id="slotD" style="left:665px; top:320px;"></div>
-    <div class="anchor" id="slotG" style="left:825px; top:320px;"></div>
-    <div class="anchor" id="slotP1" style="left:930px; top:330px;"></div>
-    <div class="anchor" id="slotP2" style="left:1020px; top:223px;"></div>
-
-    <div class="anchor" id="slotA_red" style="left:743px; top:235px;"></div>
-    <div class="anchor" id="slotM_red" style="left:586px; top:235px;"></div>
-    <div class="anchor" id="slotD_red" style="left:424px; top:235px;"></div>
-    <div class="anchor" id="slotG_red" style="left:265px; top:235px;"></div>
-    <div class="anchor" id="slotP1_red" style="left:930px; top:5px;"></div>
-    <div class="anchor" id="slotP2_red" style="left:1020px; top:-102px;"></div>
+    <!-- SLOT PILHAS -->
+  <div class="slot-pile" data-slot="A" data-anchor="slotA"></div>
+  <div class="slot-pile" data-slot="M" data-anchor="slotM"></div>
+  <div class="slot-pile" data-slot="D" data-anchor="slotD"></div>
+  <div class="slot-pile" data-slot="G" data-anchor="slotG"></div>
+  <div class="slot-pile" data-slot="P1" data-anchor="slotP1"></div>
+  <div class="slot-pile" data-slot="P2" data-anchor="slotP2"></div>
   
 
-      <!-- SLOT PILHAS -->
-    <div class="slot-pile" data-slot="A" data-anchor="slotA"></div>
-    <div class="slot-pile" data-slot="M" data-anchor="slotM"></div>
-    <div class="slot-pile" data-slot="D" data-anchor="slotD"></div>
-    <div class="slot-pile" data-slot="G" data-anchor="slotG"></div>
-    <div class="slot-pile" data-slot="P1" data-anchor="slotP1"></div>
-    <div class="slot-pile" data-slot="P2" data-anchor="slotP2"></div>
-    
+  <div class="slot-pile red-zone" data-slot="A_red" data-anchor="slotA_red"></div>
+  <div class="slot-pile red-zone" data-slot="M_red" data-anchor="slotM_red"></div>
+  <div class="slot-pile red-zone" data-slot="D_red" data-anchor="slotD_red"></div>
+  <div class="slot-pile red-zone" data-slot="G_red" data-anchor="slotG_red"></div>
+  <div class="slot-pile red-zone" data-slot="P1_red" data-anchor="slotP1_red"></div>
+  <div class="slot-pile red-zone" data-slot="P2_red" data-anchor="slotP2_red"></div>
 
-    <div class="slot-pile red-zone" data-slot="A_red" data-anchor="slotA_red"></div>
-    <div class="slot-pile red-zone" data-slot="M_red" data-anchor="slotM_red"></div>
-    <div class="slot-pile red-zone" data-slot="D_red" data-anchor="slotD_red"></div>
-    <div class="slot-pile red-zone" data-slot="G_red" data-anchor="slotG_red"></div>
-    <div class="slot-pile red-zone" data-slot="P1_red" data-anchor="slotP1_red"></div>
-    <div class="slot-pile red-zone" data-slot="P2_red" data-anchor="slotP2_red"></div>
+<!-- ===================== -->
+<!-- DECK ANCHORS (MANTÉM!) -->
 
-  <!-- ===================== -->
-  <!-- DECK ANCHORS (MANTÉM!) -->
+<div class="anchor" id="deckA" style="left:655px; top:567px;"></div>
+<div class="anchor" id="deckM" style="left:738px; top:567px;"></div>
+<div class="anchor" id="deckD" style="left:820px; top:567px;"></div>
+<div class="anchor" id="deckG" style="left:905px; top:567px;"></div>
+<div class="anchor" id="deckP" style="left:406px; top:567px;"></div>
+<div class="anchor" id="deckT" style="left:0px; top:379px;"></div>
 
-  <div class="anchor" id="deckA" style="left:655px; top:567px;"></div>
-  <div class="anchor" id="deckM" style="left:738px; top:567px;"></div>
-  <div class="anchor" id="deckD" style="left:820px; top:567px;"></div>
-  <div class="anchor" id="deckG" style="left:905px; top:567px;"></div>
-  <div class="anchor" id="deckP" style="left:406px; top:567px;"></div>
-  <div class="anchor" id="deckT" style="left:0px; top:379px;"></div>
-
-  <div class="anchor" id="deckA_red" style="left:586px; top:195px;"></div>
-  <div class="anchor" id="deckM_red" style="left:502px; top:195px;"></div>
-  <div class="anchor" id="deckD_red" style="left:419px; top:195px;"></div>
-  <div class="anchor" id="deckG_red" style="left:335px; top:195px;"></div>
-  <div class="anchor" id="deckP_red" style="left:833px; top:195px;"></div>
+<div class="anchor" id="deckA_red" style="left:586px; top:195px;"></div>
+<div class="anchor" id="deckM_red" style="left:502px; top:195px;"></div>
+<div class="anchor" id="deckD_red" style="left:419px; top:195px;"></div>
+<div class="anchor" id="deckG_red" style="left:335px; top:195px;"></div>
+<div class="anchor" id="deckP_red" style="left:833px; top:195px;"></div>
 
 
-  <!-- ===================== -->
-  <!-- DECKS COM SHUFFLE -->
+<!-- ===================== -->
+<!-- DECKS COM SHUFFLE -->
 
-  <div class="deck-wrapper" data-anchor="deckA">
-    <img class="deck-slot" src="https://i.imgur.com/9xzQNTb.png"
-        draggable="true" data-deck="A">
-        <div class="deck-count" data-count="A"></div>
-    <button class="shuffle-btn" data-deck="A"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper" data-anchor="deckA">
+  <img class="deck-slot" src="https://i.imgur.com/9xzQNTb.png"
+      draggable="true" data-deck="A">
+      <div class="deck-count" data-count="A"></div>
+  <button class="shuffle-btn" data-deck="A"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper" data-anchor="deckM">
-    <img class="deck-slot" src="https://i.imgur.com/XxdG1vW.png"
-        draggable="true" data-deck="M">
-        <div class="deck-count" data-count="M"></div>
-    <button class="shuffle-btn" data-deck="M"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper" data-anchor="deckM">
+  <img class="deck-slot" src="https://i.imgur.com/XxdG1vW.png"
+      draggable="true" data-deck="M">
+      <div class="deck-count" data-count="M"></div>
+  <button class="shuffle-btn" data-deck="M"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper" data-anchor="deckD">
-    <img class="deck-slot" src="https://i.imgur.com/RUEsxIt.png"
-        draggable="true" data-deck="D">
-        <div class="deck-count" data-count="D"></div>
-    <button class="shuffle-btn" data-deck="D"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper" data-anchor="deckD">
+  <img class="deck-slot" src="https://i.imgur.com/RUEsxIt.png"
+      draggable="true" data-deck="D">
+      <div class="deck-count" data-count="D"></div>
+  <button class="shuffle-btn" data-deck="D"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper" data-anchor="deckG">
-    <img class="deck-slot" src="https://i.imgur.com/l7eDrIo.png"
-        draggable="true" data-deck="G">
-        <div class="deck-count" data-count="G"></div>
-    <button class="shuffle-btn" data-deck="G"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper" data-anchor="deckG">
+  <img class="deck-slot" src="https://i.imgur.com/l7eDrIo.png"
+      draggable="true" data-deck="G">
+      <div class="deck-count" data-count="G"></div>
+  <button class="shuffle-btn" data-deck="G"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper" data-anchor="deckP">
-    <img class="deck-slot" src="https://i.imgur.com/ru5z5NM.png"
-        draggable="true" data-deck="P">
-         <div class="deck-count" data-count="P"></div>
-    <button class="shuffle-btn" data-deck="P"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper" data-anchor="deckP">
+  <img class="deck-slot" src="https://i.imgur.com/ru5z5NM.png"
+      draggable="true" data-deck="P">
+        <div class="deck-count" data-count="P"></div>
+  <button class="shuffle-btn" data-deck="P"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper" data-anchor="deckT">
-    <img class="deck-slot" src="https://i.imgur.com/D40CPCK.png"
-        draggable="true" data-deck="T">
-         <div class="deck-count" data-count="T"></div>
-    <button class="shuffle-btn" data-deck="T"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper" data-anchor="deckT">
+  <img class="deck-slot" src="https://i.imgur.com/D40CPCK.png"
+      draggable="true" data-deck="T">
+        <div class="deck-count" data-count="T"></div>
+  <button class="shuffle-btn" data-deck="T"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
 
-  <!-- ===================== -->
-  <!-- DECKS VERMELHOS -->
+<!-- ===================== -->
+<!-- DECKS VERMELHOS -->
 
-  <div class="deck-wrapper red-zone" data-anchor="deckA_red">
-    <img class="deck-slot" src="https://i.imgur.com/xRIC9Aq.png"
-        draggable="true" data-deck="A_red">
-        <div class="deck-count" data-count="A_red"></div>
-    <button class="shuffle-btn" data-deck="A_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper red-zone" data-anchor="deckA_red">
+  <img class="deck-slot" src="https://i.imgur.com/xRIC9Aq.png"
+      draggable="true" data-deck="A_red">
+      <div class="deck-count" data-count="A_red"></div>
+  <button class="shuffle-btn" data-deck="A_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper red-zone" data-anchor="deckM_red">
-    <img class="deck-slot" src="https://i.imgur.com/ItO2wFO.png"
-        draggable="true" data-deck="M_red">
-        <div class="deck-count" data-count="M_red"></div>
-    <button class="shuffle-btn" data-deck="M_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper red-zone" data-anchor="deckM_red">
+  <img class="deck-slot" src="https://i.imgur.com/ItO2wFO.png"
+      draggable="true" data-deck="M_red">
+      <div class="deck-count" data-count="M_red"></div>
+  <button class="shuffle-btn" data-deck="M_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper red-zone" data-anchor="deckD_red">
-    <img class="deck-slot" src="https://i.imgur.com/2e3i2cY.png"
-        draggable="true" data-deck="D_red">
-        <div class="deck-count" data-count="D_red"></div>
-    <button class="shuffle-btn" data-deck="D_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper red-zone" data-anchor="deckD_red">
+  <img class="deck-slot" src="https://i.imgur.com/2e3i2cY.png"
+      draggable="true" data-deck="D_red">
+      <div class="deck-count" data-count="D_red"></div>
+  <button class="shuffle-btn" data-deck="D_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper red-zone" data-anchor="deckG_red">
-    <img class="deck-slot" src="https://i.imgur.com/Brr9kXs.png"
-        draggable="true" data-deck="G_red">
-        <div class="deck-count" data-count="G_red"></div>
-    <button class="shuffle-btn" data-deck="G_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper red-zone" data-anchor="deckG_red">
+  <img class="deck-slot" src="https://i.imgur.com/Brr9kXs.png"
+      draggable="true" data-deck="G_red">
+      <div class="deck-count" data-count="G_red"></div>
+  <button class="shuffle-btn" data-deck="G_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
-  <div class="deck-wrapper red-zone" data-anchor="deckP_red">
-    <img class="deck-slot" src="https://i.imgur.com/vMrYkT5.png"
-        draggable="true" data-deck="P_red">
-        <div class="deck-count" data-count="P_red"></div>
-    <button class="shuffle-btn" data-deck="P_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
-  </div>
+<div class="deck-wrapper red-zone" data-anchor="deckP_red">
+  <img class="deck-slot" src="https://i.imgur.com/vMrYkT5.png"
+      draggable="true" data-deck="P_red">
+      <div class="deck-count" data-count="P_red"></div>
+  <button class="shuffle-btn" data-deck="P_red"><img src="https://i.imgur.com/2TaG2zo.png" class="shuffle-icon"></button>
+</div>
 
 
 
-    <!-- ======================= -->
-    <!-- ÂNCORAS DO SEGUNDO CÓDIGO -->
+  <!-- ======================= -->
+  <!-- ÂNCORAS DO SEGUNDO CÓDIGO -->
 
-    <!-- Bola -->
-    <!-- Bola -->
-  <div class="anchor" id="bola" style="left:581px; top:329px;"></div>
-  <img class="piece ball" src="https://i.imgur.com/xbobPgs.png" data-anchor="bola" draggable="true">
+  <!-- Bola -->
+  <!-- Bola -->
+<div class="anchor" id="bola" style="left:581px; top:329px;"></div>
+<img class="piece ball" src="https://i.imgur.com/xbobPgs.png" data-anchor="bola" draggable="true">
 
-  <!-- Gol Azul / Vermelho -->
-  <div class="anchor" id="tokengola" style="left:249px; top:480px;"></div>
-  <div class="anchor" id="tokengolv" style="left:915px; top:179px;"></div>
+<!-- Gol Azul / Vermelho -->
+<div class="anchor" id="tokengola" style="left:249px; top:480px;"></div>
+<div class="anchor" id="tokengolv" style="left:915px; top:179px;"></div>
 
-  <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengola">
-  <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengolv" draggable="true">
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengola">
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="tokengolv" draggable="true">
 
-  <!-- Forma Azul --><!--
-  <div class="anchor" id="forma1a" style="left:418px; top:488px;"></div>
-  <div class="anchor" id="forma2a" style="left:418px; top:507px;"></div>
-  <div class="anchor" id="forma3a" style="left:418px; top:524px;"></div>
+<!-- Forma Azul --><!--
+<div class="anchor" id="forma1a" style="left:418px; top:488px;"></div>
+<div class="anchor" id="forma2a" style="left:418px; top:507px;"></div>
+<div class="anchor" id="forma3a" style="left:418px; top:524px;"></div>
 
-  <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1a" draggable="true">
-  <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2a" draggable="true">
-  <img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a" draggable="true">-->
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1a" draggable="true">
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2a" draggable="true">
+<img class="piece token14" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3a" draggable="true">-->
 
-  <!-- Forma Vermelho --><!--
-  <div class="anchor" id="forma1v" style="left:749px; top:167px;"></div>
-  <div class="anchor" id="forma2v" style="left:749px; top:150px;"></div>
-  <div class="anchor" id="forma3v" style="left:749px; top:132px;"></div>
+<!-- Forma Vermelho --><!--
+<div class="anchor" id="forma1v" style="left:749px; top:167px;"></div>
+<div class="anchor" id="forma2v" style="left:749px; top:150px;"></div>
+<div class="anchor" id="forma3v" style="left:749px; top:132px;"></div>
 
-  <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1v" draggable="true">
-  <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2v" draggable="true">
-  <img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v" draggable="true">-->
-
-
-  <!-- Substituições Azul -->
-  <div class="anchor" id="suba1" style="left:432px; top:555px;"></div>
-  <div class="anchor" id="suba2" style="left:462px; top:555px;"></div>
-  <div class="anchor" id="suba3" style="left:493px; top:555px;"></div>
-  <div class="anchor" id="suba4" style="left:523px; top:555px;"></div>
-  <div class="anchor" id="suba5" style="left:554px; top:555px;"></div>
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma1v" draggable="true">
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma2v" draggable="true">
+<img class="piece token14 red" src="https://i.imgur.com/AQJilFs.png" data-anchor="forma3v" draggable="true">-->
 
 
-  <img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba1">
-  <img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba2">
-  <img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba3">
-  <img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba4">
-  <img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba5">
-
-  <!-- Substituições Vermelho -->
-  <div class="anchor" id="subv1" style="left:738px; top:103px;"></div>
-  <div class="anchor" id="subv2" style="left:707px; top:103px;"></div>
-  <div class="anchor" id="subv3" style="left:677px; top:103px;"></div>
-  <div class="anchor" id="subv4" style="left:646px; top:103px;"></div>
-  <div class="anchor" id="subv5" style="left:616px; top:103px;"></div>
-
-  <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv1">
-  <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv2">
-  <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv3">
-  <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv4">
-  <img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv5">
+<!-- Substituições Azul -->
+<div class="anchor" id="suba1" style="left:432px; top:555px;"></div>
+<div class="anchor" id="suba2" style="left:462px; top:555px;"></div>
+<div class="anchor" id="suba3" style="left:493px; top:555px;"></div>
+<div class="anchor" id="suba4" style="left:523px; top:555px;"></div>
+<div class="anchor" id="suba5" style="left:554px; top:555px;"></div>
 
 
-  <!-- Bonus Azul -->
-  <div class="anchor" id="bonus2a" style="left:960px; top:510px;"></div>
-  <div class="anchor" id="bonus1a" style="left:980px; top:510px;"></div>
-  <div class="anchor" id="bonus1a2" style="left:1000px; top:510px;"></div>
+<img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba1">
+<img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba2">
+<img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba3">
+<img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba4">
+<img class="piece token27" src="https://i.imgur.com/QaVX0SG.png" data-anchor="suba5">
 
-  <div class="anchor" id="bonus1a_extra" style="left:980px; top:510px;"></div>
-  <div class="anchor" id="bonus1a2_extra" style="left:1000px; top:510px;"></div>
+<!-- Substituições Vermelho -->
+<div class="anchor" id="subv1" style="left:738px; top:103px;"></div>
+<div class="anchor" id="subv2" style="left:707px; top:103px;"></div>
+<div class="anchor" id="subv3" style="left:677px; top:103px;"></div>
+<div class="anchor" id="subv4" style="left:646px; top:103px;"></div>
+<div class="anchor" id="subv5" style="left:616px; top:103px;"></div>
 
-  <img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a" draggable="true">
-  <img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a" draggable="true">
-  <img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2" draggable="true">
-
-  <img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a_extra" draggable="true">
-  <img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2_extra" draggable="true">
-
-  <!-- Bonus Vermelho -->
-  <div class="anchor" id="bonus2v" style="left:200px; top:140px;"></div>
-  <div class="anchor" id="bonus1v" style="left:180px; top:140px;"></div>
-  <div class="anchor" id="bonus1v2" style="left:160px; top:140px;"></div>
-
-  <div class="anchor" id="bonus1v_extra" style="left:180px; top:140px;"></div>
-  <div class="anchor" id="bonus1v2_extra" style="left:160px; top:140px;"></div>
-
-  <img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v" draggable="true">
-  <img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v" draggable="true">
-  <img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2" draggable="true">
-
-  <img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v_extra" draggable="true">
-  <img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2_extra" draggable="true">
-
-  <!-- Reds -->
-  <div class="anchor" id="red1a" style="left:1020px; top:510px;"></div>
-  <div class="anchor" id="red2a" style="left:1040px; top:510px;"></div>
-  <div class="anchor" id="red3a" style="left:1060px; top:510px;"></div>
-  <div class="anchor" id="red4a" style="left:1080px; top:510px;"></div>
-
-  <img class="piece cardred" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1a" draggable="true">
-  <img class="piece cardred" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2a" draggable="true">
-  <img class="piece cardred" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3a" draggable="true">
-  <img class="piece cardred" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4a" draggable="true">
-
-  <div class="anchor" id="red1v" style="left:140px; top:140px;"></div>
-  <div class="anchor" id="red2v" style="left:120px; top:140px;"></div>
-  <div class="anchor" id="red3v" style="left:100px; top:140px;"></div>
-  <div class="anchor" id="red4v" style="left:80px; top:140px;"></div>
-
-  <img class="piece cardred red" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1v" draggable="true">
-  <img class="piece cardred red" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2v" draggable="true">
-  <img class="piece cardred red" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3v" draggable="true">
-  <img class="piece cardred red" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4v" draggable="true">
-
-  <!-- MÃO VERMELHA -->
-  <div id="hand_red">
-    <div class="hand-counter" id="counter_red"></div>
-    <div class="hand-inner"></div>
-  </div>
-
-  <!-- MÃO AZUL -->
-  <div id="hand">
-    <div class="hand-counter" id="counter_blue"></div>
-    <div class="hand-inner"></div>
-  </div>
+<img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv1">
+<img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv2">
+<img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv3">
+<img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv4">
+<img class="piece token27 red" src="https://i.imgur.com/QaVX0SG.png" data-anchor="subv5">
 
 
+<!-- Bonus Azul -->
+<div class="anchor" id="bonus2a" style="left:960px; top:510px;"></div>
+<div class="anchor" id="bonus1a" style="left:980px; top:510px;"></div>
+<div class="anchor" id="bonus1a2" style="left:1000px; top:510px;"></div>
 
-  </div> <!-- fecha board -->
-  <!-- CRÉDITOS + PROPRIEDADE INTELECTUAL -->
-  <div id="copyright">
-    Jogo criado por Marcelo Torres e Ulisses Reis<br>
-    © 2026 — Propriedade intelectual protegida. <br>
-    Reprodução, distribuição ou uso não autorizado <br> são proibidos.
-  </div>
+<div class="anchor" id="bonus1a_extra" style="left:980px; top:510px;"></div>
+<div class="anchor" id="bonus1a2_extra" style="left:1000px; top:510px;"></div>
 
-  <div id="modalOverlay">
-    <div id="modalBox">
-      <h2 id="modalTitle"></h2>
-      <p id="modalText"></p>
+<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a" draggable="true">
+<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a" draggable="true">
+<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2" draggable="true">
 
-      <div id="modalButtons">
-        <button id="confirmBtn"></button>
-        <button id="cancelReload">Cancelar</button>
-      </div>
+<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a_extra" draggable="true">
+<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2_extra" draggable="true">
+
+<!-- Bonus Vermelho -->
+<div class="anchor" id="bonus2v" style="left:200px; top:140px;"></div>
+<div class="anchor" id="bonus1v" style="left:180px; top:140px;"></div>
+<div class="anchor" id="bonus1v2" style="left:160px; top:140px;"></div>
+
+<div class="anchor" id="bonus1v_extra" style="left:180px; top:140px;"></div>
+<div class="anchor" id="bonus1v2_extra" style="left:160px; top:140px;"></div>
+
+<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v" draggable="true">
+<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v" draggable="true">
+<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2" draggable="true">
+
+<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v_extra" draggable="true">
+<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2_extra" draggable="true">
+
+<!-- Reds -->
+<div class="anchor" id="red1a" style="left:1020px; top:510px;"></div>
+<div class="anchor" id="red2a" style="left:1040px; top:510px;"></div>
+<div class="anchor" id="red3a" style="left:1060px; top:510px;"></div>
+<div class="anchor" id="red4a" style="left:1080px; top:510px;"></div>
+
+<img class="piece cardred" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1a" draggable="true">
+<img class="piece cardred" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2a" draggable="true">
+<img class="piece cardred" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3a" draggable="true">
+<img class="piece cardred" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4a" draggable="true">
+
+<div class="anchor" id="red5a" style="left:1020px; top:510px;"></div>
+<div class="anchor" id="red6a" style="left:1040px; top:510px;"></div>
+<div class="anchor" id="red7a" style="left:1060px; top:510px;"></div>
+<div class="anchor" id="red8a" style="left:1080px; top:510px;"></div>
+
+<img class="piece cardred" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red5a" draggable="true">
+<img class="piece cardred" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red6a" draggable="true">
+<img class="piece cardred" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red7a" draggable="true">
+<img class="piece cardred" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red8a" draggable="true">
+
+<div class="anchor" id="red1v" style="left:140px; top:140px;"></div>
+<div class="anchor" id="red2v" style="left:120px; top:140px;"></div>
+<div class="anchor" id="red3v" style="left:100px; top:140px;"></div>
+<div class="anchor" id="red4v" style="left:80px; top:140px;"></div>
+
+<img class="piece cardred red" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red1v" draggable="true">
+<img class="piece cardred red" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2v" draggable="true">
+<img class="piece cardred red" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3v" draggable="true">
+<img class="piece cardred red" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4v" draggable="true">
+
+<div class="anchor" id="red5v" style="left:140px; top:140px;"></div>
+<div class="anchor" id="red6v" style="left:120px; top:140px;"></div>
+<div class="anchor" id="red7v" style="left:100px; top:140px;"></div>
+<div class="anchor" id="red8v" style="left:80px; top:140px;"></div>
+
+<img class="piece cardred red" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red5v" draggable="true">
+<img class="piece cardred red" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red6v" draggable="true">
+<img class="piece cardred red" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red7v" draggable="true">
+<img class="piece cardred red" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red8v" draggable="true">
+
+<!-- MÃO VERMELHA -->
+<div id="hand_red">
+  <div class="hand-counter" id="counter_red"></div>
+  <div class="hand-inner"></div>
+</div>
+
+<!-- MÃO AZUL -->
+<div id="hand">
+  <div class="hand-counter" id="counter_blue"></div>
+  <div class="hand-inner"></div>
+</div>
+
+
+
+</div> <!-- fecha board -->
+<!-- CRÉDITOS + PROPRIEDADE INTELECTUAL -->
+<div id="copyright">
+  Jogo criado por Marcelo Torres e Ulisses Reis<br>
+  © 2026 — Propriedade intelectual protegida. <br>
+  Reprodução, distribuição ou uso não autorizado <br> são proibidos.
+</div>
+
+<div id="modalOverlay">
+  <div id="modalBox">
+    <h2 id="modalTitle"></h2>
+    <p id="modalText"></p>
+
+    <div id="modalButtons">
+      <button id="confirmBtn"></button>
+      <button id="cancelReload">Cancelar</button>
     </div>
   </div>
+</div>
 
-  <div id="joinMessage"></div>
+<div id="joinMessage"></div>
 
-  <audio id="bgMusic" loop>
-    <source src="https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868321/background_x393rd.mp3" type="audio/mpeg">
-  </audio>
+<audio id="bgMusic" loop>
+  <source src="https://res.cloudinary.com/dzjwlafsx/video/upload/v1771868321/background_x393rd.mp3" type="audio/mpeg">
+</audio>
 
-  <img id="cardHoverZoom" class="card-hover-zoom">
+<img id="cardHoverZoom" class="card-hover-zoom">
 
-  <script src="/index.js"></script>
-  </body>
-  </html>
+<script src="/index.js"></script>
+</body>
+</html>

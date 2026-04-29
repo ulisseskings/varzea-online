@@ -198,7 +198,7 @@
     .token14 { width: 14px; height: 14px;}
     .token27 { width: 27px; height: 27px;  z-index: 2000 !important;}
     .bonus-token {width: 20px !important; height: 20px !important; }
-    .cardred { width: 11px; height: 17px; }
+    .cardred { width: 11px; height: 17px; z-index: 3000 !important;}
     .ball    { width: 30px; height: 30px; z-index: 5000 !important; position: absolute;
 }
 .twist-card{
@@ -1564,6 +1564,13 @@ body{
   max-width: 80vw;
 }
 
+.piece.cardred,
+.cardred,
+.piece[data-anchor^="red"][data-anchor$="a"],
+.piece[data-anchor^="red"][data-anchor$="v"]{
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
 
   </style>
 </head>
@@ -2015,6 +2022,16 @@ body{
 <img class="piece cardred" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3a"  >
 <img class="piece cardred" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4a"  >
 
+<div class="anchor" id="red5a" style="left:1020px; top:510px;"></div>
+<div class="anchor" id="red6a" style="left:1040px; top:510px;"></div>
+<div class="anchor" id="red7a" style="left:1060px; top:510px;"></div>
+<div class="anchor" id="red8a" style="left:1080px; top:510px;"></div>
+
+<img class="piece cardred" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red5a"  >
+<img class="piece cardred" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red6a"  >
+<img class="piece cardred" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red7a"  >
+<img class="piece cardred" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red8a"  >
+
 <div class="anchor" id="red1v" style="left:140px; top:140px;"></div>
 <div class="anchor" id="red2v" style="left:120px; top:140px;"></div>
 <div class="anchor" id="red3v" style="left:100px; top:140px;"></div>
@@ -2024,6 +2041,16 @@ body{
 <img class="piece cardred red" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red2v"  >
 <img class="piece cardred red" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red3v"  >
 <img class="piece cardred red" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red4v"  >
+
+<div class="anchor" id="red5v" style="left:140px; top:140px;"></div>
+<div class="anchor" id="red6v" style="left:120px; top:140px;"></div>
+<div class="anchor" id="red7v" style="left:100px; top:140px;"></div>
+<div class="anchor" id="red8v" style="left:80px; top:140px;"></div>
+
+<img class="piece cardred red" src="https://i.imgur.com/ht3fnVD.png" data-anchor="red5v"  >
+<img class="piece cardred red" src="https://i.imgur.com/7aZaKMd.png" data-anchor="red6v"  >
+<img class="piece cardred red" src="https://i.imgur.com/SV9Qx7s.png" data-anchor="red7v"  >
+<img class="piece cardred red" src="https://i.imgur.com/ZXRe73s.png" data-anchor="red8v"  >
 
 <!-- MÃO VERMELHA -->
 <div id="hand_red">

@@ -450,60 +450,94 @@ app.get("/api/dev-salas", async (req, res) => {
 
 io.on("connection", (socket) => {
 
-socket.on("startSecondHalf", ()=>{
-
+  socket.on("useExpulsion", ({ position }) => {
   const room = rooms[socket.roomCode];
   if(!room) return;
 
-    // 🚫 BLOQUEIO DE ESPECTADOR
-  if(socket.role === "spectator") return;
+  const role = socket.role;
+  if(role !== "blue" && role !== "red") return;
 
-  // 🔒 Opcional: só jogadores podem iniciar
-  if(socket.role !== "blue" && socket.role !== "red") return;
+  if(!["A","M","D"].includes(position)) return;
 
-  // 🔁 devolver cartas das mãos
-  room.hands.blue.forEach(card=>{
-    room.decks[card.type].push(card);
+  if(!room.expulsions){
+    room.expulsions = {
+      blue:{ total:0, A:0, M:0, D:0 },
+      red:{ total:0, A:0, M:0, D:0 }
+    };
+  }
+
+  if(!room.formation){
+    room.formation = {
+      blue:{ A:3, M:4, D:3, G:3 },
+      red:{ A:3, M:4, D:3, G:3 }
+    };
+  }
+
+  const exp = room.expulsions[role];
+
+  if(exp.total >= 4){
+    socket.emit("actionDenied", "Você já usou as 4 expulsões.");
+    return;
+  }
+
+  if(room.formation[role][position] <= 0){
+    socket.emit("actionDenied", "Essa posição já está bloqueada.");
+    return;
+  }
+
+  exp.total += 1;
+  exp[position] += 1;
+
+  room.formation[role][position] = Math.max(
+    0,
+    room.formation[role][position] - 1
+  );
+
+  io.to(socket.roomCode).emit("syncExpulsions", room.expulsions);
+
+  io.to(socket.roomCode).emit("syncFormation", {
+    blue:{ ...room.formation.blue },
+    red:{ ...room.formation.red }
   });
-
-  room.hands.red.forEach(card=>{
-    room.decks[card.type].push(card);
-  });
-
-  // 🧹 limpar mãos
-  room.hands.blue = [];
-  room.hands.red  = [];
-
-  // 🔁 devolver cartas dos slots
-  Object.keys(room.boardSlots).forEach(slot=>{
-    room.boardSlots[slot].forEach(card=>{
-      room.decks[card.type].push(card);
-    });
-    room.boardSlots[slot] = [];
-  });
-
-  // 🔀 embaralhar todos os decks
-  Object.keys(room.decks).forEach(type=>{
-    shuffle(room.decks[type]);
-  });
-  room.lastSlotPlayed = null;
-  // atualizar clientes
-  io.to(socket.roomCode).emit("updateBoardSlots", {
-  slots: room.boardSlots,
-  lastSlot: room.lastSlotPlayed
-});
-  io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
 
   io.to(socket.roomCode).emit("handCounts", {
-  blue: countHandTypes(room.hands.blue),
-  red: countHandTypes(room.hands.red)
+    blue: countHandTypes(room.hands.blue),
+    red: countHandTypes(room.hands.red)
+  });
+
+  emitActionLog(
+    socket.roomCode,
+    `${socket.playerName} usou expulsão em ${position}. Ônus: -${exp.total}`,
+    role
+  );
 });
 
-  io.to(socket.roomCode).emit("secondHalfStarted");
+socket.on("startSecondHalf", () => {
+  const room = rooms[roomCode];
+  if(!room) return;
 
-  emitActionLog(socket.roomCode, `${socket.playerName} iniciou o 2º tempo`, socket.role);
+  Object.keys(room.slotPiles).forEach(slot => {
+    const cards = room.slotPiles[slot];
+
+    cards.forEach(card => {
+      if(room.decks[card.type]){
+        room.decks[card.type].push(card);
+      }
+    });
+
+    room.slotPiles[slot] = [];
+  });
+
+  Object.keys(room.decks).forEach(type => {
+    shuffle(room.decks[type]);
+  });
+
+  room.secondHalf = true;
+
+  io.to(roomCode).emit("syncSlots", room.slotPiles);
+  io.to(roomCode).emit("syncDeckCounts", getDeckCounts(room.decks));
+  io.to(roomCode).emit("secondHalfStarted");
 });
-
 
 socket.on("updateFormation", ({ formation }) => {
 
@@ -872,6 +906,10 @@ socket.on("createRoom", ({ name, role }) => {
     blueConnected:false,
     redConnected:false,
     spectators:[],
+    expulsions:{
+      blue:{ total:0, A:0, M:0, D:0 },
+      red:{ total:0, A:0, M:0, D:0 }
+    },
 devInfo:{
   roomCode,
   createdAt: new Date().toISOString(),
@@ -984,12 +1022,23 @@ if(role === "spectator"){
 });
   socket.emit("syncSubTokens", room.subTokens || {});
   socket.emit("syncTwists", room.twists || []);
-  socket.emit("syncTokens", room.tokens || {});
   socket.emit("syncDeckSizes", room.decks);
+  socket.emit("syncSecondHalf", {
+  isSecondHalf: !!room.isSecondHalf
+});
+  socket.emit("syncTokens", room.tokens || {});
+  
+
+  
 
   socket.emit("syncFormation", room.formation || {
   blue: { A:3, M:4, D:3, G:3 },
   red:  { A:3, M:4, D:3, G:3 }
+});
+
+socket.emit("syncExpulsions", room.expulsions || {
+  blue:{ total:0, A:0, M:0, D:0 },
+  red:{ total:0, A:0, M:0, D:0 }
 });
 
   io.to(roomCode).emit("handCounts", {
@@ -1057,6 +1106,14 @@ registerRoomAccess(roomCode, socket, "reconnectRoom");
   socket.emit("syncFormation", room.formation || {
   blue: { A:3, M:4, D:3, G:3 },
   red:  { A:3, M:4, D:3, G:3 }
+});
+
+socket.emit("syncExpulsions", room.expulsions || {
+  blue:{ total:0, A:0, M:0, D:0 },
+  red:{ total:0, A:0, M:0, D:0 }
+});
+  socket.emit("syncSecondHalf", {
+  isSecondHalf: !!room.isSecondHalf
 });
 
   socket.emit("syncTokens", room.tokens || {});
@@ -1130,6 +1187,14 @@ socket.on("restartMatch", ()=>{
   // limpa posições de tokens
   room.tokens = {};
 
+   // limpa expulsões
+  room.expulsions = {
+  blue:{ total:0, A:0, M:0, D:0 },
+  red:{ total:0, A:0, M:0, D:0 }
+};
+
+  room.isSecondHalf = false;
+
   // 🔥 envia estado completo
   io.to(socket.roomCode).emit("matchRestarted");
   room.lastSlotPlayed = null;
@@ -1144,6 +1209,7 @@ socket.on("restartMatch", ()=>{
   blue: countHandTypes(room.hands.blue),
   red: countHandTypes(room.hands.red)
 });
+  io.to(socket.roomCode).emit("syncExpulsions", room.expulsions);
 });
 
 
