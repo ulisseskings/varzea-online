@@ -1692,31 +1692,20 @@ openRadial(e.clientX, e.clientY, [
   {
     label: "Comprar",
     action: ()=>{
+      // seu código atual de comprar
+    }
+  },
 
-      const f = formation[playerRole];
-
-      const counts = (playerRole === "blue")
-        ? hand
-        : hand_red;
-
-      const type = deckType.replace("_red","");
-
-      const current = counts.filter(c =>
-        c.type === deckType
-      ).length;
-
-      if(type !== "P" && current >= f[type]){
-        alert("Limite da formação atingido para " + type);
-        return;
-      }
+  {
+    label: "Reposição completa",
+    action: ()=>{
 
       if(deckType === "T"){
-        socket.emit("drawTwist");
-        playSFX(SOUNDS.draw);
+        alert("Reposição completa não usa o deck de Twist.");
         return;
       }
 
-      socket.emit("drawCard", deckType);
+      socket.emit("refillFullHand");
       playSFX(SOUNDS.draw);
     }
   }

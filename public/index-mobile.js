@@ -1932,6 +1932,22 @@ wrapper.addEventListener("touchend", function(e){
       }
     },
     {
+  label: "Reposição completa",
+  action: ()=>{
+
+    if(deckType === "T"){
+      openInfoModal(
+        "Reposição completa",
+        "Reposição completa não usa o deck de Twist."
+      );
+      return;
+    }
+
+    socket.emit("refillFullHand");
+    playSFX(SOUNDS.draw);
+  }
+},
+    {
       label: "Cancelar",
       action: ()=>{}
     }

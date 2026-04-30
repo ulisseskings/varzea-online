@@ -1308,7 +1308,85 @@ socket.on("drawCard", (deckType) => {
 
 });
 
+socket.on("refillFullHand", () => {
 
+  const room = rooms[socket.roomCode];
+  if(!room) return;
+
+  const role = socket.role;
+  if(role !== "blue" && role !== "red") return;
+
+  if(!room.formation){
+    room.formation = {
+      blue:{ A:3, M:4, D:3, G:3 },
+      red:{ A:3, M:4, D:3, G:3 }
+    };
+  }
+
+  const hand = role === "blue" ? room.hands.blue : room.hands.red;
+  const f = room.formation[role];
+
+  const deckMap = role === "blue"
+    ? { A:"A", M:"M", D:"D", G:"G" }
+    : { A:"A_red", M:"M_red", D:"D_red", G:"G_red" };
+
+  let totalBought = 0;
+
+  ["A","M","D","G"].forEach(pos => {
+
+    const deckType = deckMap[pos];
+
+    const current = hand.filter(c => c.type === deckType).length;
+    const target = f[pos] || 0;
+
+    let missing = Math.max(0, target - current);
+
+    while(missing > 0){
+
+      const deck = room.decks[deckType];
+
+      if(!deck || deck.length === 0){
+        break;
+      }
+
+      const index = Math.floor(Math.random() * deck.length);
+      const rawCard = deck.splice(index, 1)[0];
+
+      const card = {
+        ...rawCard,
+        id: randomUUID()
+      };
+
+      hand.push(card);
+
+      totalBought++;
+      missing--;
+    }
+
+  });
+
+  if(role === "blue"){
+    socket.emit("yourHand", room.hands.blue);
+  }
+
+  if(role === "red"){
+    socket.emit("yourHand", room.hands.red);
+  }
+
+  io.to(socket.roomCode).emit("handCounts", {
+    blue: countHandTypes(room.hands.blue),
+    red: countHandTypes(room.hands.red)
+  });
+
+  io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+
+  emitActionLog(
+    socket.roomCode,
+    `${socket.playerName} fez reposição completa e comprou ${totalBought} carta(s).`,
+    role
+  );
+
+});
 
 
   socket.on("shuffleDeck", (deckType) => {
