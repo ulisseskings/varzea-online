@@ -444,6 +444,38 @@ app.get("/api/dev-salas", async (req, res) => {
   }
 });
 
+
+app.delete("/api/dev-salas/recent", async (req, res) => {
+  try{
+    const limit = parseInt(req.query.limit || "10");
+
+    const recentLogs = await RoomLog
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select("_id");
+
+    const ids = recentLogs.map(log => log._id);
+
+    const result = await RoomLog.deleteMany({
+      _id: { $in: ids }
+    });
+
+    res.json({
+      ok: true,
+      deleted: result.deletedCount
+    });
+
+  }catch(err){
+    console.error("Erro ao apagar logs recentes:", err);
+    res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
+});
+
+
 /* ===============================
    CONEXÃO
 ================================ */
