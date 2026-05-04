@@ -1647,6 +1647,126 @@ socket.on("drawCard", (deckType) => {
 
 });
 
+socket.on("blindPlayFromDeck", (deckType) => {
+
+	const room = rooms[socket.roomCode];
+	if(!room) return;
+
+	if(socket.role !== "blue" && socket.role !== "red") return;
+
+	const isRedDeck = deckType.includes("_red");
+	const baseType = deckType.replace("_red", "");
+
+	if(!["A","M","D","G"].includes(baseType)) return;
+
+	if(socket.role === "blue" && isRedDeck) return;
+	if(socket.role === "red" && !isRedDeck) return;
+
+	const deck = room.decks[deckType];
+	if(!deck || deck.length === 0) return;
+
+	if(!room.boardSlots[deckType]){
+		console.log("Slot inválido para Jogar às Cegas:", deckType);
+		return;
+	}
+
+	const index = Math.floor(Math.random() * deck.length);
+	const rawCard = deck.splice(index, 1)[0];
+
+	const card = {
+		...rawCard,
+		id: randomUUID()
+	};
+
+	room.boardSlots[deckType].push(card);
+	room.lastSlotPlayed = deckType;
+
+	io.to(socket.roomCode).emit("updateBoardSlots", {
+		slots: room.boardSlots,
+		lastSlot: room.lastSlotPlayed
+	});
+
+	io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+
+	io.to(socket.roomCode).emit("handCounts", {
+		blue: countHandTypes(room.hands.blue),
+		red: countHandTypes(room.hands.red)
+	});
+
+	emitActionLog(
+		socket.roomCode,
+		`${socket.playerName} jogou às cegas uma carta ${deckType} direto do deck.`,
+		socket.role
+	);
+
+});
+
+
+socket.on("blindPlayFromHand", (cardType) => {
+
+	const room = rooms[socket.roomCode];
+	if(!room) return;
+
+	if(socket.role !== "blue" && socket.role !== "red") return;
+
+	const isRedType = cardType.includes("_red");
+	const baseType = cardType.replace("_red", "");
+
+	if(!["A","M","D","G"].includes(baseType)) return;
+
+	if(socket.role === "blue" && isRedType) return;
+	if(socket.role === "red" && !isRedType) return;
+
+	const playerHand = socket.role === "blue"
+		? room.hands.blue
+		: room.hands.red;
+
+	if(!playerHand) return;
+
+	const possibleCards = playerHand.filter(card => card.type === cardType);
+	if(possibleCards.length === 0) return;
+
+	const chosenCard = possibleCards[Math.floor(Math.random() * possibleCards.length)];
+	const cardIndex = playerHand.findIndex(card => card.id === chosenCard.id);
+	if(cardIndex === -1) return;
+
+	const card = playerHand.splice(cardIndex, 1)[0];
+
+	if(!room.boardSlots[cardType]){
+		console.log("Slot inválido para Jogar às Cegas da mão:", cardType);
+		return;
+	}
+
+	room.boardSlots[cardType].push(card);
+	room.lastSlotPlayed = cardType;
+
+	if(socket.role === "blue"){
+		socket.emit("yourHand", room.hands.blue);
+	}
+
+	if(socket.role === "red"){
+		socket.emit("yourHand", room.hands.red);
+	}
+
+	io.to(socket.roomCode).emit("updateBoardSlots", {
+		slots: room.boardSlots,
+		lastSlot: room.lastSlotPlayed
+	});
+
+	io.to(socket.roomCode).emit("handCounts", {
+		blue: countHandTypes(room.hands.blue),
+		red: countHandTypes(room.hands.red)
+	});
+
+	emitActionLog(
+		socket.roomCode,
+		`${socket.playerName} jogou às cegas uma carta ${cardType} da mão.`,
+		socket.role
+	);
+
+});
+
+
 socket.on("refillFullHand", () => {
 
   const room = rooms[socket.roomCode];

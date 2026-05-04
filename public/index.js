@@ -1053,6 +1053,21 @@ function renderGroup(handArray, targetDiv){
   }
 },
 
+...( ["A","M","D","G"].includes(card.type.replace("_red", "")) 
+	? [
+		{
+			label: "Jogar às Cegas",
+			action: ()=>{
+				socket.emit("blindPlayFromHand", card.type);
+				selectedCardId = null;
+				clearSelection();
+				playSFX(SOUNDS.throw);
+			}
+		}
+	]
+	: []
+),
+
 {
   label: "Cancelar",
   action: ()=>{}
@@ -1720,6 +1735,16 @@ deck.addEventListener("click", (e)=>{
 			}
 		});
 	}
+
+  if(isAMDGDeck){
+	deckActions.push({
+		label: "Jogar às Cegas",
+		action: ()=>{
+			socket.emit("blindPlayFromDeck", deckType);
+			playSFX(SOUNDS.throw);
+		}
+	});
+}
 
 	deckActions.push({
 		label: "Cancelar",
