@@ -1565,6 +1565,119 @@ display: block;
   pointer-events: auto !important;
 }
 
+#blindShotOverlay{
+	position: fixed;
+	inset: 0;
+	display: none;
+	justify-content: center;
+	align-items: center;
+	background: rgba(0,0,0,0.78);
+	z-index: 99999999;
+	pointer-events: auto;
+}
+
+.blind-shot-box{
+	width: min(760px, 92vw);
+	min-height: 360px;
+	background: rgba(12,22,30,0.96);
+	border: 2px solid #ffffff;
+	border-radius: 18px;
+	box-shadow: 0 0 35px rgba(255,255,255,0.35);
+	padding: 24px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 18px;
+	color: white;
+	text-align: center;
+}
+
+.blind-shot-title{
+	font-size: 28px;
+	font-weight: 900;
+	color: #00d9ff;
+	text-transform: uppercase;
+}
+
+.blind-shot-text{
+	font-size: 18px;
+	font-weight: 700;
+	max-width: 620px;
+	line-height: 1.35;
+}
+
+.blind-shot-cards{
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 18px;
+	flex-wrap: wrap;
+	min-height: 145px;
+}
+
+.blind-shot-card{
+	width: 90px;
+	height: 125px;
+	object-fit: cover;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: transform .15s, box-shadow .15s, border .15s;
+	border: 3px solid transparent;
+}
+
+.blind-shot-card:hover{
+	transform: scale(1.08);
+}
+
+.blind-shot-card.selected-card{
+	border: 3px solid #ffff00;
+	box-shadow: 0 0 18px #ffff00, 0 0 32px rgba(255,255,0,0.7);
+	transform: scale(1.12);
+}
+
+.blind-shot-play-btn{
+	padding: 12px 34px;
+	border-radius: 12px;
+	border: 2px solid white;
+	background: #0da83f;
+	color: white;
+	font-size: 18px;
+	font-weight: 900;
+	cursor: pointer;
+}
+
+.blind-shot-play-btn:disabled{
+	background: #777;
+	cursor: default;
+}
+
+.blind-shot-empty{
+	font-size: 18px;
+	font-weight: 800;
+	color: #ffdd55;
+}
+
+.blind-shot-card-btn{
+	background: transparent;
+	border: 2px solid transparent;
+	padding: 8px;
+	cursor: pointer;
+	color: white;
+	border-radius: 10px;
+}
+
+.blind-shot-card-btn.selected-card{
+	border-color: yellow;
+	box-shadow: 0 0 14px yellow;
+}
+
+.blind-shot-card-back{
+	width: 90px;
+	height: 130px;
+	object-fit: cover;
+	display: block;
+}
+
   </style>
 </head>
 
@@ -1572,6 +1685,7 @@ display: block;
 
 
 <body>
+  
 
   <div id="gameTooltip"></div>
 
@@ -1992,30 +2106,66 @@ display: block;
 <div class="anchor" id="bonus1a" style="left:980px; top:510px;"></div>
 <div class="anchor" id="bonus1a2" style="left:1000px; top:510px;"></div>
 
+<div class="anchor" id="bonus2a_extra" style="left:960px; top:510px;"></div>
 <div class="anchor" id="bonus1a_extra" style="left:980px; top:510px;"></div>
 <div class="anchor" id="bonus1a2_extra" style="left:1000px; top:510px;"></div>
 
-<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a" draggable="true">
-<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a" draggable="true">
-<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2" draggable="true">
+<div class="anchor" id="bonus2a_extra2" style="left:960px; top:510px;"></div>
+<div class="anchor" id="bonus1a_extra2" style="left:980px; top:510px;"></div>
+<div class="anchor" id="bonus1a2_extra2" style="left:1000px; top:510px;"></div>
 
-<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a_extra" draggable="true">
-<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2_extra" draggable="true">
+<div class="anchor" id="bonus2a_extra3" style="left:960px; top:510px;"></div>
+<div class="anchor" id="bonus1a_extra3" style="left:980px; top:510px;"></div>
+<div class="anchor" id="bonus1a2_extra3" style="left:1000px; top:510px;"></div>
+
+<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a" >
+<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a">
+<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2" >
+
+<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a_extra">
+<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a_extra">
+<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2_extra">
+
+<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a_extra2">
+<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a_extra2">
+<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2_extra2">
+
+<img class="piece bonus-token" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2a_extra3">
+<img class="piece bonus-token" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1a_extra3">
+<img class="piece bonus-token" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1a2_extra3">
 
 <!-- Bonus Vermelho -->
 <div class="anchor" id="bonus2v" style="left:200px; top:140px;"></div>
 <div class="anchor" id="bonus1v" style="left:180px; top:140px;"></div>
 <div class="anchor" id="bonus1v2" style="left:160px; top:140px;"></div>
 
+<div class="anchor" id="bonus2v_extra" style="left:200px; top:140px;"></div>
 <div class="anchor" id="bonus1v_extra" style="left:180px; top:140px;"></div>
 <div class="anchor" id="bonus1v2_extra" style="left:160px; top:140px;"></div>
 
-<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v" draggable="true">
-<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v" draggable="true">
-<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2" draggable="true">
+<div class="anchor" id="bonus2v_extra2" style="left:200px; top:140px;"></div>
+<div class="anchor" id="bonus1v_extra2" style="left:180px; top:140px;"></div>
+<div class="anchor" id="bonus1v2_extra2" style="left:160px; top:140px;"></div>
 
-<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v_extra" draggable="true">
-<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2_extra" draggable="true">
+<div class="anchor" id="bonus2v_extra3" style="left:200px; top:140px;"></div>
+<div class="anchor" id="bonus1v_extra3" style="left:180px; top:140px;"></div>
+<div class="anchor" id="bonus1v2_extra3" style="left:160px; top:140px;"></div>
+
+<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v">
+<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v">
+<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2">
+
+<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v_extra">
+<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v_extra">
+<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2_extra">
+
+<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v_extra2">
+<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v_extra2">
+<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2_extra2">
+
+<img class="piece bonus-token red" src="https://i.imgur.com/rpOZM4D.png" data-anchor="bonus2v_extra3" >
+<img class="piece bonus-token red" src="https://i.imgur.com/IFFHO2e.png" data-anchor="bonus1v_extra3">
+<img class="piece bonus-token red" src="https://i.imgur.com/UwhWKVf.png" data-anchor="bonus1v2_extra3">
 
 <!-- Reds -->
 <div class="anchor" id="red1a" style="left:1020px; top:510px;"></div>

@@ -1665,53 +1665,71 @@ openRadial(e.clientX, e.clientY, [
 
 document.querySelectorAll("[data-deck]").forEach(deck=>{
 
-
 deck.addEventListener("click", (e)=>{
 
-e.stopPropagation();
+	e.stopPropagation();
 
-document.querySelectorAll(".selected-card")
-.forEach(el => el.classList.remove("selected-card"));
+	document.querySelectorAll(".selected-card")
+	.forEach(el => el.classList.remove("selected-card"));
 
-deck.classList.add("selected-card");
+	deck.classList.add("selected-card");
 
-const deckType = deck.dataset.deck;
+	const deckType = deck.dataset.deck;
 
-const isRedDeck = deckType.includes("_red");
-const isTwistDeck = deckType === "T";
+	const isRedDeck = deckType.includes("_red");
+	const isTwistDeck = deckType === "T";
+	const baseDeckType = deckType.replace("_red", "");
+	const isAMDGDeck = ["A", "M", "D", "G"].includes(baseDeckType);
 
-if(!isTwistDeck){
-  if(playerRole === "blue" && isRedDeck) return;
-  if(playerRole === "red" && !isRedDeck) return;
-}
+	if(!isTwistDeck){
+		if(playerRole === "blue" && isRedDeck) return;
+		if(playerRole === "red" && !isRedDeck) return;
+	}
 
-highlightSlot(deckType);
+	highlightSlot(deckType);
 
-openRadial(e.clientX, e.clientY, [
+	const deckActions = [
+		{
+			label: "Comprar",
+			action: ()=>{
+				if(deckType === "T"){
+					socket.emit("drawCard", "T");
+					return;
+				}
 
-  {
-    label: "Comprar",
-    action: ()=>{
-      // seu código atual de comprar
-    }
-  },
+				socket.emit("drawCard", deckType);
+			}
+		}
+	];
 
-  {
-    label: "Reposição completa",
-    action: ()=>{
+	if(deckType === "T"){
+		deckActions.push({
+			label: "Modo Aberto",
+			action: ()=>{
+				socket.emit("openTwistMode");
+			}
+		});
+	}
 
-      if(deckType === "T"){
-        alert("Reposição completa não usa o deck de Twist.");
-        return;
-      }
+	if(isAMDGDeck){
+		deckActions.push({
+			label: "Reposição completa",
+			action: ()=>{
+				socket.emit("refillFullHand");
+				playSFX(SOUNDS.draw);
+			}
+		});
+	}
 
-      socket.emit("refillFullHand");
-      playSFX(SOUNDS.draw);
-    }
-  }
+	deckActions.push({
+		label: "Cancelar",
+		action: ()=>{}
+	});
 
-]);
+	openRadial(e.clientX, e.clientY, deckActions);
+
 });
+
 });
 
 ["hand","hand_red"].forEach(id=>{
@@ -2069,11 +2087,13 @@ img.addEventListener("click", (e)=>{
 
   openRadial(e.clientX, e.clientY, [
     {
-      label: "Ativar carta",
-      action: ()=>{
-        console.log("Twist ativada:", card.id);
-      }
-    },
+	label: "Ativar carta",
+	action: ()=>{
+		socket.emit("activateTwist", {
+			id: card.id
+		});
+	}
+},
     {
       label: "Voltar para o deck",
       action: ()=>{
@@ -2120,6 +2140,93 @@ document.getElementById("twistZoomOverlay")
     }
 
 });
+
+let blindShotSelectedCardId = null;
+
+function openBlindShotOverlay(cards){
+
+	let overlay = document.getElementById("blindShotOverlay");
+
+	if(!overlay){
+		overlay = document.createElement("div");
+		overlay.id = "blindShotOverlay";
+		document.body.appendChild(overlay);
+	}
+
+	overlay.innerHTML = "";
+
+	const box = document.createElement("div");
+	box.style.background = "#111";
+	box.style.padding = "20px";
+	box.style.borderRadius = "12px";
+	box.style.textAlign = "center";
+	box.style.color = "white";
+
+	const title = document.createElement("div");
+	title.innerText = "Twist Chute às Cegas";
+
+	const cardsArea = document.createElement("div");
+	cardsArea.style.display = "flex";
+	cardsArea.style.gap = "10px";
+	cardsArea.style.margin = "15px 0";
+
+	cards.forEach(card => {
+
+		const btn = document.createElement("button");
+btn.className = "blind-shot-card-btn";
+btn.innerHTML = `
+	<img src="https://i.imgur.com/AQJilFs.png" class="blind-shot-card-back">
+	<div>${card.type}</div>
+`;
+
+btn.onclick = ()=>{
+	blindShotSelectedCardId = card.id;
+
+	document.querySelectorAll(".blind-shot-card-btn")
+		.forEach(b => b.classList.remove("selected-card"));
+
+	btn.classList.add("selected-card");
+};
+
+cardsArea.appendChild(btn);
+
+	});
+
+	const playBtn = document.createElement("button");
+	playBtn.innerText = "Jogar";
+
+	playBtn.onclick = ()=>{
+
+		if(!blindShotSelectedCardId){
+			alert("Escolha uma carta");
+			return;
+		}
+
+		socket.emit("blindShotPlay", {
+			cardId: blindShotSelectedCardId
+		});
+	};
+
+	box.appendChild(title);
+	box.appendChild(cardsArea);
+	box.appendChild(playBtn);
+
+	overlay.appendChild(box);
+
+	overlay.style.position = "fixed";
+	overlay.style.inset = "0";
+	overlay.style.background = "rgba(0,0,0,0.8)";
+	overlay.style.display = "flex";
+	overlay.style.justifyContent = "center";
+	overlay.style.alignItems = "center";
+}
+
+function closeBlindShotOverlay(){
+	const overlay = document.getElementById("blindShotOverlay");
+	if(overlay){
+		overlay.remove();
+	}
+}
 
 
 /* ===================== */
@@ -2620,6 +2727,7 @@ if(!el) return;
 el.style.transform =
   `translate(-50%, -50%) rotate(${card.rotation}deg)`;
 });
+
 socket.on("syncTwists", (twists)=>{
 
 // remove todas twists atuais da tela
@@ -2631,6 +2739,75 @@ twists.forEach(t=>{
   spawnTwistCard(t);
 });
 });
+
+socket.on("spawnOpenTwists", (twists)=>{
+
+	twists.forEach(data => {
+
+		// evita duplicar
+		if(document.getElementById(data.anchor)) return;
+
+		// 🔥 cria anchor
+		const anchor = document.createElement("div");
+		anchor.id = data.anchor;
+		anchor.style.position = "absolute";
+		anchor.style.left = data.x + "px";
+		anchor.style.top  = data.y + "px";
+
+		board.appendChild(anchor);
+
+		// 🔥 cria peça visual
+		const piece = document.createElement("img");
+		piece.src = data.img;
+		piece.className = "piece twist-card";
+
+		piece.dataset.anchor = data.anchor;
+
+		piece.style.position = "absolute";
+		piece.style.transform = "translate(-50%, -50%)";
+		piece.style.zIndex = 999999;
+
+		board.appendChild(piece);
+
+	});
+
+	applyAnchors();
+});
+
+socket.on("twistEffectStarted", (effect)=>{
+
+	if(effect.type !== "chute_as_cegas") return;
+
+});
+
+socket.on("blindShotChoices", ({ cards })=>{
+	openBlindShotOverlay(cards);
+});
+
+socket.on("blindShotPlayed", ()=>{
+	const overlay = document.getElementById("blindShotOverlay");
+
+	if(!overlay) return;
+
+	overlay.innerHTML = `
+		<div class="blind-shot-box">
+			<div class="blind-shot-title">Twist Chute às Cegas</div>
+			<div class="blind-shot-text">Sua escolha foi feita. Aguardando o outro jogador...</div>
+		</div>
+	`;
+
+	overlay.style.display = "flex";
+});
+
+socket.on("twistEffectEnded", (effect)=>{
+
+	if(effect.type !== "chute_as_cegas") return;
+
+	closeBlindShotOverlay();
+
+});
+
+
 socket.on("playerJoinedMessage", ({name, role})=>{
 
 let texto = "";
@@ -2751,6 +2928,12 @@ socket.on("syncSecondHalf", ({ isSecondHalf }) => {
   }else{
     applyFirstHalfLayout();
   }
+});
+
+socket.on("spawnTwist", (card)=>{
+
+playSFX(SOUNDS.throw);
+spawnTwistCard(card);
 });
 
 socket.on("syncDeckSizes", (serverDecks)=>{

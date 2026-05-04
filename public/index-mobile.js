@@ -1851,107 +1851,116 @@ document.querySelectorAll(".deck-wrapper").forEach(wrapper=>{
 
 wrapper.addEventListener("touchend", function(e){
 
-  const touch = e.changedTouches?.[0];
-  if(!touch) return;
+	const touch = e.changedTouches?.[0];
+	if(!touch) return;
 
-  e.preventDefault();
-  e.stopPropagation();
+	e.preventDefault();
+	e.stopPropagation();
 
-  const deck = wrapper.querySelector("[data-deck]");
-  if(!deck) return;
+	const deck = wrapper.querySelector("[data-deck]");
+	if(!deck) return;
 
-  const deckType = deck.dataset.deck;
+	const deckType = deck.dataset.deck;
 
-  if(playerRole === "spectator") return;
+	if(playerRole === "spectator") return;
 
-  if(playerRole === "blue" && deckType.endsWith("_red")) return;
+	if(playerRole === "blue" && deckType.endsWith("_red")) return;
 
-  if(playerRole === "red"){
-    if(
-      deckType === "A" ||
-      deckType === "M" ||
-      deckType === "D" ||
-      deckType === "G" ||
-      deckType === "P"
-    ) return;
-  }
+	if(playerRole === "red"){
+		if(
+			deckType === "A" ||
+			deckType === "M" ||
+			deckType === "D" ||
+			deckType === "G" ||
+			deckType === "P"
+		) return;
+	}
 
-  selectElement(wrapper);
+	selectElement(wrapper);
 
-  openRadial(touch.clientX, touch.clientY, [
-    {
-      label: "Comprar",
-      action: ()=>{
+	const deckActions = [
+		{
+			label: "Comprar",
+			action: ()=>{
 
-        if(deckType === "T"){
-          socket.emit("drawTwist");
-          return;
-        }
+				if(deckType === "T"){
+					socket.emit("drawCard", "T");
+					return;
+				}
 
-        const player = playerRole === "blue" ? "blue" : "red";
+				const player = playerRole === "blue" ? "blue" : "red";
 
-        if(!canDrawFromDeck(player, deckType)){
+				if(!canDrawFromDeck(player, deckType)){
 
-          const baseType = getBaseType(deckType);
-          const f = getFormationByPlayer(player);
-          const currentCount = countTypeInHand(player, deckType);
-          const needsRefill = mustRefillHand(player);
+					const baseType = getBaseType(deckType);
+					const f = getFormationByPlayer(player);
+					const currentCount = countTypeInHand(player, deckType);
+					const needsRefill = mustRefillHand(player);
 
-          if(needsRefill && f && currentCount >= f[baseType]){
-            openInfoModal(
-              "Limite atingido",
-              `Você não pode comprar mais cartas do tipo ${baseType}.\n\n` +
-              `Sua formação permite até ${f[baseType]} carta(s) desse tipo na mão.`
-            );
-            return;
-          }
+					if(needsRefill && f && currentCount >= f[baseType]){
+						openInfoModal(
+							"Limite atingido",
+							`Você não pode comprar mais cartas do tipo ${baseType}.\n\n` +
+							`Sua formação permite até ${f[baseType]} carta(s) desse tipo na mão.`
+						);
+						return;
+					}
 
-          if(!needsRefill){
-            openInfoModal(
-              "Compra bloqueada",
-              "Você não pode comprar mais cartas AMDG agora.\n\n" +
-              "Seu limite atual já foi atingido ou algum bloqueio de mão está ativo."
-            );
-            return;
-          }
+					if(!needsRefill){
+						openInfoModal(
+							"Compra bloqueada",
+							"Você não pode comprar mais cartas AMDG agora.\n\n" +
+							"Seu limite atual já foi atingido ou algum bloqueio de mão está ativo."
+						);
+						return;
+					}
 
-          openInfoModal(
-            "Compra bloqueada",
-            "Essa compra não é permitida neste momento."
-          );
-          return;
-        }
+					openInfoModal(
+						"Compra bloqueada",
+						"Essa compra não é permitida neste momento."
+					);
+					return;
+				}
 
-        socket.emit("drawCard", deckType);
-      }
-    },
-    {
-      label: "Embaralhar",
-      action: ()=>{
-        socket.emit("shuffleDeck", deckType);
-      }
-    },
-    {
-  label: "Reposição completa",
-  action: ()=>{
+				socket.emit("drawCard", deckType);
+			}
+		},
+		{
+			label: "Embaralhar",
+			action: ()=>{
+				socket.emit("shuffleDeck", deckType);
+			}
+		}
+	];
 
-    if(deckType === "T"){
-      openInfoModal(
-        "Reposição completa",
-        "Reposição completa não usa o deck de Twist."
-      );
-      return;
-    }
+	if(deckType === "T"){
+		deckActions.push({
+			label: "Modo Aberto",
+			action: ()=>{
+				socket.emit("openTwistMode");
+			}
+		});
+	}
 
-    socket.emit("refillFullHand");
-    playSFX(SOUNDS.draw);
-  }
-},
-    {
-      label: "Cancelar",
-      action: ()=>{}
-    }
-  ]);
+	const baseDeckType = deckType.replace("_red", "");
+const isAMDGDeck = ["A", "M", "D", "G"].includes(baseDeckType);
+
+if(isAMDGDeck){
+	deckActions.push({
+		label: "Reposição completa",
+		action: ()=>{
+			socket.emit("refillFullHand");
+			playSFX(SOUNDS.draw);
+		}
+	});
+}
+
+	deckActions.push({
+		label: "Cancelar",
+		action: ()=>{}
+	});
+
+	openRadial(touch.clientX, touch.clientY, deckActions);
 
 }, { passive:false });
 
@@ -2252,6 +2261,8 @@ let startY = 0;
 let holdTimer = null;
 let lastTap = 0;
 
+let activationTimer = null;
+
 /* TOUCH START */
 
 img.addEventListener("touchstart",(e)=>{
@@ -2268,6 +2279,16 @@ document.querySelectorAll(".twist-selected")
 
 img.classList.add("twist-selected");
 highlightTwistDeck();
+
+clearTimeout(activationTimer);
+
+activationTimer = setTimeout(()=>{
+	if(!dragging){
+		socket.emit("activateTwist", {
+			id: card.id
+		});
+	}
+}, 900);
 
 const now = Date.now();
 
@@ -2301,6 +2322,8 @@ holdTimer = setTimeout(()=>{
 
 img.addEventListener("touchmove",(e)=>{
 
+clearTimeout(activationTimer);
+
 const touch = e.touches[0];
 
 const dx = Math.abs(touch.clientX - startX);
@@ -2323,6 +2346,8 @@ img.style.top  = p.y + "px";
 /* TOUCH END */
 
 img.addEventListener("touchend",(e)=>{
+
+clearTimeout(activationTimer);
 
 clearTimeout(holdTimer);
 
@@ -2359,13 +2384,51 @@ if(deck && deck.dataset.deck === "T"){
 
 if(dragging){
 
-  socket.emit("moveTwist", {
-    id: card.id,
-    x: parseFloat(img.style.left),
-    y: parseFloat(img.style.top)
-  });
+	socket.emit("moveTwist", {
+		id: card.id,
+		x: parseFloat(img.style.left),
+		y: parseFloat(img.style.top)
+	});
 
+	document.querySelectorAll(".twist-selected")
+	.forEach(el => el.classList.remove("twist-selected"));
+
+	clearHighlight();
+	return;
 }
+
+openRadial(touch.clientX, touch.clientY, [
+	{
+		label: "Ativar carta",
+		action: ()=>{
+			socket.emit("activateTwist", {
+				id: card.id
+			});
+		}
+	},
+	{
+		label: "Voltar para o deck",
+		action: ()=>{
+			socket.emit("returnTwistToDeck", {
+				id: card.id
+			});
+
+			document.querySelectorAll(".twist-selected")
+			.forEach(el => el.classList.remove("twist-selected"));
+
+			clearHighlight();
+		}
+	},
+	{
+		label: "Cancelar",
+		action: ()=>{
+			document.querySelectorAll(".twist-selected")
+			.forEach(el => el.classList.remove("twist-selected"));
+
+			clearHighlight();
+		}
+	}
+]);
 
 document.querySelectorAll(".twist-selected")
 .forEach(el => el.classList.remove("twist-selected"));
@@ -2381,6 +2444,93 @@ img.addEventListener("dblclick", ()=>{
 
 
 board.appendChild(img);
+}
+
+let blindShotSelectedCardId = null;
+
+function openBlindShotOverlay(cards){
+
+	let overlay = document.getElementById("blindShotOverlay");
+
+	if(!overlay){
+		overlay = document.createElement("div");
+		overlay.id = "blindShotOverlay";
+		document.body.appendChild(overlay);
+	}
+
+	overlay.innerHTML = "";
+
+	const box = document.createElement("div");
+	box.style.background = "#111";
+	box.style.padding = "20px";
+	box.style.borderRadius = "12px";
+	box.style.textAlign = "center";
+	box.style.color = "white";
+
+	const title = document.createElement("div");
+	title.innerText = "Twist Chute às Cegas";
+
+	const cardsArea = document.createElement("div");
+	cardsArea.style.display = "flex";
+	cardsArea.style.gap = "10px";
+	cardsArea.style.margin = "15px 0";
+
+	cards.forEach(card => {
+
+		const btn = document.createElement("button");
+btn.className = "blind-shot-card-btn";
+btn.innerHTML = `
+	<img src="https://i.imgur.com/AQJilFs.png" class="blind-shot-card-back">
+	<div>${card.type}</div>
+`;
+
+btn.onclick = ()=>{
+	blindShotSelectedCardId = card.id;
+
+	document.querySelectorAll(".blind-shot-card-btn")
+		.forEach(b => b.classList.remove("selected-card"));
+
+	btn.classList.add("selected-card");
+};
+
+cardsArea.appendChild(btn);
+
+	});
+
+	const playBtn = document.createElement("button");
+	playBtn.innerText = "Jogar";
+
+	playBtn.onclick = ()=>{
+
+		if(!blindShotSelectedCardId){
+			alert("Escolha uma carta");
+			return;
+		}
+
+		socket.emit("blindShotPlay", {
+			cardId: blindShotSelectedCardId
+		});
+	};
+
+	box.appendChild(title);
+	box.appendChild(cardsArea);
+	box.appendChild(playBtn);
+
+	overlay.appendChild(box);
+
+	overlay.style.position = "fixed";
+	overlay.style.inset = "0";
+	overlay.style.background = "rgba(0,0,0,0.8)";
+	overlay.style.display = "flex";
+	overlay.style.justifyContent = "center";
+	overlay.style.alignItems = "center";
+}
+
+function closeBlindShotOverlay(){
+	const overlay = document.getElementById("blindShotOverlay");
+	if(overlay){
+		overlay.remove();
+	}
 }
 
 // ✅ clicar fora fecha o zoom
@@ -2857,6 +3007,40 @@ if(exists) return;
 
 spawnTwistCard(card);
 
+});
+
+socket.on("spawnOpenTwists", (twists)=>{
+
+	twists.forEach(data => {
+
+		// evita duplicar
+		if(document.getElementById(data.anchor)) return;
+
+		// 🔥 cria anchor
+		const anchor = document.createElement("div");
+		anchor.id = data.anchor;
+		anchor.style.position = "absolute";
+		anchor.style.left = data.x + "px";
+		anchor.style.top  = data.y + "px";
+
+		board.appendChild(anchor);
+
+		// 🔥 cria peça visual
+		const piece = document.createElement("img");
+		piece.src = data.img;
+		piece.className = "piece twist-card";
+
+		piece.dataset.anchor = data.anchor;
+
+		piece.style.position = "absolute";
+		piece.style.transform = "translate(-50%, -50%)";
+		piece.style.zIndex = 999999;
+
+		board.appendChild(piece);
+
+	});
+
+	applyAnchors();
 });
 
 socket.on("tokenMoved", (data)=>{

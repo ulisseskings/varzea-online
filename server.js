@@ -394,6 +394,41 @@ function emitActionLog(roomCode, text, color){
   });
 }
 
+const TWIST_CHUTE_AS_CEGAS = "https://i.imgur.com/IrPk7wE.png";
+
+function getBlindShotEnemyRole(role){
+
+	if(role === "blue") return "red";
+	if(role === "red") return "blue";
+
+	return null;
+}
+
+function getBlindShotAllowedTypes(enemyRole){
+
+	if(enemyRole === "blue"){
+		return ["A", "G"];
+	}
+
+	if(enemyRole === "red"){
+		return ["A_red", "G_red"];
+	}
+
+	return [];
+}
+
+function getBlindShotSlot(cardType){
+
+	if(cardType === "A") return "A";
+	if(cardType === "G") return "G";
+
+	if(cardType === "A_red") return "A_red";
+	if(cardType === "G_red") return "G_red";
+
+	return null;
+}
+
+
 function createShuffledDecks(){
 
   const newDecks = {};
@@ -773,30 +808,245 @@ socket.on("flipSubToken", ({anchor, faceUp})=>{
 });
   
 
-socket.on("drawTwist", ()=>{
+
+socket.on("activateTwist", ({ id })=>{
 
   const room = rooms[socket.roomCode];
-  if(!room) return;
+	if(!room) return;
 
-  if(room.decks.T.length === 0) return;
+  console.log("ID recebido:", id);
+	console.log("Twists na sala:", room.twists);
 
-  const index = Math.floor(Math.random() * room.decks.T.length);
-  const card = room.decks.T.splice(index,1)[0];
+	if(socket.role !== "blue" && socket.role !== "red") return;
 
-  const twistObj = {
-    id: randomUUID(),
-    front: card.front,
-    x: 200,
-    y: 210,
-    rotation: 0
-  };
+	const twist = room.twists.find(t => t.id === id);
 
-  room.twists.push(twistObj);
+  console.log("Twist encontrada:", twist);
 
-  io.to(socket.roomCode).emit("spawnTwist", twistObj);
-  io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+if(!twist){
+	socket.emit("actionDenied", "Essa carta twist não está registrada na mesa. Compre/coloque a carta no tabuleiro antes de ativar.");
+	return;
+}
+
+	if(twist.front !== TWIST_CHUTE_AS_CEGAS){
+		socket.emit("actionDenied", "Essa carta twist ainda não tem ativação programada.");
+		return;
+	}
+
+  console.log("Twist ativada:", twist.front);
+console.log("Twist esperada:", TWIST_CHUTE_AS_CEGAS);
+
+	const roomCode = socket.roomCode;
+
+	room.activeEffect = {
+		type: "chute_as_cegas",
+		twistId: id,
+		choices: {}
+	};
+
+	io.to(roomCode).emit("twistEffectStarted", {
+		type: "chute_as_cegas",
+		title: "Twist Chute às Cegas",
+		text: "Selecione uma das cartas do seu adversário e clique em Jogar."
+	});
+
+	const clients = io.sockets.adapter.rooms.get(roomCode);
+
+	if(clients){
+		clients.forEach(socketId => {
+
+			const targetSocket = io.sockets.sockets.get(socketId);
+			if(!targetSocket) return;
+
+			const role = targetSocket.role;
+			if(role !== "blue" && role !== "red") return;
+
+			const enemyRole = getBlindShotEnemyRole(role);
+			if(!enemyRole) return;
+
+			const enemyHand = room.hands[enemyRole] || [];
+			const allowedTypes = getBlindShotAllowedTypes(enemyRole);
+
+			const cards = enemyHand
+				.filter(card => allowedTypes.includes(card.type))
+				.map(card => ({
+					id: card.id,
+					type: card.type
+				}));
+
+        if(cards.length === 0){
+	targetSocket.emit("actionDenied", "O adversário não tem cartas A ou G disponíveis para o Chute às Cegas.");
+	return;
+}
+
+			targetSocket.emit("blindShotChoices", {
+				cards
+			});
+
+		});
+	}
+
+	emitActionLog(
+		roomCode,
+		`${socket.playerName} ativou o Twist Chute às Cegas.`,
+		socket.role
+	);
 
 });
+
+socket.on("blindShotPlay", ({ cardId })=>{
+
+	const room = rooms[socket.roomCode];
+	if(!room) return;
+
+	if(!room.activeEffect || room.activeEffect.type !== "chute_as_cegas"){
+		return;
+	}
+
+	const role = socket.role;
+	if(role !== "blue" && role !== "red") return;
+
+	const enemyRole = getBlindShotEnemyRole(role);
+	if(!enemyRole) return;
+
+	const enemyHand = room.hands[enemyRole];
+	if(!enemyHand) return;
+
+	const cardIndex = enemyHand.findIndex(card => card.id === cardId);
+	if(cardIndex === -1) return;
+
+	const card = enemyHand[cardIndex];
+
+	const allowedTypes = getBlindShotAllowedTypes(enemyRole);
+	if(!allowedTypes.includes(card.type)) return;
+
+	const targetSlot = getBlindShotSlot(card.type);
+	if(!targetSlot || !room.boardSlots[targetSlot]) return;
+
+	enemyHand.splice(cardIndex, 1);
+
+	room.boardSlots[targetSlot].push(card);
+	room.lastSlotPlayed = targetSlot;
+
+	room.activeEffect.choices[role] = {
+		chosenCardId: card.id,
+		targetOwner: enemyRole,
+		targetSlot
+	};
+
+	io.to(socket.roomCode).emit("updateBoardSlots", {
+		slots: room.boardSlots,
+		lastSlot: room.lastSlotPlayed
+	});
+
+	io.to(socket.roomCode).emit("handCounts", {
+		blue: countHandTypes(room.hands.blue),
+		red: countHandTypes(room.hands.red)
+	});
+
+	const clients = io.sockets.adapter.rooms.get(socket.roomCode);
+
+	if(clients){
+
+		clients.forEach(socketId => {
+
+			const targetSocket = io.sockets.sockets.get(socketId);
+			if(!targetSocket) return;
+
+			if(targetSocket.role === "blue"){
+				targetSocket.emit("yourHand", room.hands.blue);
+			}
+
+			if(targetSocket.role === "red"){
+				targetSocket.emit("yourHand", room.hands.red);
+			}
+
+		});
+
+	}
+
+	socket.emit("blindShotPlayed");
+
+	emitActionLog(
+		socket.roomCode,
+		`${socket.playerName} escolheu uma carta às cegas da mão adversária.`,
+		socket.role
+	);
+
+	const blueDone = !!room.activeEffect.choices.blue;
+	const redDone = !!room.activeEffect.choices.red;
+
+	if(blueDone && redDone){
+
+		const twistId = room.activeEffect.twistId;
+
+		room.twists = room.twists.filter(t => t.id !== twistId);
+
+		io.to(socket.roomCode).emit("twistRemoved", twistId);
+
+		room.activeEffect = null;
+
+		io.to(socket.roomCode).emit("twistEffectEnded", {
+			type: "chute_as_cegas"
+		});
+
+		emitActionLog(
+			socket.roomCode,
+			"Twist Chute às Cegas resolvido.",
+			"white"
+		);
+
+	}
+
+});
+
+socket.on("openTwistMode", ()=>{
+
+	const room = rooms[socket.roomCode];
+	if(!room) return;
+
+	const openTwistUrls = [
+		"https://i.imgur.com/yttdDNw.png",
+		"https://i.imgur.com/gxdT1gp.png",
+		"https://i.imgur.com/6Kxyh6N.png"
+	];
+
+	const baseX = 360;
+	const baseY = 210;
+	const gap = 95;
+
+	openTwistUrls.forEach((url, index)=>{
+
+		const deckIndex = room.decks.T.findIndex(card => card.front === url);
+
+		if(deckIndex === -1) return;
+
+		const card = room.decks.T.splice(deckIndex, 1)[0];
+
+		const twistObj = {
+			id: randomUUID(),
+			front: card.front,
+			x: baseX + (index * gap),
+			y: baseY,
+			rotation: 0
+		};
+
+		room.twists.push(twistObj);
+
+		io.to(socket.roomCode).emit("spawnTwist", twistObj);
+
+	});
+
+	io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+
+	emitActionLog(
+		socket.roomCode,
+		`${socket.playerName} abriu o Modo Aberto do deck de Twist.`,
+		socket.role
+	);
+
+});
+
 
 socket.on("rotateTwist", ({id, double})=>{
 
@@ -860,6 +1110,39 @@ socket.on("requestHand", ()=>{
     return;
   }
 });
+
+
+function getBlindShotSlot(cardType){
+
+	if(cardType === "A") return "A";
+	if(cardType === "G") return "G";
+
+	if(cardType === "A_red") return "A_red";
+	if(cardType === "G_red") return "G_red";
+
+	return null;
+}
+
+function getBlindShotEnemyRole(role){
+
+	if(role === "blue") return "red";
+	if(role === "red") return "blue";
+
+	return null;
+}
+
+function getBlindShotAllowedTypes(enemyRole){
+
+	if(enemyRole === "blue"){
+		return ["A", "G"];
+	}
+
+	if(enemyRole === "red"){
+		return ["A_red", "G_red"];
+	}
+
+	return [];
+}
 
   socket.on("playCardToSlot", ({cardId, slot}) => {
 
@@ -1315,6 +1598,30 @@ socket.on("drawCard", (deckType) => {
     id: randomUUID()
   };
 
+  if(deckType === "T"){
+
+	const twistObj = {
+		id: card.id,
+		front: card.front,
+		x: 190,
+		y: 210,
+		rotation: 0
+	};
+
+	room.twists.push(twistObj);
+
+	io.to(socket.roomCode).emit("spawnTwist", twistObj);
+	io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+
+	emitActionLog(
+		socket.roomCode,
+		`${socket.playerName} comprou uma carta do deck T`,
+		socket.role
+	);
+
+	return;
+}
+
   if(socket.role === "blue"){
     room.hands.blue.push(card);
     socket.emit("yourHand", room.hands.blue);
@@ -1506,3 +1813,4 @@ if(room.devInfo?.closedAt){
 	}, 10000);
 });
 });
+
