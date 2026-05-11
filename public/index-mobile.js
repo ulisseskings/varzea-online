@@ -591,6 +591,39 @@ rejoinCurrentRoom();
 });
 
 socket.on("disconnect", (reason) => {
+
+function showConnectionPauseOverlay(data){
+
+	if(data.role === playerRole) return;
+
+	const overlay = document.getElementById("connectionPauseOverlay");
+	const text = document.getElementById("connectionPauseText");
+
+	if(!overlay) return;
+
+	if(text){
+		text.innerText = `${data.name || "O outro jogador"} perdeu a conexão. Aguarde o retorno antes de fazer qualquer movimento.`;
+	}
+
+	overlay.style.display = "flex";
+}
+
+function hideConnectionPauseOverlay(){
+	const overlay = document.getElementById("connectionPauseOverlay");
+	if(!overlay) return;
+
+	overlay.style.display = "none";
+}
+
+socket.on("playerTemporarilyDisconnected", (data)=>{
+	showConnectionPauseOverlay(data);
+});
+
+socket.on("playerReturned", (data)=>{
+	hideConnectionPauseOverlay();
+});
+
+
 console.log("❌ socket desconectado:", reason);
 addLogEntry?.("Conexão instável. Tentando reconectar...", "white");
 });

@@ -1678,6 +1678,41 @@ display: block;
 	display: block;
 }
 
+#connectionPauseOverlay{
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.72);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 99999999;
+	pointer-events: auto;
+}
+
+#connectionPauseBox{
+	width: min(520px, 90vw);
+	padding: 26px;
+	border-radius: 18px;
+	background: rgba(18,18,18,0.96);
+	border: 2px solid rgba(255,255,255,0.25);
+	color: white;
+	text-align: center;
+	font-family: Arial, sans-serif;
+	box-shadow: 0 0 30px rgba(0,0,0,0.8);
+}
+
+#connectionPauseTitle{
+	font-size: 26px;
+	font-weight: bold;
+	margin-bottom: 12px;
+	color: #ffdd66;
+}
+
+#connectionPauseText{
+	font-size: 17px;
+	line-height: 1.45;
+}
+
   </style>
 </head>
 
@@ -1685,6 +1720,15 @@ display: block;
 
 
 <body>
+
+<div id="connectionPauseOverlay">
+	<div id="connectionPauseBox">
+		<div id="connectionPauseTitle">Jogador desconectado</div>
+		<div id="connectionPauseText">
+			O outro jogador perdeu a conexão. Aguarde o retorno antes de fazer qualquer movimento.
+		</div>
+	</div>
+</div>
   
 
   <div id="gameTooltip"></div>

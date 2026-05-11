@@ -1112,37 +1112,6 @@ socket.on("requestHand", ()=>{
 });
 
 
-function getBlindShotSlot(cardType){
-
-	if(cardType === "A") return "A";
-	if(cardType === "G") return "G";
-
-	if(cardType === "A_red") return "A_red";
-	if(cardType === "G_red") return "G_red";
-
-	return null;
-}
-
-function getBlindShotEnemyRole(role){
-
-	if(role === "blue") return "red";
-	if(role === "red") return "blue";
-
-	return null;
-}
-
-function getBlindShotAllowedTypes(enemyRole){
-
-	if(enemyRole === "blue"){
-		return ["A", "G"];
-	}
-
-	if(enemyRole === "red"){
-		return ["A_red", "G_red"];
-	}
-
-	return [];
-}
 
   socket.on("playCardToSlot", ({cardId, slot}) => {
 
@@ -1299,12 +1268,12 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
   }
 
   // 🚫 BLOQUEIO DE TIMES
-  if(role === "blue" && room.players.blue){
+  if(role === "blue" && room.players.blue && room.players.blue !== name){
     socket.emit("roomError", "O Time Azul já está sendo usado.");
     return;
   }
 
-  if(role === "red" && room.players.red){
+  if(role === "red" && room.players.red && room.players.red !== name){
     socket.emit("roomError", "O Time Vermelho já está sendo usado.");
     return;
   }
@@ -1317,11 +1286,20 @@ socket.on("joinRoom", ({ name, role, roomCode }) => {
   socket.join(roomCode);
 
 if(role === "blue"){
-  room.players.blue = name;
+	room.players.blue = name;
+	room.blueConnected = true;
 }
 
 if(role === "red"){
-  room.players.red = name;
+	room.players.red = name;
+	room.redConnected = true;
+}
+
+if(role === "blue" || role === "red"){
+	socket.to(roomCode).emit("playerReturned", {
+		role,
+		name
+	});
 }
 
 if(role === "spectator"){
@@ -1403,6 +1381,16 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
 
   const room = rooms[roomCode];
 
+  if(role === "blue" && room.players.blue && room.players.blue !== name){
+	socket.emit("roomError", "Esse Time Azul pertence a outro jogador.");
+	return;
+}
+
+if(role === "red" && room.players.red && room.players.red !== name){
+	socket.emit("roomError", "Esse Time Vermelho pertence a outro jogador.");
+	return;
+}
+
   socket.role = role;
   socket.roomCode = roomCode;
   socket.playerName = name;
@@ -1411,11 +1399,21 @@ socket.on("reconnectRoom", ({ name, role, roomCode }) => {
 
 // 🔥 REASSUME POSIÇÃO
 if(role === "blue"){
-  room.players.blue = name;
+	room.players.blue = name;
+	room.blueConnected = true;
 }
 
 if(role === "red"){
-  room.players.red = name;
+	room.players.red = name;
+	room.redConnected = true;
+}
+
+
+if(role === "blue" || role === "red"){
+	socket.to(roomCode).emit("playerReturned", {
+		role,
+		name
+	});
 }
 
 if(role === "spectator"){
@@ -1896,11 +1894,24 @@ socket.on("moveTwist", (data)=>{
 
 		if(stillConnected) return;
 
-		if(role === "blue") room.players.blue = null;
-		if(role === "red") room.players.red = null;
-		if(role === "spectator"){
-			room.spectators = room.spectators.filter(n => n !== playerName);
-		}
+if(role === "blue"){
+	room.blueConnected = false;
+}
+
+if(role === "red"){
+	room.redConnected = false;
+}
+
+if(role === "blue" || role === "red"){
+	socket.to(roomCode).emit("playerTemporarilyDisconnected", {
+		role,
+		name: playerName
+	});
+}
+
+if(role === "spectator"){
+	room.spectators = room.spectators.filter(n => n !== playerName);
+}
 
     registerRoomAccess(roomCode, socket, "disconnect");
 
@@ -1908,7 +1919,7 @@ const hasBlue = !!room.players.blue;
 const hasRed = !!room.players.red;
 const hasSpectators = room.spectators && room.spectators.length > 0;
 
-if(!hasBlue && !hasRed && !hasSpectators){
+if(false && !hasBlue && !hasRed && !hasSpectators){
   if(room.devInfo && !room.devInfo.closedAt){
     room.devInfo.closedAt = new Date().toISOString();
   }
