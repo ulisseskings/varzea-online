@@ -2908,6 +2908,16 @@ socket.on("handCounts", (counts)=>{
   updateHandCounters();
 });
 
+socket.on("syncFormation", (data)=>{
+  if(!data) return;
+
+  formation = data;
+
+  updateFormationUI();
+  updateHandCounters();
+});
+
+
 socket.on("updateBoardSlots", (data)=>{
 
 if(data.lastSlot){
