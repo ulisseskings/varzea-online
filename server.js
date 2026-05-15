@@ -73,6 +73,14 @@ const roomLogSchema = new mongoose.Schema({
 
 const RoomLog = mongoose.model("RoomLog", roomLogSchema);
 
+const roomStateSchema = new mongoose.Schema({
+  roomCode: { type: String, unique: true },
+  state: Object,
+  updatedAt: Date
+});
+
+const RoomState = mongoose.model("RoomState", roomStateSchema);
+
 const DEV_PANEL_PASSWORD = process.env.DEV_PANEL_PASSWORD || "admin123";
 
 function getRoomDuration(createdAt, closedAt = null){
@@ -163,6 +171,37 @@ async function registerRoomAccess(roomCode, socket, action){
     console.error("❌ Erro ao salvar log no Mongo:", err.message);
     console.error(err);
   }
+}
+
+async function saveRoomState(roomCode){
+
+  const room = rooms[roomCode];
+  if(!room) return;
+
+  try{
+
+    await RoomState.findOneAndUpdate(
+      { roomCode },
+      {
+        roomCode,
+        state: room,
+        updatedAt: new Date()
+      },
+      {
+        upsert: true,
+        new: true
+      }
+    );
+
+  }catch(err){
+
+    console.error(
+      "❌ Erro ao salvar estado da sala:",
+      err.message
+    );
+
+  }
+
 }
 
 function shuffle(array){
@@ -571,6 +610,7 @@ io.on("connection", (socket) => {
     blue: countHandTypes(room.hands.blue),
     red: countHandTypes(room.hands.red)
   });
+  saveRoomState(socket.roomCode);
 
   emitActionLog(
     socket.roomCode,
@@ -622,6 +662,8 @@ socket.on("startSecondHalf", () => {
     red: countHandTypes(room.hands.red)
   });
 
+  saveRoomState(socket.roomCode);
+
   emitActionLog(
     socket.roomCode,
     "Segundo tempo iniciado. As mãos foram mantidas e os slots voltaram para os decks.",
@@ -660,7 +702,7 @@ socket.on("updateFormation", ({ formation }) => {
     blue: countHandTypes(room.hands.blue),
     red: countHandTypes(room.hands.red)
   });
-
+saveRoomState(socket.roomCode);
 });
 
 socket.on("returnTwistToDeck", ({id})=>{
@@ -691,6 +733,8 @@ socket.on("returnTwistToDeck", ({id})=>{
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
   io.to(socket.roomCode).emit("twistRemoved", id);
   io.to(socket.roomCode).emit("deckShuffled","T");
+
+  saveRoomState(socket.roomCode);
 
 });
 
@@ -723,6 +767,7 @@ socket.on("returnTwistToDeck", ({id})=>{
   emitActionLog(socket.roomCode, `${socket.playerName} devolveu ${card.type} para o deck ${deck}`, socket.role);
 
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+  saveRoomState(socket.roomCode);
 
   socket.emit("yourHand", playerHand);
 
@@ -784,29 +829,9 @@ socket.on("flipSubToken", ({anchor, faceUp})=>{
     anchor,
     faceUp
   });
+  saveRoomState(roomCode);
 
 });
-
-socket.on("flipSubToken", ({anchor, faceUp})=>{
-
-  const roomCode = socket.roomCode;
-  if(!roomCode || !rooms[roomCode]) return;
-
-  const room = rooms[roomCode];
-
-  if(!room.subTokens){
-    room.subTokens = {};
-  }
-
-  room.subTokens[anchor] = faceUp;
-
-  io.to(roomCode).emit("subTokenFlipped", {
-    anchor,
-    faceUp
-  });
-
-});
-  
 
 
 socket.on("activateTwist", ({ id })=>{
@@ -943,6 +968,7 @@ socket.on("blindShotPlay", ({ cardId })=>{
 		blue: countHandTypes(room.hands.blue),
 		red: countHandTypes(room.hands.red)
 	});
+  saveRoomState(socket.roomCode);
 
 	const clients = io.sockets.adapter.rooms.get(socket.roomCode);
 
@@ -966,6 +992,7 @@ socket.on("blindShotPlay", ({ cardId })=>{
 	}
 
 	socket.emit("blindShotPlayed");
+  saveRoomState(socket.roomCode);
 
 	emitActionLog(
 		socket.roomCode,
@@ -1038,6 +1065,7 @@ socket.on("openTwistMode", ()=>{
 	});
 
 	io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+  saveRoomState(socket.roomCode);
 
 	emitActionLog(
 		socket.roomCode,
@@ -1062,6 +1090,7 @@ socket.on("rotateTwist", ({id, double})=>{
   twist.rotation = (twist.rotation + amount) % 360;
 
   io.to(socket.roomCode).emit("twistRotated", twist);
+  saveRoomState(socket.roomCode);
 
 });
 
@@ -1081,6 +1110,7 @@ socket.on("moveToken", (data) => {
   emitActionLog(socket.roomCode, `${socket.playerName} moveu o token ${data.anchor}`, socket.role);
 
   io.to(socket.roomCode).emit("tokenMoved", data);
+  saveRoomState(socket.roomCode);
 
   if(data.anchor === "tokengola"){
     io.to(socket.roomCode).emit("goalScored", {
@@ -1157,6 +1187,7 @@ socket.on("requestHand", ()=>{
       blue: countHandTypes(room.hands.blue),
       red: countHandTypes(room.hands.red)
     });
+    saveRoomState(socket.roomCode);
 
   });
 
@@ -1192,6 +1223,7 @@ socket.on("returnCardToHand", ({ cardId, slot }) => {
   blue: countHandTypes(room.hands.blue),
   red: countHandTypes(room.hands.red)
 });
+saveRoomState(socket.roomCode);
 
 });
 
@@ -1244,18 +1276,32 @@ registerRoomAccess(roomCode, socket, "createRoom");
 
   io.to(roomCode).emit("syncPlayers", rooms[roomCode].players);
   io.to(roomCode).emit("syncSpectators", rooms[roomCode].spectators);
+  saveRoomState(roomCode);
 
 });
 
-socket.on("joinRoom", ({ name, role, roomCode }) => {
+socket.on("joinRoom", async ({ name, role, roomCode }) => {
 
   console.log("Tentando entrar na sala:", roomCode);
   console.log("Salas existentes:", Object.keys(rooms));
 
   if(!rooms[roomCode]){
+
+  const savedRoom =
+    await RoomState.findOne({ roomCode }).lean();
+
+  if(savedRoom && savedRoom.state){
+
+    rooms[roomCode] = savedRoom.state;
+
+  }else{
+
     socket.emit("roomError", "Sala não existe.");
     return;
+
   }
+
+}
 
   const room = rooms[roomCode];
 
@@ -1375,9 +1421,29 @@ socket.emit("syncExpulsions", room.expulsions || {
   
 });
 
-socket.on("reconnectRoom", ({ name, role, roomCode }) => {
+socket.on("reconnectRoom", async ({ name, role, roomCode }) => {
 
-  if(!rooms[roomCode]) return;
+  if(!rooms[roomCode]){
+
+    const savedRoom =
+      await RoomState.findOne({ roomCode }).lean();
+
+    if(savedRoom && savedRoom.state){
+
+      rooms[roomCode] = savedRoom.state;
+
+    }else{
+
+      socket.emit(
+        "roomError",
+        "Sala não encontrada para reconexão."
+      );
+
+      return;
+
+    }
+
+  }
 
   const room = rooms[roomCode];
 
@@ -1551,8 +1617,9 @@ socket.on("restartMatch", ()=>{
   red: countHandTypes(room.hands.red)
 });
   io.to(socket.roomCode).emit("syncExpulsions", room.expulsions);
-});
 
+saveRoomState(socket.roomCode);
+});
 
 
 
@@ -1617,6 +1684,8 @@ socket.on("drawCard", (deckType) => {
 		socket.role
 	);
 
+  saveRoomState(socket.roomCode);
+
 	return;
 }
 
@@ -1642,6 +1711,7 @@ socket.on("drawCard", (deckType) => {
   );
 
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+  saveRoomState(socket.roomCode);
 
 });
 
@@ -1696,7 +1766,7 @@ socket.on("blindPlayFromDeck", (deckType) => {
 		`${socket.playerName} jogou às cegas uma carta ${deckType} direto do deck.`,
 		socket.role
 	);
-
+saveRoomState(socket.roomCode);
 });
 
 
@@ -1761,7 +1831,7 @@ socket.on("blindPlayFromHand", (cardType) => {
 		`${socket.playerName} jogou às cegas uma carta ${cardType} da mão.`,
 		socket.role
 	);
-
+saveRoomState(socket.roomCode);
 });
 
 
@@ -1836,6 +1906,7 @@ socket.on("refillFullHand", () => {
   });
 
   io.to(socket.roomCode).emit("syncDeckSizes", room.decks);
+  saveRoomState(socket.roomCode);
 
   emitActionLog(
     socket.roomCode,
@@ -1858,6 +1929,7 @@ socket.on("refillFullHand", () => {
 
     // envia para todos da sala
     io.to(socket.roomCode).emit("deckShuffled", deckType);
+    saveRoomState(socket.roomCode);
 
   });
 
@@ -1873,6 +1945,7 @@ socket.on("moveTwist", (data)=>{
   twist.y = data.y;
 
   io.to(socket.roomCode).emit("twistMoved", twist);
+  saveRoomState(socket.roomCode);
 });
 
   socket.on("disconnect", () => {

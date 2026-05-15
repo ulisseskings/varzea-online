@@ -512,19 +512,23 @@ console.log("🔁 socket reconectado:", socket.id);
 rejoinCurrentRoom();
 });
 
-socket.on("disconnect", (reason) => {
-
 function showConnectionPauseOverlay(data){
 
+	if(!data) return;
 	if(data.role === playerRole) return;
 
 	const overlay = document.getElementById("connectionPauseOverlay");
+	const title = document.getElementById("connectionPauseTitle");
 	const text = document.getElementById("connectionPauseText");
 
 	if(!overlay) return;
 
+	if(title){
+		title.innerText = "Jogador desconectado";
+	}
+
 	if(text){
-		text.innerText = `${data.name || "O outro jogador"} perdeu a conexão. Aguarde o retorno antes de fazer qualquer movimento.`;
+		text.innerText = `${data.name || "O outro jogador"} está desconectado da partida. Aguardando seu retorno.`;
 	}
 
 	overlay.style.display = "flex";
@@ -542,12 +546,13 @@ socket.on("playerTemporarilyDisconnected", (data)=>{
 });
 
 socket.on("playerReturned", (data)=>{
+	if(data && data.role === playerRole) return;
 	hideConnectionPauseOverlay();
 });
 
-
-console.log("❌ socket desconectado:", reason);
-addLogEntry?.("Conexão instável. Tentando reconectar...", "white");
+socket.on("disconnect", (reason) => {
+	console.log("❌ socket desconectado:", reason);
+	addLogEntry?.("Conexão instável. Tentando reconectar...", "white");
 });
 
 socket.on("connect_error", (err) => {
@@ -2675,20 +2680,26 @@ socket.on("tokenMoved", (data)=>{
 const anchor = document.getElementById(data.anchor);
 if(!anchor) return;
 
-anchor.style.left = data.x + "px";
-anchor.style.top  = data.y + "px";
+const piece = document.querySelector(
+  `.piece[data-anchor="${data.anchor}"]`
+);
 
-const piece = document.querySelector(`[data-anchor="${data.anchor}"]`);
+const pos = clampTokenPosition(
+  parseFloat(data.x),
+  parseFloat(data.y)
+);
+
+anchor.style.left = pos.x + "px";
+anchor.style.top  = pos.y + "px";
+
+if(piece){
+  piece.style.left = pos.x + "px";
+  piece.style.top  = pos.y + "px";
+}
+
+applyAnchors();
+
 if(!piece) return;
-
-piece.dataset.moved = "true";
-piece.style.left = data.x + "px";
-piece.style.top  = data.y + "px";
-
-setTimeout(updateExpulsionTokenScale, 50);
-
-// ✅ não força transform aqui, porque isso apaga o scale(1.5)
-updateExpulsionTokenScale();
 
 if(piece.classList.contains("ball")){
   playSFX(SOUNDS.kick);
@@ -2976,8 +2987,34 @@ function applyFirstHalfLayout(){
   }
 }
 
+function showSecondHalfEffect(){
+
+	const overlay = document.getElementById("secondHalfOverlay");
+	const gif = document.getElementById("secondHalfGif");
+
+	if(!overlay || !gif) return;
+
+	if(playerRole === "blue"){
+		gif.src = "https://i.imgur.com/Jpw9AN7.gif";
+	}else if(playerRole === "red"){
+		gif.src = "https://i.imgur.com/RG9u9hw.gif";
+	}else{
+		gif.src = "https://i.imgur.com/Jpw9AN7.gif";
+	}
+
+	overlay.style.display = "flex";
+
+	playSFX(SOUNDS.whistle);
+
+	clearTimeout(window.secondHalfOverlayTimer);
+	window.secondHalfOverlayTimer = setTimeout(()=>{
+		overlay.style.display = "none";
+	}, 3000);
+}
+
 socket.on("secondHalfStarted", () => {
-  applySecondHalfLayout();
+	applySecondHalfLayout();
+	showSecondHalfEffect();
 });
 
 socket.on("syncSecondHalf", ({ isSecondHalf }) => {
@@ -3159,6 +3196,8 @@ playGoalEffect();
 
 socket.on("matchRestarted", ()=>{
 
+  showRestartEffect();
+
 hand = [];
 hand_red = [];
 
@@ -3186,6 +3225,21 @@ applyFirstHalfLayout();
 socket.emit("syncDeckSizes");
 
 });
+
+function showRestartEffect(){
+
+	const overlay = document.getElementById("restartOverlay");
+	if(!overlay) return;
+
+	overlay.style.display = "flex";
+
+	playSFX(SOUNDS.whistle);
+
+	clearTimeout(window.restartOverlayTimer);
+	window.restartOverlayTimer = setTimeout(()=>{
+		overlay.style.display = "none";
+	}, 3000);
+}
 
 socket.on("secondHalfStarted", () => {
 applySecondHalfLayout();

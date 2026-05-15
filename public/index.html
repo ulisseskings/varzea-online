@@ -1713,6 +1713,59 @@ display: block;
 	line-height: 1.45;
 }
 
+#connectionSpinner{
+	width: 42px;
+	height: 42px;
+	margin: 0 auto 18px auto;
+	border: 5px solid rgba(255,255,255,0.25);
+	border-top: 5px solid #ffdd66;
+	border-radius: 50%;
+	animation: connectionSpin 0.9s linear infinite;
+}
+
+@keyframes connectionSpin{
+	from{
+		transform: rotate(0deg);
+	}
+	to{
+		transform: rotate(360deg);
+	}
+}
+
+#secondHalfOverlay{
+	position: fixed;
+	inset: 0;
+	display: none;
+	justify-content: center;
+	align-items: center;
+	background: rgba(0,0,0,0.45);
+	z-index: 9999999;
+	pointer-events: none;
+}
+
+#secondHalfGif{
+	width: 420px;
+	max-width: 85vw;
+	height: auto;
+}
+
+#restartOverlay{
+	position: fixed;
+	inset: 0;
+	display: none;
+	justify-content: center;
+	align-items: center;
+	background: rgba(0,0,0,0.45);
+	z-index: 9999999;
+	pointer-events: none;
+}
+
+#restartGif{
+	width: 420px;
+	max-width: 85vw;
+	height: auto;
+}
+
   </style>
 </head>
 
@@ -1724,9 +1777,11 @@ display: block;
 <div id="connectionPauseOverlay">
 	<div id="connectionPauseBox">
 		<div id="connectionPauseTitle">Jogador desconectado</div>
-		<div id="connectionPauseText">
-			O outro jogador perdeu a conexão. Aguarde o retorno antes de fazer qualquer movimento.
-		</div>
+		<div id="connectionSpinner"></div>
+
+<div id="connectionPauseText">
+	O outro jogador está desconectado da partida. Aguardando seu retorno.
+</div>
 	</div>
 </div>
   
@@ -1739,6 +1794,14 @@ display: block;
 
 <div id="goalOverlay">
   <img src="https://i.imgur.com/6iVE1IR.gif" id="goalGif">
+</div>
+
+<div id="secondHalfOverlay">
+	<img id="secondHalfGif" src="">
+</div>
+
+<div id="restartOverlay">
+	<img id="restartGif" src="https://i.imgur.com/zrezhYb.gif">
 </div>
 
 <div id="actionLogToggle">📜</div>
