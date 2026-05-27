@@ -441,6 +441,12 @@ document.body.classList.add("red-view");
 if(playerRole === "red"){
 document.body.classList.add("red-player");
 }
+
+if(playerRole === "spectator"){
+	document.body.classList.add("spectator-view");
+}
+
+
 const playerName = sessionStorage.getItem("playerName");
 
 const handInnerBlue = handEl.querySelector(".hand-inner");
@@ -984,44 +990,46 @@ if(playerRole === "spectator"){
 }
 
 function getFormationAdjustments(f){
-  const adj = {
-    A: 0,
-    M: 0,
-    D: 0,
-    G: 0
-  };
+	const adj = {
+		A: 0,
+		M: 0,
+		D: 0,
+		G: 0
+	};
 
-  if(f.A === 4){
-    adj.M = -1;
-    adj.D = -1;
-  }
+	// ATAQUE
+	if(f.A === 4){
+		adj.M -= 1;
+		adj.D -= 1;
+	}
 
-  if(f.A === 5){
-    adj.M = -2;
-    adj.D = -1;
-  }
+	if(f.A === 5){
+		adj.M -= 2;
+		adj.D -= 1;
+	}
 
-  if(f.M === 3){
-    adj.A = -1;
-    adj.D = -1;
-  }
+	// MEIO-CAMPO
+	if(f.M === 5){
+		adj.A -= 1;
+	}
 
-  if(f.D === 3){
-    adj.D = 1;
-    adj.G = 1;
-  }
+	// DEFESA
+	if(f.D === 3){
+		adj.D += 1;
+		adj.G += 1;
+	}
 
-  if(f.D === 4){
-    adj.A = 1;
-    adj.D = 1;
-  }
+	if(f.D === 4){
+		adj.A += 1;
+		adj.D += 1;
+	}
 
-  if(f.D === 5){
-    adj.A = 1;
-    adj.M = 1;
-  }
+	if(f.D === 5){
+		adj.A += 1;
+		adj.M += 1;
+	}
 
-  return adj;
+	return adj;
 }
 
 function getExpulsionLimit(role){

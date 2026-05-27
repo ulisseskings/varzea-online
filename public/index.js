@@ -389,6 +389,40 @@ if(!list || list.length === 0){
   .join(", ");
 });
 
+socket.on("syncTokens", (tokens)=>{
+
+	setTimeout(()=>{
+
+		Object.keys(tokens || {}).forEach(anchor=>{
+
+			const el = document.getElementById(anchor);
+			if(!el) return;
+
+			const piece = document.querySelector(
+				`.piece[data-anchor="${anchor}"]`
+			);
+
+			const pos = clampTokenPosition(
+				parseFloat(tokens[anchor].x),
+				parseFloat(tokens[anchor].y)
+			);
+
+			el.style.left = pos.x + "px";
+			el.style.top  = pos.y + "px";
+
+			if(piece){
+				piece.style.left = pos.x + "px";
+				piece.style.top  = pos.y + "px";
+			}
+
+		});
+
+		applyAnchors();
+
+	}, 50);
+
+});
+
 let decks = {}; // cliente não controla decks, apenas evita erro
 
 const board = document.getElementById("board");
@@ -759,6 +793,63 @@ document.getElementById("hand_red")
   ?.classList.remove("highlight-zone");
 }
 
+function openInfoModal(title, text){
+
+	const old = document.getElementById("infoModal");
+
+	if(old){
+		old.remove();
+	}
+
+	const overlay = document.createElement("div");
+	overlay.id = "infoModal";
+
+	overlay.style.position = "fixed";
+	overlay.style.inset = "0";
+	overlay.style.background = "rgba(0,0,0,0.72)";
+	overlay.style.display = "flex";
+	overlay.style.alignItems = "center";
+	overlay.style.justifyContent = "center";
+	overlay.style.zIndex = "99999999";
+
+	overlay.innerHTML = `
+		<div style="
+			background:#111;
+			color:white;
+			padding:22px;
+			border-radius:14px;
+			min-width:320px;
+			max-width:480px;
+			text-align:center;
+			font-family:Arial,sans-serif;
+			box-shadow:0 0 30px rgba(0,0,0,0.7);
+		">
+			<h2 style="margin-top:0;">${title}</h2>
+
+			<div style="margin-top:12px; line-height:1.5;">
+				${text}
+			</div>
+
+			<button id="closeInfoModal" style="
+				margin-top:18px;
+				padding:8px 18px;
+				cursor:pointer;
+			">
+				OK
+			</button>
+		</div>
+	`;
+
+	document.body.appendChild(overlay);
+
+	document
+		.getElementById("closeInfoModal")
+		?.addEventListener("click", ()=>{
+			overlay.remove();
+		});
+
+}
+
 
 /* ===================== */
 /* CONTAGEM DE CARTAS */
@@ -843,44 +934,46 @@ if(playerRole === "spectator"){
 }
 
 function getFormationAdjustments(f){
-  const adj = {
-    A: 0,
-    M: 0,
-    D: 0,
-    G: 0
-  };
+	const adj = {
+		A: 0,
+		M: 0,
+		D: 0,
+		G: 0
+	};
 
-  if(f.A === 4){
-    adj.M = -1;
-    adj.D = -1;
-  }
+	// ATAQUE
+	if(f.A === 4){
+		adj.M -= 1;
+		adj.D -= 1;
+	}
 
-  if(f.A === 5){
-    adj.M = -2;
-    adj.D = -1;
-  }
+	if(f.A === 5){
+		adj.M -= 2;
+		adj.D -= 1;
+	}
 
-  if(f.M === 3){
-    adj.A = -1;
-    adj.D = -1;
-  }
+	// MEIO-CAMPO
+	if(f.M === 5){
+		adj.A -= 1;
+	}
 
-  if(f.D === 3){
-    adj.D = 1;
-    adj.G = 1;
-  }
+	// DEFESA
+	if(f.D === 3){
+		adj.D += 1;
+		adj.G += 1;
+	}
 
-  if(f.D === 4){
-    adj.A = 1;
-    adj.D = 1;
-  }
+	if(f.D === 4){
+		adj.A += 1;
+		adj.D += 1;
+	}
 
-  if(f.D === 5){
-    adj.A = 1;
-    adj.M = 1;
-  }
+	if(f.D === 5){
+		adj.A += 1;
+		adj.M += 1;
+	}
 
-  return adj;
+	return adj;
 }
 
 function getExpulsionLimit(role){
@@ -939,6 +1032,72 @@ const required = getExpulsionLimit(player);
 return totalAMDG < required;
 }
 
+function getHandArrayByPlayer(player){
+return player === "blue" ? hand : hand_red;
+}
+
+function getFormationByPlayer(player){
+return player === "blue" ? formation.blue : formation.red;
+}
+
+function countTypeInHand(player, deckType){
+const currentHand = getHandArrayByPlayer(player);
+return currentHand.filter(c => c.type === deckType).length;
+}
+
+function getBaseType(deckType){
+return deckType.replace("_red", "");
+}
+
+function checkDeckEnd(player){
+
+	const amdgDecks = player === "blue"
+		? ["A","M","D","G"]
+		: ["A_red","M_red","D_red","G_red"];
+
+	return amdgDecks.some(type =>
+		!decks[type] || decks[type].length === 0
+	);
+
+}
+
+function canPlayCardFromHand(player, cardType){
+
+	if(checkDeckEnd(player)){
+		return true;
+	}
+
+	const currentHand = getHandArrayByPlayer(player);
+
+	const totalAMDG = currentHand.filter(c => {
+
+		const base = c.type.replace("_red","");
+
+		return ["A","M","D","G"].includes(base);
+
+	}).length;
+
+	return totalAMDG >= getExpulsionLimit(player);
+
+}
+
+
+function canDrawFromDeck(player, deckType){
+
+if(deckType === "P" || deckType === "P_red" || deckType === "T"){
+  return true;
+}
+
+const baseType = getBaseType(deckType);
+const f = getFormationByPlayer(player);
+
+if(!f || !f[baseType]){
+  return true;
+}
+
+const currentCount = countTypeInHand(player, deckType);
+return currentCount < f[baseType];
+}
 
 let firstHalfEnded = false;
 
@@ -1063,8 +1222,13 @@ function renderGroup(handArray, targetDiv){
         label: "Jogar",
         action: ()=>{
 
-          if(mustRefillHand(playerRole)){
-            alert("Você precisa ter 13 cartas na mão para jogar");
+          if(!canPlayCardFromHand(playerRole, card.type)){
+
+            openInfoModal(
+              "Mão incompleta",
+              "Você precisa completar sua mão antes de jogar cartas."
+            );
+
             return;
           }
 
@@ -1590,7 +1754,12 @@ slotPiles[type].forEach((card, i)=>{
   const img = document.createElement("img");
   img.src = card.front;
   img.className = "slot-big-card";
-  img.style.transform = isRedOwnedCard(card) ? "rotate(180deg)" : "none";
+  
+  if(playerRole === "red" && isRedOwnedCard(card)){
+	img.style.transform = "none";
+}else{
+	img.style.transform = isRedOwnedCard(card) ? "rotate(180deg)" : "none";
+}
 
   if(card.id === selectedCardId){
     img.classList.add("selected-card");
@@ -1749,6 +1918,16 @@ deck.addEventListener("click", (e)=>{
 					socket.emit("drawCard", "T");
 					return;
 				}
+
+        	if(!canDrawFromDeck(playerRole, deckType)){
+
+		openInfoModal(
+			"Limite atingido",
+			"Você já possui o número máximo desse tipo de carta definido pela sua formação."
+		);
+
+		return;
+	}
 
 				socket.emit("drawCard", deckType);
 			}

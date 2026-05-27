@@ -250,6 +250,16 @@
   color: rgb(0,255,120);
 }
 
+#playerBlueName{
+	color: #4db8ff;
+	text-shadow: 0 0 8px rgba(77,184,255,0.6);
+}
+
+#playerRedName{
+	color: #ff5a5a;
+	text-shadow: 0 0 8px rgba(255,90,90,0.6);
+}
+
 /* ===================== */
 /* TOPBAR ESTILO GAME HUD */
 
@@ -688,6 +698,12 @@
 /* jogador vermelho vendo contador do azul */
 .red-view #counter_blue{
   transform:rotate(180deg);
+}
+
+/* espectador vendo tudo normal */
+body.spectator-view #counter_red,
+body.spectator-view #counter_blue{
+	transform: rotate(0deg) !important;
 }
 /* ===================== */
 /* CARTAS FIXAS DO TABULEIRO */
