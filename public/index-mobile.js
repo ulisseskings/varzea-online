@@ -2802,7 +2802,7 @@ function openModal(type){
 
     confirmBtn.onclick = ()=>{
       window.open(
-        "https://discord.gg/xGV2ku9f",
+        "https://discord.gg/dBZkRQtP2H",
         "_blank"
       );
       closeModal();
