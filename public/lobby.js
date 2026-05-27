@@ -336,7 +336,7 @@ document.getElementById("discordBtnLobby")
   confirmBtn.innerText = "Acessar";
 
   confirmBtn.onclick = ()=>{
-    window.open("https://discord.gg/xGV2ku9f","_blank");
+    window.open("https://discord.gg/dBZkRQtP2H","_blank");
     overlay.style.display = "none";
   };
 
@@ -346,7 +346,7 @@ document.getElementById("discordBtnLobby")
 document.getElementById("discordTopBar")
   ?.addEventListener("click", ()=>{
 
-  window.open("https://discord.gg/xGV2ku9f","_blank");
+  window.open("https://discord.gg/dBZkRQtP2H","_blank");
 
 });
 });
