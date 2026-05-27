@@ -537,13 +537,19 @@ socket.emit("reconnectRoom", {
 }
 
 socket.on("connect", () => {
-console.log("✅ socket conectado:", socket.id);
-rejoinCurrentRoom();
+	console.log("✅ socket conectado:", socket.id);
+
+	hideConnectionPauseOverlay();
+
+	rejoinCurrentRoom();
 });
 
 socket.on("reconnect", () => {
-console.log("🔁 socket reconectado:", socket.id);
-rejoinCurrentRoom();
+	console.log("🔁 socket reconectado:", socket.id);
+
+	hideConnectionPauseOverlay();
+
+	rejoinCurrentRoom();
 });
 
 function showConnectionPauseOverlay(data){
@@ -575,6 +581,25 @@ function hideConnectionPauseOverlay(){
 	overlay.style.display = "none";
 }
 
+function showServerConnectionOverlay(){
+
+	const overlay = document.getElementById("connectionPauseOverlay");
+	const title = document.getElementById("connectionPauseTitle");
+	const text = document.getElementById("connectionPauseText");
+
+	if(!overlay) return;
+
+	if(title){
+		title.innerText = "Queda de conexão do servidor";
+	}
+
+	if(text){
+		text.innerText = "Houve uma queda de conexão do servidor. Em menos de 1 minuto a conexão será reestabelecida!";
+	}
+
+	overlay.style.display = "flex";
+}
+
 socket.on("playerTemporarilyDisconnected", (data)=>{
 	showConnectionPauseOverlay(data);
 });
@@ -586,7 +611,13 @@ socket.on("playerReturned", (data)=>{
 
 socket.on("disconnect", (reason) => {
 	console.log("❌ socket desconectado:", reason);
-	addLogEntry?.("Conexão instável. Tentando reconectar...", "white");
+
+	showServerConnectionOverlay();
+
+	addLogEntry?.(
+		"Queda de conexão do servidor. Tentando reconectar...",
+		"white"
+	);
 });
 
 socket.on("connect_error", (err) => {
@@ -2190,7 +2221,44 @@ document.querySelectorAll(".piece.token27").forEach(piece => {
 
 });
 
+const TOKEN14_BACK = "https://i.imgur.com/bMYpqaE.png";
 
+function setupToken14Flip(){
+
+	document.querySelectorAll(".piece.token14").forEach(piece => {
+
+		if(piece.dataset.token14FlipBound === "true") return;
+
+		piece.dataset.token14FlipBound = "true";
+		piece.dataset.front = piece.src;
+		piece.dataset.back  = TOKEN14_BACK;
+		piece.dataset.faceUp = piece.dataset.faceUp || "true";
+
+		piece.addEventListener("dblclick", function(e){
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			if(playerRole === "spectator") return;
+
+			const faceUp = this.dataset.faceUp === "true";
+			const newState = !faceUp;
+
+			this.dataset.faceUp = newState ? "true" : "false";
+			this.src = newState ? this.dataset.front : this.dataset.back;
+
+			socket.emit("flipToken14", {
+				anchor: this.dataset.anchor,
+				faceUp: newState
+			});
+
+		});
+
+	});
+
+}
+
+setupToken14Flip();
 /* ===================== */
 /* PILHA ÚNICA DE 20 TOKENS TWIST */
 
@@ -2232,6 +2300,7 @@ function spawnTwistStack(){
     board.appendChild(token);
   }
 
+  setupToken14Flip();
   applyAnchors();
 }
 
@@ -2915,6 +2984,38 @@ socket.on("subTokenFlipped", ({anchor, faceUp})=>{
 
   // 🔥 efeito + som
   showSubEffect();
+
+});
+
+socket.on("token14Flipped", ({anchor, faceUp})=>{
+
+	const piece = document.querySelector(`.piece.token14[data-anchor="${anchor}"]`);
+	if(!piece) return;
+
+	piece.dataset.front = piece.dataset.front || piece.src;
+	piece.dataset.back  = TOKEN14_BACK;
+
+	piece.dataset.faceUp = faceUp ? "true" : "false";
+	piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+
+});
+
+socket.on("syncToken14Faces", (tokens)=>{
+
+	Object.keys(tokens || {}).forEach(anchor=>{
+
+		const piece = document.querySelector(`.piece.token14[data-anchor="${anchor}"]`);
+		if(!piece) return;
+
+		piece.dataset.front = piece.dataset.front || piece.src;
+		piece.dataset.back  = TOKEN14_BACK;
+
+		const faceUp = tokens[anchor];
+
+		piece.dataset.faceUp = faceUp ? "true" : "false";
+		piece.src = faceUp ? piece.dataset.front : piece.dataset.back;
+
+	});
 
 });
 

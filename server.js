@@ -833,6 +833,27 @@ socket.on("flipSubToken", ({anchor, faceUp})=>{
 
 });
 
+socket.on("flipToken14", ({anchor, faceUp})=>{
+
+	const roomCode = socket.roomCode;
+	if(!roomCode || !rooms[roomCode]) return;
+
+	const room = rooms[roomCode];
+
+	if(!room.token14Faces){
+		room.token14Faces = {};
+	}
+
+	room.token14Faces[anchor] = faceUp;
+
+	io.to(roomCode).emit("token14Flipped", {
+		anchor,
+		faceUp
+	});
+
+	saveRoomState(roomCode);
+
+});
 
 socket.on("activateTwist", ({ id })=>{
 
@@ -1503,6 +1524,7 @@ registerRoomAccess(roomCode, socket, "reconnectRoom");
   lastSlot: room.lastSlotPlayed || null
 });
   socket.emit("syncSubTokens", room.subTokens || {});
+  socket.emit("syncToken14Faces", room.token14Faces || {});
   socket.emit("syncTwists", room.twists || []);
   socket.emit("syncDeckSizes", room.decks);
 
