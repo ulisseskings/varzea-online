@@ -3137,7 +3137,7 @@ function applyFirstHalfLayout(){
   if(tempo) tempo.innerText = "1º Tempo";
 
   const bg = document.getElementById("boardBg");
-  if(bg) bg.src = "https://i.imgur.com/auIBYLo.jpg?1";
+  if(bg) bg.src = "https://i.imgur.com/9Fam9LP.png";
 
   document.querySelectorAll(".anchor").forEach(anchor=>{
     if(anchor.dataset.initialLeft){
