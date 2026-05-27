@@ -3084,7 +3084,7 @@ function applySecondHalfLayout(){
   if(tempo) tempo.innerText = "2º Tempo";
 
   const bg = document.getElementById("boardBg");
-  if(bg) bg.src = "https://i.imgur.com/auIBYLo.png";
+  if(bg) bg.src = "https://i.imgur.com/9Fam9LP.png";
 
   Object.keys(slotPositionsSecondHalf).forEach(slotId => {
   const pos = slotPositionsSecondHalf[slotId];
@@ -3137,7 +3137,7 @@ function applyFirstHalfLayout(){
   if(tempo) tempo.innerText = "1º Tempo";
 
   const bg = document.getElementById("boardBg");
-  if(bg) bg.src = "https://i.imgur.com/9Fam9LP.png";
+  if(bg) bg.src = "https://i.imgur.com/o9pCaqC.png";
 
   document.querySelectorAll(".anchor").forEach(anchor=>{
     if(anchor.dataset.initialLeft){
