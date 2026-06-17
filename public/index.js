@@ -1115,19 +1115,43 @@ function canPlayCardFromHand(player, cardType){
 
 function canDrawFromDeck(player, deckType){
 
-if(deckType === "P" || deckType === "P_red" || deckType === "T"){
-  return true;
-}
+	if(
+		deckType === "P" ||
+		deckType === "P_red" ||
+		deckType === "T"
+	){
+		return true;
+	}
 
-const baseType = getBaseType(deckType);
-const f = getFormationByPlayer(player);
+	const currentHand = getHandArrayByPlayer(player);
 
-if(!f || !f[baseType]){
-  return true;
-}
+	const totalAMDG = currentHand.filter(card => {
+		const baseType = getBaseType(card.type);
+		return ["A", "M", "D", "G"].includes(baseType);
+	}).length;
 
-const currentCount = countTypeInHand(player, deckType);
-return currentCount < f[baseType];
+	const handLimit = getExpulsionLimit(player);
+
+	// Limite total da mão:
+	// 0 expulsões = 13
+	// 1 expulsão  = 12
+	// 2 expulsões = 11
+	// 3 expulsões = 10
+	// 4 expulsões = 9
+	if(totalAMDG >= handLimit){
+		return false;
+	}
+
+	const baseType = getBaseType(deckType);
+	const f = getFormationByPlayer(player);
+
+	if(!f || f[baseType] === undefined){
+		return true;
+	}
+
+	const currentCount = countTypeInHand(player, deckType);
+
+	return currentCount < f[baseType];
 }
 
 let firstHalfEnded = false;

@@ -424,6 +424,26 @@ function countHandTypes(hand){
 
 }
 
+function countAMDGCards(hand){
+
+	return (hand || []).filter(card => {
+
+		const baseType = String(card.type || "")
+			.replace("_red", "");
+
+		return ["A", "M", "D", "G"].includes(baseType);
+
+	}).length;
+}
+
+function getExpulsionHandLimit(room, role){
+
+	const totalExpulsions =
+		room.expulsions?.[role]?.total || 0;
+
+	return Math.max(9, 13 - totalExpulsions);
+}
+
 function emitActionLog(roomCode, text, color){
   if(!roomCode || !text) return;
 
@@ -1674,6 +1694,40 @@ socket.on("drawCard", (deckType) => {
   const room = rooms[socket.roomCode];
   if(!room) return;
 
+  	const role = socket.role;
+	const baseType = String(deckType || "").replace("_red", "");
+
+	const isAMDG =
+		["A", "M", "D", "G"].includes(baseType);
+
+	if(isAMDG){
+
+		if(role !== "blue" && role !== "red"){
+			return;
+		}
+
+		const playerHand =
+			role === "blue"
+				? room.hands.blue
+				: room.hands.red;
+
+		const handLimit =
+			getExpulsionHandLimit(room, role);
+
+		const totalAMDG =
+			countAMDGCards(playerHand);
+
+		if(totalAMDG >= handLimit){
+
+			socket.emit(
+				"actionDenied",
+				`Seu limite atual é de ${handLimit} cartas AMDG na mão.`
+			);
+
+			return;
+		}
+	}
+
   const deck = room.decks[deckType];
   if(!deck || deck.length === 0) return;
 
@@ -1875,6 +1929,8 @@ socket.on("refillFullHand", () => {
   const hand = role === "blue" ? room.hands.blue : room.hands.red;
   const f = room.formation[role];
 
+  const handLimit = getExpulsionHandLimit(room, role);
+
   const deckMap = role === "blue"
     ? { A:"A", M:"M", D:"D", G:"G" }
     : { A:"A_red", M:"M_red", D:"D_red", G:"G_red" };
@@ -1891,6 +1947,11 @@ socket.on("refillFullHand", () => {
     let missing = Math.max(0, target - current);
 
     while(missing > 0){
+
+      // Não ultrapassa o limite definido pelas expulsões
+      if(countAMDGCards(hand) >= handLimit){
+        break;
+      }
 
       const deck = room.decks[deckType];
 
